@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Griha Colour Palette Database. Add new palettes here. The palette-engine.js reads this file and requires no code changes to add new palettes.",
+    "instructions": "Each palette must have: id, name, zones[], room_types[], swatches[], vastu_rationale, style_tags[], vendors[]"
+  },
+  "palettes": [
+    {
+      "id": "PAL-001",
+      "name": "Warm Earthen",
+      "description": "Rich terracotta, warm tawny brown, and soft cream — rooted in Indian vernacular architecture.",
+      "vastu_rationale": "Earth tones anchor the SW zone's stability principle. These shades mirror the earth element that governs Nairutya direction.",
+      "science_rationale": "Warm neutrals lower perceived room temperature psychologically and promote feelings of security — ideal for master bedrooms.",
+      "zones": ["SW", "S"],
+      "room_types": ["master_bedroom", "bedroom", "living_room"],
+      "style_tags": ["traditional", "contemporary_indian", "warm", "earthy"],
+      "swatches": [
+        { "name": "Kaolin Clay",     "hex": "#EAE1D5", "role": "primary_wall",   "asian_paints_code": "9282", "berger_code": "P110-2", "nippon_code": "NP OW 1036 P" },
+        { "name": "Wheat Straw",     "hex": "#C8A882", "role": "accent_wall",    "asian_paints_code": "8178", "berger_code": "P110-3", "nippon_code": "NP OW 1048 P" },
+        { "name": "Teak Brown",      "hex": "#8E6D4E", "role": "trim_ceiling",   "asian_paints_code": "7155", "berger_code": "P110-6", "nippon_code": "NP OW 1062 P" },
+        { "name": "Sheesham",        "hex": "#5C3D2C", "role": "feature_detail", "asian_paints_code": "6132", "berger_code": "P110-7", "nippon_code": "NP OW 1075 P" },
+        { "name": "Deep Mahogany",   "hex": "#2E1B0D", "role": "furniture_tone", "asian_paints_code": "5118", "berger_code": "P110-9", "nippon_code": "NP OW 1082 P" }
+      ],
+      "wallpaper_suggestion": "Subtle linen or grasscloth texture wallpaper on one accent wall. Avoid bold prints — texture only.",
+      "vendors": [
+        { "name": "Asian Paints",  "url": "https://www.asianpaints.com/colour-palette/warm-earthy.html",   "type": "paint" },
+        { "name": "Berger Paints", "url": "https://www.bergerpaints.com/colourise/palette/earthy",          "type": "paint" },
+        { "name": "Nippon Paint",  "url": "https://www.nipponpaint.co.in/colour-solutions/earthy-tones",    "type": "paint" }
+      ]
+    },
+    {
+      "id": "PAL-002",
+      "name": "Sage Serenity",
+      "description": "Soft sage greens, botanical moss, and deep forest — bringing the calm of nature indoors.",
+      "vastu_rationale": "Green and its tones align with the water-and-growth energy of the N and NE zones. Supports Kubera's abundance principle.",
+      "science_rationale": "Green is the colour wavelength the human eye processes with least effort, reducing mental fatigue — ideal for study rooms and NE living rooms.",
+      "zones": ["N", "NE", "NW"],
+      "room_types": ["living_room", "study", "bedroom", "kids_bedroom"],
+      "style_tags": ["modern", "minimalist", "botanical", "calm"],
+      "swatches": [
+        { "name": "Morning Mist",    "hex": "#E8EEE6", "role": "primary_wall",   "asian_paints_code": "9341", "berger_code": "G120-1", "nippon_code": "NP GN 1024 P" },
+        { "name": "Pale Sage",       "hex": "#B5CDAC", "role": "secondary_wall", "asian_paints_code": "8334", "berger_code": "G120-3", "nippon_code": "NP GN 1036 P" },
+        { "name": "Herb Garden",     "hex": "#779971", "role": "accent_wall",    "asian_paints_code": "7220", "berger_code": "G120-5", "nippon_code": "NP GN 1052 P" },
+        { "name": "Deep Fern",       "hex": "#4E7848", "role": "trim_detail",    "asian_paints_code": "6215", "berger_code": "G120-7", "nippon_code": "NP GN 1068 P" },
+        { "name": "Forest Floor",    "hex": "#2B4D25", "role": "furniture_tone", "asian_paints_code": "5211", "berger_code": "G120-9", "nippon_code": "NP GN 1080 P" }
+      ],
+      "wallpaper_suggestion": "Botanical print wallpaper — single accent wall. Large-leaf monstera or palm print in deep green on light ground.",
+      "vendors": [
+        { "name": "Asian Paints",  "url": "https://www.asianpaints.com/colour-palette/sage-greens.html",  "type": "paint" },
+        { "name": "Nippon Paint",  "url": "https://www.nipponpaint.co.in/colour-solutions/sage-green",    "type": "paint" }
+      ]
+    },
+    {
+      "id": "PAL-003",
+      "name": "Terracotta Dawn",
+      "description": "Burnt clay, spiced orange, and ancient ochre — the colours of old Rajasthan and Chettinad homes.",
+      "vastu_rationale": "Fire tones energise the SE Agni zone. Orange and terracotta amplify the fire element's qualities of energy, heat, and transformation.",
+      "science_rationale": "Warm orange hues increase alertness and stimulate appetite — highly suited to kitchens and east-facing dining rooms.",
+      "zones": ["SE", "E", "S"],
+      "room_types": ["kitchen", "dining_room", "living_room"],
+      "style_tags": ["traditional", "contemporary_indian", "bold", "warm", "rajasthani"],
+      "swatches": [
+        { "name": "Pale Peach",      "hex": "#F5ECE1", "role": "primary_wall",   "asian_paints_code": "9183", "berger_code": "O130-1", "nippon_code": "NP OR 1022 P" },
+        { "name": "Warm Sand",       "hex": "#E0B090", "role": "secondary_wall", "asian_paints_code": "8179", "berger_code": "O130-3", "nippon_code": "NP OR 1038 P" },
+        { "name": "Fired Clay",      "hex": "#C47040", "role": "accent_wall",    "asian_paints_code": "7167", "berger_code": "O130-5", "nippon_code": "NP OR 1055 P" },
+        { "name": "Brick Spice",     "hex": "#9A4820", "role": "feature_detail", "asian_paints_code": "6154", "berger_code": "O130-7", "nippon_code": "NP OR 1070 P" },
+        { "name": "Sindoor Deep",    "hex": "#5C2510", "role": "furniture_tone", "asian_paints_code": "5145", "berger_code": "O130-9", "nippon_code": "NP OR 1082 P" }
+      ],
+      "wallpaper_suggestion": "Geometric tile print or hand-block print wallpaper — traditional Indian motifs in burnt orange and terracotta.",
+      "vendors": [
+        { "name": "Asian Paints",  "url": "https://www.asianpaints.com/colour-palette/terracotta.html",   "type": "paint" },
+        { "name": "Berger Paints", "url": "https://www.bergerpaints.com/colourise/palette/terracotta",     "type": "paint" },
+        { "name": "Nippon Paint",  "url": "https://www.nipponpaint.co.in/colour-solutions/terracotta",     "type": "paint" }
+      ]
+    },
+    {
+      "id": "PAL-004",
+      "name": "Blue Hour",
+      "description": "Deep indigo, twilight blue, and soft silver — bringing the serenity of the evening sky indoors.",
+      "vastu_rationale": "Blue and indigo tones support the water element of the N and W zones. Particularly effective for Varuna-governed west-facing rooms.",
+      "science_rationale": "Blue light wavelengths suppress cortisol and promote relaxation — making blue tones appropriate for bedrooms and study spaces.",
+      "zones": ["N", "W", "NW"],
+      "room_types": ["bedroom", "study", "guest_bedroom"],
+      "style_tags": ["modern", "minimalist", "calm", "contemporary"],
+      "swatches": [
+        { "name": "Arctic Mist",     "hex": "#EBF0F5", "role": "primary_wall",   "asian_paints_code": "9421", "berger_code": "B140-1", "nippon_code": "NP BL 1020 P" },
+        { "name": "Sky Reflection",  "hex": "#A8C4D8", "role": "secondary_wall", "asian_paints_code": "8411", "berger_code": "B140-3", "nippon_code": "NP BL 1038 P" },
+        { "name": "Cerulean",        "hex": "#5B8FAE", "role": "accent_wall",    "asian_paints_code": "7389", "berger_code": "B140-5", "nippon_code": "NP BL 1055 P" },
+        { "name": "Denim Night",     "hex": "#2E5F82", "role": "feature_detail", "asian_paints_code": "6378", "berger_code": "B140-7", "nippon_code": "NP BL 1070 P" },
+        { "name": "Deep Indigo",     "hex": "#0E2F4A", "role": "furniture_tone", "asian_paints_code": "5364", "berger_code": "B140-9", "nippon_code": "NP BL 1082 P" }
+      ],
+      "wallpaper_suggestion": "Textured linen wallpaper in off-white — let the paint do the colour work. Avoid busy prints.",
+      "vendors": [
+        { "name": "Asian Paints",  "url": "https://www.asianpaints.com/colour-palette/blue-shades.html", "type": "paint" },
+        { "name": "Berger Paints", "url": "https://www.bergerpaints.com/colourise/palette/blue-hour",    "type": "paint" }
+      ]
+    },
+    {
+      "id": "PAL-005",
+      "name": "Cloud White Collection",
+      "description": "A curated range of whites — from cool chalk to warm ivory — for a timeless, light-maximising interior.",
+      "vastu_rationale": "White and off-white tones are universally compatible across all Vastu zones. Especially important for the Brahmasthan (central area) and NE zone.",
+      "science_rationale": "White reflects the most light of any colour, maximising the use of natural light — critical in Indian apartment designs where natural light is limited.",
+      "zones": ["ALL"],
+      "room_types": ["ALL"],
+      "style_tags": ["minimalist", "modern", "contemporary", "light", "versatile"],
+      "swatches": [
+        { "name": "Pure Cloud",      "hex": "#FDFCFA", "role": "ceiling",        "asian_paints_code": "9002", "berger_code": "W150-1", "nippon_code": "NP WH 1002 P" },
+        { "name": "Linen White",     "hex": "#F5F0E8", "role": "primary_wall",   "asian_paints_code": "9011", "berger_code": "W150-2", "nippon_code": "NP WH 1010 P" },
+        { "name": "Warm Ivory",      "hex": "#EDE8DC", "role": "secondary_wall", "asian_paints_code": "9022", "berger_code": "W150-3", "nippon_code": "NP WH 1018 P" },
+        { "name": "Parchment",       "hex": "#E2DAC8", "role": "accent_trim",    "asian_paints_code": "9033", "berger_code": "W150-4", "nippon_code": "NP WH 1026 P" },
+        { "name": "Greige",          "hex": "#C8BC9F", "role": "feature_wall",   "asian_paints_code": "9044", "berger_code": "W150-5", "nippon_code": "NP WH 1038 P" }
+      ],
+      "wallpaper_suggestion": "Subtle embossed or textured white wallpaper — damask or linen weave pattern for depth without colour.",
+      "vendors": [
+        { "name": "Asian Paints",  "url": "https://www.asianpaints.com/colour-palette/whites.html",     "type": "paint" },
+        { "name": "Berger Paints", "url": "https://www.bergerpaints.com/colourise/palette/whites",      "type": "paint" },
+        { "name": "Nippon Paint",  "url": "https://www.nipponpaint.co.in/colour-solutions/whites",      "type": "paint" }
+      ]
+    }
+  ]
+}
