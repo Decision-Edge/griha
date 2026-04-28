@@ -655,12 +655,44 @@ window.removeMasterplan = function(e) {
   updateFooter();
 };
 
+// ── Fallback analysis (used when Worker isn't deployed yet) ────────────────
+// Produces smart defaults based on room label so all features work immediately.
+// AI Worker adds photo-specific insights on top — it is an enhancement, not a dependency.
+const FALLBACK_SQFT = {
+  'master bedroom':160,'living room':220,'kitchen':100,'washroom':60,
+  'balcony':80,'pooja room':50,'kids bedroom':120,'guest bedroom':130,
+  'study':100,'dining room':150
+};
+function fallbackAnalysis(label) {
+  return {
+    ok: true,
+    _isFallback: true, // shown as a banner in results
+    room_identified: true,
+    confidence: 'medium',
+    observations: {
+      estimated_sqft:          FALLBACK_SQFT[label.toLowerCase()] || 150,
+      ceiling_height:          'standard',
+      window_count:            1,
+      light_direction:         label.toLowerCase().includes('kitchen') ? 'south' : 'east',
+      light_quality:           'moderate',
+      overhead_beams_detected: false,
+      beam_positions:          'not_applicable',
+      electrical_points_visible: 2,
+      electrical_point_positions: ['near_entrance', 'opposite_wall'],
+      existing_furniture:      [],
+      wall_colours_existing:   ['white'],
+      flooring_type:           'tile',
+      style_detected:          ['contemporary_indian']
+    }
+  };
+}
+
 // ── Start analysis ─────────────────────────────────────────────────────────
 async function startAnalysis() {
   const roomsToAnalyse = UPLOAD.rooms.filter(r => r.photos.some(Boolean));
   if(!roomsToAnalyse.length) return;
 
-  // Show overlay
+  // Show loading overlay
   const overlay = document.getElementById('analysingOverlay');
   overlay.style.display = 'flex';
   document.getElementById('aoProgress').innerHTML = roomsToAnalyse.map(r=>
@@ -669,34 +701,46 @@ async function startAnalysis() {
       <span class="ao-room-status pending" id="ao-${r.id}">Waiting…</span>
     </div>`).join('');
 
-  // Analyse masterplan if provided
+  // Try masterplan analysis (silently skip if worker not deployed)
   if(UPLOAD.masterplanFile) {
     try {
       const mpResult = await S.M.ai.analyzeMasterplan(UPLOAD.masterplanFile);
       if(mpResult.ok) S.masterplan = mpResult;
-    } catch(e) { console.warn('Masterplan analysis failed:', e); }
+    } catch(e) { console.warn('Masterplan analysis skipped (Worker not deployed)'); }
   }
 
-  // Analyse each room (sequentially to respect API rate limits)
+  // Analyse each room
   S.rooms = [];
   for(const uploadRoom of roomsToAnalyse) {
     const statusEl = document.getElementById(`ao-${uploadRoom.id}`);
     if(statusEl) { statusEl.textContent = 'Analysing…'; statusEl.className = 'ao-room-status analysing'; }
 
     const photos = uploadRoom.photos.filter(Boolean);
-    const ai     = await S.M.ai.analyzeRoom(photos[0], uploadRoom.label);
-    // If multiple photos, note them for UI (future: send all to AI)
-    const zone   = getZone(uploadRoom.label);
-    const vastu  = S.M.vastu.analyzeRoom({
+    let ai;
+
+    // Try real AI analysis — fall back to smart defaults if Worker isn't ready
+    try {
+      ai = await S.M.ai.analyzeRoom(photos[0], uploadRoom.label);
+      if(!ai.ok) {
+        console.info(`AI analysis unavailable (${ai.error}) — using smart defaults for ${uploadRoom.label}`);
+        ai = fallbackAnalysis(uploadRoom.label);
+      }
+    } catch(e) {
+      console.info('Worker not reachable — using smart defaults');
+      ai = fallbackAnalysis(uploadRoom.label);
+    }
+
+    const zone    = getZone(uploadRoom.label);
+    const vastu   = S.M.vastu.analyzeRoom({
       room_type: normalise(uploadRoom.label), compass_zone: zone,
       ai_observations: ai.observations || {}
     });
     const lighting = S.M.lighting.plan({
-      room_type: normalise(uploadRoom.label),
-      sqft: ai.observations?.estimated_sqft || 150,
+      room_type:    normalise(uploadRoom.label),
+      sqft:         ai.observations?.estimated_sqft || 150,
       compass_zone: zone,
       electrical_points: ai.observations?.electrical_points_visible || 2,
-      ceiling_height: ai.observations?.ceiling_height || 'standard'
+      ceiling_height:    ai.observations?.ceiling_height || 'standard'
     });
 
     S.rooms.push({
@@ -705,18 +749,15 @@ async function startAnalysis() {
       previews: uploadRoom.previews.filter(Boolean),
       ai, vastu, lighting,
       designOptions: null,
-      status: ai.ok ? 'done' : 'error'
+      status: 'done'
     });
 
-    if(statusEl) {
-      statusEl.textContent = ai.ok ? '✓ Done' : '✗ Failed';
-      statusEl.className   = `ao-room-status ${ai.ok ? 'done' : 'error'}`;
-    }
+    if(statusEl) { statusEl.textContent = '✓ Ready'; statusEl.className = 'ao-room-status done'; }
   }
 
   saveSession();
 
-  // Hide overlay and show results
+  // Transition to results view
   overlay.style.display = 'none';
   document.getElementById('uploadPhase').style.display  = 'none';
   document.getElementById('resultsPhase').style.display = 'block';
@@ -758,12 +799,24 @@ function renderRoomResults(idx) {
   const area    = document.getElementById('resultsArea');
 
   if(!room.ai?.ok) {
-    area.innerHTML = `<div style="padding:24px;color:var(--terra);">
-      <strong>Analysis failed for ${room.label}</strong><br>
-      <span style="font-size:13px;color:var(--ch70);">${room.ai?.error || 'Unknown error. Check your worker is deployed.'}</span>
+    area.innerHTML = `<div style="padding:24px;">
+      <div style="background:var(--terra-l);border:1px solid rgba(192,80,42,0.25);border-radius:var(--r-md);padding:14px 16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:500;color:var(--terra);margin-bottom:4px;">AI analysis unavailable for ${room.label}</div>
+        <div style="font-size:12px;color:var(--ch70);line-height:1.6;">The Cloudflare Worker isn't deployed yet. <a href="README.md" style="color:var(--terra);">See setup guide</a> to enable photo analysis. In the meantime, use the "Generate 4 design options" button below — it works without the Worker.</div>
+      </div>
     </div>`;
     return;
   }
+
+  // Show a banner if using smart defaults instead of real AI analysis
+  const fallbackBanner = room.ai._isFallback ? `
+    <div style="background:var(--gold-l);border:1px solid rgba(176,125,32,0.25);border-radius:var(--r-md);padding:12px 16px;display:flex;align-items:flex-start;gap:10px;">
+      <div style="font-size:18px;flex-shrink:0;">💡</div>
+      <div>
+        <div style="font-size:12px;font-weight:500;color:var(--gold);margin-bottom:3px;">Using smart defaults — photo analysis pending</div>
+        <div style="font-size:12px;color:var(--ch70);line-height:1.55;">Vastu rules, lighting plan, design options and products are all live. Deploy your <a href="README.md" style="color:var(--gold);">Cloudflare Worker</a> to unlock photo-specific analysis (beam detection, exact room dimensions, current wall colours).</div>
+      </div>
+    </div>` : '';
 
   const rulesHTML = [
     {rules:vastu.violated_rules||[],  icon:'✗',cls:'violated'},
@@ -787,6 +840,7 @@ function renderRoomResults(idx) {
   const photosStrip = room.previews.map(url=>`<img class="rps-thumb" src="${url}" alt="Room photo">`).join('');
 
   area.innerHTML = `
+    ${fallbackBanner}
     <div class="r-header">
       <div>
         <div class="r-room-title">${room.label}</div>
@@ -1060,6 +1114,8 @@ window.downloadSpec       = (roomIdx,optIdx) => {
   S.M.carpSpec.downloadHTML(spec);
 };
 window.showRestoredResults = showRestoredResults;
+window.startAnalysis       = startAnalysis;
+window.goBackToUpload      = goBackToUpload;
 
 init();
 </script>
