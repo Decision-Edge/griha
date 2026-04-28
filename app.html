@@ -3,347 +3,411 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Griha — Design Tool</title>
+<title>Griha — Design your home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
   --cream:#F6F1EB;--warm-white:#FDFAF6;--charcoal:#1A1714;
-  --ch70:rgba(26,23,20,.7);--ch40:rgba(26,23,20,.4);--ch12:rgba(26,23,20,.12);--ch05:rgba(26,23,20,.05);
-  --terra:#C0502A;--terra-h:#A3431F;--terra-l:#F3E8E3;
-  --gold:#B07D20;--gold-l:#F4EAD5;--sage:#4F6250;--sage-l:#E5EDE4;
-  --border:rgba(26,23,20,.09);--border-md:rgba(26,23,20,.15);
-  --sb:280px;--font-d:'Cormorant Garamond',Georgia,serif;--font-b:'DM Sans',system-ui,sans-serif;
+  --ch70:rgba(26,23,20,0.7);--ch40:rgba(26,23,20,0.4);
+  --ch12:rgba(26,23,20,0.12);--ch06:rgba(26,23,20,0.05);
+  --terra:#C0502A;--terra-l:#F3E8E3;--terra-h:#A3431F;
+  --gold:#B07D20;--gold-l:#F4EAD5;
+  --sage:#4F6250;--sage-l:#E5EDE4;
+  --blue-l:#E6F1FB;--blue:#0C447C;
+  --border:rgba(26,23,20,0.09);--border-md:rgba(26,23,20,0.15);
+  --font-d:'Cormorant Garamond',Georgia,serif;
+  --font-b:'DM Sans',system-ui,sans-serif;
+  --r-sm:8px;--r-md:12px;--r-lg:18px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;overflow:hidden;}
-body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal);font-size:13px;line-height:1.6;display:flex;flex-direction:column;}
+body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal);font-size:14px;line-height:1.6;min-height:100vh;}
 
-/* TOPBAR */
-.topbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--warm-white);}
-.topbar-logo{font-family:var(--font-d);font-size:21px;font-weight:500;text-decoration:none;color:var(--charcoal);}
-.topbar-logo em{color:var(--terra);font-style:normal;}
-.topbar-status{font-size:11px;color:var(--gold);display:none;}
-.topbar-right{display:flex;align-items:center;gap:8px;}
-.btn-xs{padding:6px 14px;border-radius:100px;font-size:11px;font-weight:500;border:1px solid var(--border-md);background:transparent;color:var(--ch70);cursor:pointer;text-decoration:none;transition:all .15s;}
-.btn-xs:hover{background:var(--ch05);}
-.btn-xs.primary{background:var(--terra);color:#fff;border-color:var(--terra);}
-.btn-xs.primary:hover{background:var(--terra-h);}
+/* ── NAV ── */
+.topbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:1px solid var(--border);background:var(--warm-white);position:sticky;top:0;z-index:100;}
+.tlogo{font-family:var(--font-d);font-size:24px;font-weight:500;text-decoration:none;color:var(--charcoal);}
+.tlogo em{color:var(--terra);font-style:normal;}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.btn-sm{padding:7px 18px;border-radius:100px;font-size:12px;font-weight:500;border:1px solid var(--border-md);background:transparent;color:var(--charcoal);cursor:pointer;text-decoration:none;transition:all .15s;}
+.btn-sm:hover{background:var(--ch06);}
+.btn-sm.primary{background:var(--terra);color:#fff;border-color:var(--terra);}
+.btn-sm.primary:hover{background:var(--terra-h);}
 
-#globalError{display:none;padding:8px 16px;background:#FDECEA;color:#791F1F;font-size:12px;flex-shrink:0;}
+/* ── UPLOAD PHASE ── */
+#uploadPhase{max-width:820px;margin:0 auto;padding:48px 24px 80px;}
+.upload-hero{text-align:center;margin-bottom:48px;}
+.upload-hero-eyebrow{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--terra);margin-bottom:12px;}
+.upload-hero-title{font-family:var(--font-d);font-size:52px;font-weight:400;line-height:1.08;letter-spacing:-0.02em;color:var(--charcoal);margin-bottom:14px;}
+.upload-hero-sub{font-size:15px;color:var(--ch70);line-height:1.7;max-width:440px;margin:0 auto;font-weight:300;}
 
-/* LAYOUT */
-.layout{display:flex;flex:1;overflow:hidden;}
+/* ── ROOM CARD ── */
+.room-card{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;transition:border-color .2s;}
+.room-card:focus-within{border-color:var(--terra);}
+.room-card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:var(--cream);}
+.room-card-left{display:flex;align-items:center;gap:10px;}
+.room-num{width:28px;height:28px;border-radius:50%;background:var(--terra);color:#fff;font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.room-label-select{font-family:var(--font-b);font-size:14px;font-weight:500;color:var(--charcoal);border:none;background:transparent;cursor:pointer;outline:none;appearance:none;padding-right:20px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231A1714' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0 center;}
+.room-remove-btn{font-size:12px;color:var(--ch40);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;transition:all .15s;}
+.room-remove-btn:hover{color:var(--terra);background:var(--terra-l);}
 
-/* SIDEBAR */
-.sidebar{width:var(--sb);flex-shrink:0;border-right:1px solid var(--border);background:var(--cream);display:flex;flex-direction:column;overflow-y:auto;}
-.sb-sec{padding:12px;border-bottom:1px solid var(--border);}
-.sb-label{font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ch40);margin-bottom:8px;}
-.room-select{width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border-md);background:var(--warm-white);font-family:var(--font-b);font-size:12px;color:var(--charcoal);outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231A1714' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;margin-bottom:8px;cursor:pointer;}
-.room-select:focus{border-color:var(--terra);}
-.drop-zone{border:1.5px dashed var(--border-md);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:all .18s;background:var(--warm-white);}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--terra);background:var(--terra-l);}
-.drop-icon{font-size:20px;margin-bottom:6px;}
-.drop-text{font-size:11px;color:var(--ch40);line-height:1.5;}
-.drop-text strong{color:var(--terra);}
-input[type=file]{display:none;}
+/* ── PHOTO SLOTS ── */
+.photo-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:20px;}
+.photo-slot{position:relative;aspect-ratio:4/3;border-radius:var(--r-md);overflow:hidden;cursor:pointer;transition:all .2s;}
+.photo-slot-empty{border:1.5px dashed var(--border-md);background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.photo-slot-empty:hover{border-color:var(--terra);background:var(--terra-l);}
+.photo-slot-empty.drag-over{border-color:var(--terra);background:var(--terra-l);transform:scale(1.02);}
+.slot-icon{font-size:24px;opacity:.4;}
+.slot-label{font-size:11px;color:var(--ch40);text-align:center;line-height:1.4;padding:0 8px;}
+.slot-label strong{color:var(--terra);display:block;}
+.photo-slot-filled{position:relative;}
+.photo-slot-filled img{width:100%;height:100%;object-fit:cover;display:block;}
+.slot-overlay{position:absolute;inset:0;background:rgba(26,23,20,0);transition:background .2s;display:flex;align-items:center;justify-content:center;}
+.photo-slot-filled:hover .slot-overlay{background:rgba(26,23,20,0.45);}
+.slot-remove{opacity:0;background:#fff;border:none;border-radius:100px;padding:5px 12px;font-size:11px;font-weight:500;color:var(--terra);cursor:pointer;transition:opacity .2s;}
+.photo-slot-filled:hover .slot-remove{opacity:1;}
+.slot-angle-label{position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,0.65);color:#fff;font-size:10px;padding:2px 8px;border-radius:100px;}
 
-/* Room tabs */
-#roomTabs{display:flex;flex-direction:column;gap:3px;}
-.room-tab{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;transition:all .14s;border:1px solid transparent;}
-.room-tab:hover{background:var(--warm-white);}
-.room-tab.active{background:var(--warm-white);border-color:var(--border);}
-.room-tab img{width:32px;height:32px;object-fit:cover;border-radius:4px;flex-shrink:0;}
-.room-tab span{font-size:11px;font-weight:500;flex:1;}
-.rt-status{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.rt-status.pending{background:var(--ch40);}
-.rt-status.analysing{background:var(--gold);animation:pulse 1.2s ease-in-out infinite;}
-.rt-status.generating{background:var(--terra);animation:pulse .8s ease-in-out infinite;}
-.rt-status.done{background:var(--sage);}
-.rt-status.error{background:#C0392B;}
-@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+/* photo slot count badge */
+.room-photo-count{font-size:11px;color:var(--ch40);padding:0 20px 14px;display:flex;align-items:center;gap:6px;}
+.photo-count-dot{width:6px;height:6px;border-radius:50%;background:var(--ch40);}
+.photo-count-dot.filled{background:var(--sage);}
 
-/* Masterplan */
-.mp-btn{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--warm-white);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;}
-.mp-btn:hover{border-color:var(--terra);}
-.mp-icon{font-size:15px;}
-.mp-info{flex:1;}
-.mp-title{font-size:11px;font-weight:500;}
-.mp-sub{font-size:10px;color:var(--ch40);}
-.mp-status{font-size:10px;padding:5px 8px;border-radius:5px;margin-top:6px;}
-.mp-status.success{background:var(--sage-l);color:var(--sage);}
-.mp-status.error{background:var(--terra-l);color:var(--terra);}
-#mpRooms{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
-.mp-chip{font-size:10px;padding:2px 7px;border-radius:100px;background:var(--warm-white);border:1px solid var(--border);display:inline-flex;align-items:center;gap:4px;}
-.mp-chip-zone{font-weight:500;color:var(--terra);}
+/* ── ADD ROOM ── */
+.add-room-btn{width:100%;padding:14px;border-radius:var(--r-lg);border:1.5px dashed var(--border-md);background:transparent;color:var(--ch70);font-size:13px;font-weight:400;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:32px;}
+.add-room-btn:hover{border-color:var(--terra);color:var(--terra);background:var(--terra-l);}
 
-/* MAIN */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+/* ── MASTERPLAN SECTION ── */
+.section-divider{display:flex;align-items:center;gap:12px;margin:32px 0 20px;color:var(--ch40);font-size:11px;letter-spacing:.08em;text-transform:uppercase;}
+.section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.masterplan-card{border:1px solid var(--border);border-radius:var(--r-md);padding:16px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all .2s;background:var(--warm-white);}
+.masterplan-card:hover{border-color:var(--terra);background:var(--terra-l);}
+.masterplan-card.uploaded{border-color:var(--sage);background:var(--sage-l);cursor:default;}
+.mp-icon-wrap{width:44px;height:44px;border-radius:10px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.mp-text-title{font-size:14px;font-weight:500;margin-bottom:2px;}
+.mp-text-sub{font-size:12px;color:var(--ch40);line-height:1.4;}
+.mp-uploaded-preview{width:56px;height:40px;object-fit:cover;border-radius:6px;margin-left:auto;}
+.mp-remove{font-size:11px;color:var(--terra);background:none;border:none;cursor:pointer;margin-left:auto;text-decoration:underline;}
 
-/* Empty state */
-.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--ch40);text-align:center;}
-.empty-icon{font-size:40px;opacity:.35;margin-bottom:14px;}
-.empty-title{font-family:var(--font-d);font-size:26px;font-weight:400;color:var(--charcoal);opacity:.4;margin-bottom:8px;}
-.empty-sub{font-size:12px;max-width:280px;line-height:1.65;}
+/* ── ANALYSE CTA ── */
+.analyse-footer{position:sticky;bottom:0;background:rgba(253,250,246,0.96);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 -24px;margin-top:32px;}
+.analyse-summary{font-size:12px;color:var(--ch70);line-height:1.5;}
+.analyse-summary strong{color:var(--charcoal);display:block;font-size:13px;margin-bottom:1px;}
+.analyse-btn{padding:14px 32px;border-radius:100px;background:var(--charcoal);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.analyse-btn:hover:not(:disabled){background:var(--terra);transform:translateY(-1px);}
+.analyse-btn:disabled{opacity:.4;cursor:not-allowed;}
 
-/* Step tabs */
-.step-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--warm-white);}
-.step-tab{padding:10px 16px;font-size:11px;font-weight:500;color:var(--ch40);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;}
-.step-tab.active{color:var(--terra);border-bottom-color:var(--terra);}
-.step-tab.disabled{opacity:.35;cursor:not-allowed;}
+/* ── RESTORE BANNER ── */
+.restore-banner{background:var(--sage-l);border-bottom:1px solid rgba(79,98,80,0.2);padding:8px 24px;font-size:12px;color:var(--sage);display:flex;align-items:center;justify-content:space-between;}
+.restore-banner button{font-size:11px;color:var(--terra);background:none;border:none;cursor:pointer;text-decoration:underline;}
 
-/* Content panels */
-.step-panel{flex:1;overflow-y:auto;display:none;}
-.step-panel.active{display:block;}
+/* ── RESULTS PHASE ── */
+#resultsPhase{display:none;height:calc(100vh - 56px);}
+.results-layout{display:flex;height:100%;overflow:hidden;}
 
-/* ANALYSIS PANEL */
-.analysis-content{padding:20px;display:flex;flex-direction:column;gap:16px;}
-.analysis-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
-.analysis-room-title{font-family:var(--font-d);font-size:26px;font-weight:500;line-height:1.1;}
-.analysis-meta{font-size:11px;color:var(--ch40);margin-top:3px;}
-.vastu-score{text-align:center;min-width:72px;}
-.score-num{font-family:var(--font-d);font-size:44px;font-weight:400;line-height:1;color:var(--score-col,#888);}
-.score-label{font-size:10px;color:var(--ch40);margin-top:2px;}
-.insights-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.insight-card{background:var(--cream);border-radius:6px;padding:10px;border:1px solid var(--border);}
-.ic-label{font-size:9px;color:var(--ch40);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
-.ic-val{font-size:12px;font-weight:500;}
-.ic-sub{font-size:10px;color:var(--ch40);margin-top:2px;}
-.section-hd{font-size:9px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ch40);padding-bottom:7px;border-bottom:1px solid var(--border);}
-.vastu-rule{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:6px;border:1px solid transparent;margin-bottom:5px;}
-.vastu-compliant{background:var(--sage-l);border-color:rgba(79,98,80,.12);}
-.vastu-warning{background:var(--gold-l);border-color:rgba(176,125,32,.12);}
-.vastu-violated{background:var(--terra-l);border-color:rgba(192,80,42,.15);}
-.vr-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;margin-top:1px;}
+/* results sidebar */
+.r-sidebar{width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--cream);display:flex;flex-direction:column;overflow-y:auto;}
+.r-sb-section{padding:12px 14px;border-bottom:1px solid var(--border);}
+.r-sb-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ch40);margin-bottom:8px;}
+.r-room-list{display:flex;flex-direction:column;gap:3px;}
+.r-room-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r-sm);cursor:pointer;transition:all .14s;border:1px solid transparent;}
+.r-room-item:hover{background:var(--warm-white);}
+.r-room-item.active{background:var(--warm-white);border-color:var(--border);}
+.r-room-thumb{width:36px;height:28px;object-fit:cover;border-radius:4px;flex-shrink:0;}
+.r-room-thumb-placeholder{width:36px;height:28px;background:var(--border);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.r-room-name{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.r-room-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.r-room-dot.analysing{background:var(--gold);animation:pulse 1.2s ease-in-out infinite;}
+.r-room-dot.done{background:var(--sage);}
+.r-room-dot.error{background:var(--terra);}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+.r-back-btn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ch70);padding:10px 14px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-top:1px solid var(--border);margin-top:auto;}
+.r-back-btn:hover{color:var(--terra);}
+
+/* results main */
+.r-main{flex:1;overflow-y:auto;padding:24px;}
+.r-results{display:flex;flex-direction:column;gap:20px;}
+
+/* results header */
+.r-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
+.r-room-title{font-family:var(--font-d);font-size:28px;font-weight:500;line-height:1.1;}
+.r-meta{font-size:12px;color:var(--ch40);margin-top:4px;}
+.vastu-score{text-align:center;min-width:80px;}
+.vs-num{font-family:var(--font-d);font-size:48px;font-weight:400;line-height:1;color:var(--score-colour,#888);}
+.vs-label{font-size:11px;color:var(--ch40);margin-top:2px;}
+
+/* photo thumbnails in results */
+.room-photos-strip{display:flex;gap:8px;}
+.rps-thumb{width:80px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);}
+
+/* insights */
+.insights{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.insight{background:var(--cream);border-radius:var(--r-sm);padding:10px 12px;border:1px solid var(--border);}
+.i-label{font-size:10px;color:var(--ch40);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.i-val{font-size:12px;font-weight:500;}
+.i-sub{font-size:10px;color:var(--ch40);margin-top:1px;}
+.section-block{display:flex;flex-direction:column;gap:10px;}
+.section-title{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ch40);padding-bottom:8px;border-bottom:1px solid var(--border);}
+
+/* vastu rules */
+.vastu-rule{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:var(--r-sm);border:1px solid transparent;}
+.vastu-compliant{background:var(--sage-l);border-color:rgba(79,98,80,0.15);}
+.vastu-warning{background:var(--gold-l);border-color:rgba(176,125,32,0.15);}
+.vastu-violated{background:var(--terra-l);border-color:rgba(192,80,42,0.2);}
+.vr-icon{font-size:11px;font-weight:600;flex-shrink:0;width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:2px;}
 .vastu-compliant .vr-icon{background:var(--sage);color:#fff;}
-.vastu-warning   .vr-icon{background:var(--gold);color:#fff;}
-.vastu-violated  .vr-icon{background:var(--terra);color:#fff;}
-.vr-title{font-size:11px;font-weight:500;margin-bottom:2px;}
+.vastu-warning .vr-icon{background:var(--gold);color:#fff;}
+.vastu-violated .vr-icon{background:var(--terra);color:#fff;}
+.vr-title{font-size:12px;font-weight:500;margin-bottom:2px;}
 .vr-desc{font-size:11px;color:var(--ch70);line-height:1.5;}
-.vr-source{font-size:9px;color:var(--ch40);margin-top:3px;font-style:italic;}
-.gen-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:8px;background:var(--terra);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .18s;width:100%;}
-.gen-btn:hover{background:var(--terra-h);transform:translateY(-1px);}
-.gen-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-.gen-btn-note{font-size:10px;color:var(--ch40);text-align:center;margin-top:4px;}
+.vr-source{font-size:10px;color:var(--ch40);margin-top:3px;font-style:italic;}
 
-/* DESIGNS PANEL */
-.designs-content{padding:0;}
-.designs-generating{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:12px;}
-.generating-dots{display:flex;gap:8px;}
-.gdot{width:8px;height:8px;border-radius:50%;background:var(--terra);animation:pulse 1.2s ease-in-out infinite;}
-.gdot:nth-child(2){animation-delay:.2s;background:var(--gold);}
-.gdot:nth-child(3){animation-delay:.4s;background:var(--sage);}
-.generating-text{font-size:13px;color:var(--ch40);}
-.design-options-strip{display:flex;gap:12px;padding:16px;overflow-x:auto;border-bottom:1px solid var(--border);flex-shrink:0;}
-.design-option-card{flex-shrink:0;width:180px;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .18s;}
-.design-option-card:hover{border-color:var(--terra);transform:translateY(-2px);}
-.design-option-card.selected{border-color:var(--terra);box-shadow:0 0 0 3px rgba(192,80,42,.1);}
-.doc-image{width:100%;height:110px;object-fit:cover;background:var(--cream);display:flex;align-items:center;justify-content:center;}
-.doc-image-placeholder{width:100%;height:110px;display:flex;align-items:center;justify-content:center;font-size:28px;background:linear-gradient(135deg,var(--cream) 0%,var(--terra-l) 100%);}
-.doc-info{padding:8px 10px;}
-.doc-name{font-size:11px;font-weight:500;margin-bottom:2px;}
-.doc-tagline{font-size:10px;color:var(--ch40);line-height:1.4;}
-.doc-price{font-size:10px;color:var(--terra);margin-top:4px;font-weight:500;}
+/* generate designs button */
+.gen-btn{width:100%;padding:14px;border-radius:var(--r-md);background:var(--charcoal);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.gen-btn:hover{background:var(--terra);}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed;}
+.gen-btn-note{font-size:11px;color:var(--ch40);text-align:center;margin-top:6px;}
 
-/* Design detail */
-.design-detail{display:none;flex:1;overflow-y:auto;}
-.design-detail.visible{display:block;}
-.dd-hero{position:relative;width:100%;height:280px;background:var(--cream);overflow:hidden;}
-.dd-hero img{width:100%;height:100%;object-fit:cover;}
-.dd-hero-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;background:linear-gradient(135deg,var(--cream) 0%,var(--terra-l) 100%);}
-.dd-hero-overlay{position:absolute;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(transparent,rgba(26,23,20,.7));}
-.dd-name{font-family:var(--font-d);font-size:22px;font-weight:400;color:#fff;}
-.dd-tagline{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;}
-.dd-body{padding:16px;display:flex;flex-direction:column;gap:16px;}
-.dd-meta-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.dd-meta-card{background:var(--cream);border-radius:6px;padding:10px;border:1px solid var(--border);}
-.dd-meta-label{font-size:9px;color:var(--ch40);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
-.dd-meta-val{font-size:11px;color:var(--charcoal);line-height:1.4;}
-.colour-swatches{display:flex;gap:5px;margin-top:6px;}
-.colour-swatch{width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);}
-.vastu-address-box{background:var(--sage-l);border:1px solid rgba(79,98,80,.2);border-radius:6px;padding:10px 12px;font-size:11px;color:var(--charcoal);line-height:1.6;}
-.vastu-address-box strong{font-weight:500;}
+/* design options */
+.design-options-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.design-card{border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;cursor:pointer;transition:all .2s;}
+.design-card:hover{border-color:var(--terra);transform:translateY(-2px);box-shadow:0 8px 24px var(--ch12);}
+.dc-colours{height:56px;display:flex;}
+.dc-swatch{flex:1;}
+.dc-body{padding:12px 14px;}
+.dc-name{font-family:var(--font-d);font-size:17px;font-weight:500;color:var(--charcoal);margin-bottom:2px;}
+.dc-tagline{font-size:11px;color:var(--ch70);margin-bottom:8px;}
+.dc-features{display:flex;flex-direction:column;gap:3px;}
+.dc-feature{font-size:11px;color:var(--ch70);display:flex;gap:5px;align-items:flex-start;line-height:1.4;}
+.dc-feature::before{content:'·';color:var(--terra);flex-shrink:0;}
+.dc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.dc-budget{font-size:11px;color:var(--ch70);}
+.dc-budget strong{color:var(--charcoal);}
+.dc-vastu{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--sage);}
+.dc-vastu-dot{width:6px;height:6px;border-radius:50%;background:var(--sage);}
+.dc-select-btn{font-size:11px;font-weight:500;padding:5px 12px;border-radius:100px;background:var(--terra);color:#fff;border:none;cursor:pointer;}
 
-/* Shopping list */
-.shopping-list{display:flex;flex-direction:column;gap:14px;}
-.cat-section{display:flex;flex-direction:column;gap:8px;}
-.cat-hd{display:flex;align-items:center;justify-content:space-between;}
-.cat-title{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ch40);}
-.cat-count{font-size:10px;color:var(--ch40);}
-.products-list{display:flex;flex-direction:column;gap:6px;}
-.product-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--warm-white);transition:all .15s;}
-.product-row:hover{border-color:var(--terra);}
-.pr-emoji{font-size:20px;flex-shrink:0;width:32px;text-align:center;}
-.pr-info{flex:1;min-width:0;}
-.pr-name{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.pr-brand{font-size:10px;color:var(--ch40);}
-.pr-vastu{font-size:10px;color:var(--sage);}
-.pr-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
-.pr-price{font-size:12px;font-weight:600;}
-.pr-platform{font-size:9px;padding:2px 6px;border-radius:100px;}
-.pp-amazon{background:rgba(255,153,0,.15);color:#8A5A00;}
+/* selected design */
+.selected-design{border:1.5px solid var(--terra);border-radius:var(--r-lg);overflow:hidden;}
+.sd-header{padding:14px 18px;background:var(--terra);display:flex;align-items:center;justify-content:space-between;}
+.sd-title{font-family:var(--font-d);font-size:20px;font-weight:500;color:#fff;}
+.sd-tagline{font-size:12px;color:rgba(255,255,255,0.7);margin-top:2px;}
+.sd-change{font-size:12px;color:rgba(255,255,255,0.8);cursor:pointer;text-decoration:underline;background:none;border:none;}
+.sd-colours{height:44px;display:flex;}
+.sd-desc{padding:12px 18px;font-size:13px;color:var(--ch70);line-height:1.65;background:var(--cream);}
+.sd-vastu-points{display:flex;flex-direction:column;gap:4px;padding:8px 18px;background:var(--sage-l);border-top:1px solid rgba(79,98,80,0.15);}
+.sd-vp{font-size:12px;color:var(--sage);display:flex;gap:6px;}
+.sd-vp::before{content:'✓';flex-shrink:0;}
+
+/* product tabs */
+.prod-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 18px;}
+.prod-tab{padding:10px 12px;font-size:12px;font-weight:500;color:var(--ch70);cursor:pointer;border-bottom:2px solid transparent;background:none;border-left:none;border-right:none;border-top:none;transition:all .15s;}
+.prod-tab:hover{color:var(--charcoal);}
+.prod-tab.active{color:var(--terra);border-bottom-color:var(--terra);}
+.prod-panel{display:none;padding:14px 18px;}
+.prod-panel.active{display:block;}
+.prod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.prod-card{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;transition:all .18s;}
+.prod-card:hover{border-color:var(--terra);transform:translateY(-2px);}
+.pc-img{height:72px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--cream);position:relative;}
+.pc-platform{position:absolute;top:5px;right:5px;font-size:9px;font-weight:500;padding:2px 6px;border-radius:100px;}
+.pp-amazon{background:rgba(255,153,0,.15);color:#9A6000;}
 .pp-pepperfry{background:var(--terra-l);color:var(--terra);}
-.pp-urban-ladder,.pp-urban_ladder{background:var(--sage-l);color:var(--sage);}
-.pp-ikea{background:rgba(0,88,163,.1);color:#005891;}
-.pr-buy{font-size:10px;padding:4px 10px;border-radius:100px;background:var(--terra);color:#fff;text-decoration:none;white-space:nowrap;}
-.pr-buy:hover{background:var(--terra-h);}
+.pp-urban-ladder{background:var(--sage-l);color:var(--sage);}
+.pp-ikea{background:var(--blue-l);color:var(--blue);}
+.pp-asian-paints{background:var(--gold-l);color:var(--gold);}
+.pc-body{padding:8px 10px 10px;}
+.pc-name{font-size:11px;font-weight:500;line-height:1.3;margin-bottom:1px;}
+.pc-brand{font-size:10px;color:var(--ch40);}
+.pc-vastu{font-size:9px;color:var(--sage);margin-top:3px;}
+.pc-vastu::before{content:'✓ ';}
+.pc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:7px;}
+.pc-price{font-size:12px;font-weight:600;}
+.pc-buy{font-size:10px;font-weight:500;padding:3px 8px;border-radius:100px;background:var(--terra);color:#fff;text-decoration:none;}
 
-/* Lighting plan */
-.lighting-plan{background:var(--charcoal);border-radius:8px;padding:14px;color:rgba(253,250,246,.85);}
-.lp-title{font-size:11px;font-weight:500;margin-bottom:8px;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase;}
-.lp-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:11px;line-height:1.5;}
-.lp-item:last-child{border-bottom:none;padding-bottom:0;}
-.lp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
-.lp-ambient{background:#FAC775;}
-.lp-accent{background:#F0997B;}
-.lp-task{background:#9FE1CB;}
+/* wall section */
+.wall-colours-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.wc-card{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;}
+.wc-swatch{height:56px;}
+.wc-body{padding:9px 11px;}
+.wc-name{font-size:12px;font-weight:500;margin-bottom:2px;}
+.wc-code{font-size:10px;color:var(--ch40);}
+.wc-role{font-size:10px;color:var(--ch70);margin-top:3px;}
+.wallpaper-block{border:1px solid var(--border);border-radius:var(--r-md);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-top:10px;}
+.wp-icon{font-size:20px;flex-shrink:0;}
+.wp-title{font-size:13px;font-weight:500;margin-bottom:3px;}
+.wp-desc{font-size:12px;color:var(--ch70);line-height:1.5;margin-bottom:4px;}
+.wp-vendor{font-size:11px;font-weight:500;color:var(--terra);}
 
-/* Wallpaper */
-.wallpaper-box{border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.wp-preview{height:60px;background:repeating-linear-gradient(45deg,var(--cream) 0,var(--cream) 10px,var(--terra-l) 10px,var(--terra-l) 20px);}
-.wp-info{padding:10px 12px;}
-.wp-note{font-size:11px;color:var(--ch70);line-height:1.5;}
+/* lighting */
+.lighting-plan{display:flex;flex-direction:column;gap:8px;}
+.lp-zone{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;}
+.lp-zone-title{font-size:12px;font-weight:500;margin-bottom:2px;}
+.lp-zone-desc{font-size:11px;color:var(--ch70);margin-bottom:6px;}
+.lp-fixtures{display:flex;flex-direction:column;gap:3px;}
+.lp-fixture{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ch70);}
+.lp-fixture::before{content:'•';color:var(--terra);}
+.lp-cost{background:var(--cream);border-radius:var(--r-sm);padding:10px 14px;display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;}
+.lp-cost-item{display:flex;flex-direction:column;gap:2px;}
+.lp-cost-label{font-size:10px;color:var(--ch40);text-transform:uppercase;letter-spacing:.06em;}
+.lp-cost-val{font-size:13px;font-weight:500;}
+.lp-vastu-notes{display:flex;flex-direction:column;gap:4px;margin-top:6px;}
+.lp-vastu-note{font-size:11px;color:var(--ch70);display:flex;gap:6px;}
+.lp-vastu-note::before{content:'→';color:var(--terra);flex-shrink:0;}
 
-/* Carpenter spec */
-.carpenter-section{border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.carp-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--cream);cursor:pointer;}
-.carp-hd-title{font-size:11px;font-weight:500;}
-.carp-hd-sub{font-size:10px;color:var(--ch40);}
-.carp-chevron{font-size:10px;color:var(--ch40);transition:transform .2s;}
-.carp-chevron.open{transform:rotate(180deg);}
-.carp-body{display:none;padding:12px;}
-.carp-body.open{display:flex;flex-direction:column;gap:8px;}
-.carp-pieces{display:flex;flex-wrap:wrap;gap:6px;}
-.carp-piece-btn{padding:5px 12px;border-radius:100px;border:1px solid var(--border-md);background:var(--warm-white);font-size:11px;cursor:pointer;transition:all .15s;}
-.carp-piece-btn:hover{border-color:var(--terra);color:var(--terra);}
-.carp-loading{font-size:11px;color:var(--ch40);padding:8px 0;}
-.carp-result{background:var(--cream);border-radius:6px;padding:10px;font-size:11px;line-height:1.6;}
-.carp-result-name{font-size:13px;font-weight:500;margin-bottom:6px;}
-.carp-result-dims{color:var(--ch70);margin-bottom:6px;}
-.carp-result-total{font-size:14px;font-weight:600;color:var(--terra);margin-bottom:8px;}
-.carp-print-btn{padding:6px 14px;border-radius:100px;background:var(--charcoal);color:#fff;border:none;font-size:11px;cursor:pointer;transition:all .15s;}
-.carp-print-btn:hover{background:var(--terra);}
+/* carpenter spec */
+.spec-btn{width:100%;padding:13px;border-radius:var(--r-md);border:1.5px solid var(--charcoal);background:transparent;color:var(--charcoal);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;}
+.spec-btn:hover{background:var(--charcoal);color:#fff;}
+.spec-items{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.spec-item-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:100px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--warm-white);transition:all .15s;}
+.spec-item-chip.selected{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
 
-/* Cost summary */
-.cost-summary{background:var(--charcoal);border-radius:8px;padding:14px;display:flex;justify-content:space-between;align-items:center;}
-.cs-label{font-size:11px;color:rgba(255,255,255,.45);}
-.cs-amount{font-family:var(--font-d);font-size:28px;font-weight:400;color:rgba(255,255,255,.9);}
-.cs-note{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px;}
-
-/* SELECT DESIGN btn */
-.select-design-btn{width:100%;padding:13px;border-radius:8px;background:var(--terra);color:#fff;border:none;font-size:13px;font-weight:500;cursor:pointer;transition:all .18s;}
-.select-design-btn:hover{background:var(--terra-h);}
-
-/* CHAT PANEL */
-.chat-panel{width:260px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--warm-white);}
-.chat-hd{padding:12px;border-bottom:1px solid var(--border);}
-.chat-hd-title{font-size:12px;font-weight:500;}
-.chat-hd-sub{font-size:10px;color:var(--ch40);margin-top:2px;}
-#chatMessages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;}
-.chat-empty-msg{font-size:11px;color:var(--ch40);line-height:1.65;padding:8px 0;}
-.chat-msg{padding:8px 10px;border-radius:7px;font-size:11px;line-height:1.55;max-width:92%;}
-.chat-user{background:var(--terra);color:#fff;align-self:flex-end;border-radius:7px 7px 2px 7px;}
-.chat-assistant{background:var(--cream);color:var(--charcoal);align-self:flex-start;border:1px solid var(--border);border-radius:2px 7px 7px 7px;}
+/* chat */
+.r-chat{width:272px;flex-shrink:0;border-left:1px solid var(--border);background:var(--warm-white);display:flex;flex-direction:column;}
+.chat-hd{padding:12px 14px;border-bottom:1px solid var(--border);}
+.chat-hd-title{font-size:13px;font-weight:500;}
+.chat-hd-sub{font-size:11px;color:var(--ch40);margin-top:1px;}
+.chat-msgs{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;}
+.chat-msg{padding:8px 11px;border-radius:var(--r-sm);font-size:12px;line-height:1.55;max-width:90%;}
+.chat-user{background:var(--terra);color:#fff;align-self:flex-end;border-radius:var(--r-sm) var(--r-sm) 2px var(--r-sm);}
+.chat-assistant{background:var(--cream);color:var(--charcoal);align-self:flex-start;border:1px solid var(--border);border-radius:2px var(--r-sm) var(--r-sm) var(--r-sm);}
 .chat-assistant.loading{color:var(--ch40);font-style:italic;}
+.chat-empty-msg{text-align:center;color:var(--ch40);font-size:11px;padding:16px;line-height:1.6;}
 .chat-input-row{padding:10px;border-top:1px solid var(--border);display:flex;gap:6px;}
-#chatInput{flex:1;padding:7px 10px;border-radius:6px;border:1px solid var(--border-md);font-family:var(--font-b);font-size:11px;color:var(--charcoal);background:var(--cream);outline:none;resize:none;height:34px;}
+#chatInput{flex:1;padding:7px 10px;border-radius:var(--r-sm);border:1px solid var(--border-md);font-family:var(--font-b);font-size:12px;color:var(--charcoal);background:var(--cream);outline:none;resize:none;height:36px;}
 #chatInput:focus{border-color:var(--terra);}
-#chatSend{padding:7px 12px;border-radius:6px;background:var(--terra);color:#fff;border:none;cursor:pointer;font-size:11px;font-weight:500;}
-#chatSend:hover{background:var(--terra-h);}
+#chatSend{padding:7px 12px;border-radius:var(--r-sm);background:var(--terra);color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:500;}
 
-@media(max-width:900px){
-  .chat-panel{display:none;}
-  .insights-grid{grid-template-columns:1fr 1fr;}
-  :root{--sb:240px;}
-}
-@media(max-width:640px){
-  :root{--sb:0px;}
-  .sidebar{display:none;}
+/* loading overlay */
+.analysing-overlay{position:fixed;inset:0;background:rgba(253,250,246,0.92);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.ao-spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--terra);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ao-title{font-family:var(--font-d);font-size:28px;font-weight:400;}
+.ao-sub{font-size:13px;color:var(--ch70);margin-top:-8px;}
+.ao-progress{display:flex;flex-direction:column;gap:6px;width:320px;margin-top:8px;}
+.ao-room-progress{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--ch70);}
+.ao-room-status{font-size:11px;}
+.ao-room-status.done{color:var(--sage);}
+.ao-room-status.analysing{color:var(--gold);}
+.ao-room-status.pending{color:var(--ch40);}
+
+@media(max-width:768px){
+  .topbar{padding:0 20px;}
+  #uploadPhase{padding:32px 16px 100px;}
+  .upload-hero-title{font-size:36px;}
+  .photo-slots{grid-template-columns:repeat(3,1fr);gap:8px;padding:14px;}
+  .insights{grid-template-columns:1fr 1fr;}
+  .prod-grid{grid-template-columns:1fr 1fr;}
+  .design-options-grid{grid-template-columns:1fr;}
+  .r-chat{display:none;}
 }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <a href="index.html" class="topbar-logo">Gri<em>ha</em></a>
-  <span class="topbar-status" id="topStatus"></span>
-  <div class="topbar-right">
-    <a href="index.html" class="btn-xs">← Home</a>
+<!-- NAV -->
+<nav class="topbar">
+  <a href="index.html" class="tlogo">Gri<em>ha</em></a>
+  <div class="nav-right">
+    <a href="index.html" class="btn-sm">← Home</a>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════
+     UPLOAD PHASE
+══════════════════════════════════════════════ -->
+<div id="uploadPhase">
+
+  <div class="upload-hero">
+    <div class="upload-hero-eyebrow">AI-powered · Vastu compliant · Indian homes</div>
+    <h1 class="upload-hero-title">Let's design<br>your home</h1>
+    <p class="upload-hero-sub">Upload up to 3 photos per room — different angles give Griha's AI a fuller picture of your space.</p>
+  </div>
+
+  <!-- Room cards -->
+  <div id="roomCardsContainer"></div>
+
+  <!-- Add room -->
+  <button class="add-room-btn" id="addRoomBtn">+ Add another room</button>
+
+  <!-- Masterplan -->
+  <div class="section-divider">Builder masterplan (optional but recommended)</div>
+  <div class="masterplan-card" id="masterplanCard" onclick="document.getElementById('mpFileInput').click()">
+    <div class="mp-icon-wrap">🏗</div>
+    <div>
+      <div class="mp-text-title">Upload your floor plan</div>
+      <div class="mp-text-sub">Enables compass zone analysis and Vastu zone mapping for every room</div>
+    </div>
+  </div>
+  <input type="file" id="mpFileInput" accept="image/jpeg,image/png,image/webp" style="display:none">
+
+  <!-- Sticky footer CTA -->
+  <div class="analyse-footer" id="analyseFooter">
+    <div class="analyse-summary">
+      <strong id="footerRoomCount">0 rooms ready</strong>
+      <span id="footerPhotoCount">Add at least one room photo to begin</span>
+    </div>
+    <button class="analyse-btn" id="analyseBtn" disabled onclick="startAnalysis()">
+      Analyse my rooms →
+    </button>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     RESULTS PHASE
+══════════════════════════════════════════════ -->
+<div id="resultsPhase">
+  <div class="results-layout">
+
+    <!-- Sidebar: room list -->
+    <aside class="r-sidebar">
+      <div class="r-sb-section">
+        <div class="r-sb-label">Your rooms</div>
+        <div class="r-room-list" id="resultRoomList"></div>
+      </div>
+      <button class="r-back-btn" onclick="goBackToUpload()">← Edit rooms / Upload more</button>
+    </aside>
+
+    <!-- Main results area -->
+    <main class="r-main">
+      <div class="r-results" id="resultsArea">
+        <div style="text-align:center;padding:48px;color:var(--ch40);">
+          <div style="font-size:36px;margin-bottom:12px;opacity:.4;">⏳</div>
+          <div style="font-size:14px;">Analysis in progress…</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Chat -->
+    <aside class="r-chat">
+      <div class="chat-hd">
+        <div class="chat-hd-title">Ask Griha</div>
+        <div class="chat-hd-sub">Refine any suggestion</div>
+      </div>
+      <div class="chat-msgs" id="chatMsgs">
+        <div class="chat-empty-msg">
+          Once your analysis is ready, ask:<br><br>
+          "What colour suits my bedroom?"<br><br>
+          "Show me more traditional options"<br><br>
+          "Why is my kitchen placement flagged?"
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <textarea id="chatInput" placeholder="Ask about your design…" rows="1"></textarea>
+        <button id="chatSend">→</button>
+      </div>
+    </aside>
   </div>
 </div>
-<div id="globalError"></div>
 
-<div class="layout">
-
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <div class="sb-sec">
-    <div class="sb-label">Room type</div>
-    <select class="room-select" id="roomSelect">
-      <option>Master bedroom</option><option>Living room</option><option>Kitchen</option>
-      <option>Washroom</option><option>Balcony</option><option>Pooja room</option>
-      <option>Kids bedroom</option><option>Guest bedroom</option><option>Study</option><option>Dining room</option>
-    </select>
-    <div class="drop-zone" id="dropZone" onclick="document.getElementById('roomInput').click()">
-      <div class="drop-icon">📷</div>
-      <div class="drop-text"><strong>Upload room photo</strong><br>or drag and drop<br>JPG · PNG · WebP · max 5MB</div>
-    </div>
-    <input type="file" id="roomInput" accept="image/jpeg,image/png,image/webp" multiple>
-  </div>
-  <div class="sb-sec" style="flex:1;">
-    <div class="sb-label">Rooms</div>
-    <div id="roomTabs"><div class="chat-empty-msg">Upload a photo above to begin.</div></div>
-  </div>
-  <div class="sb-sec">
-    <div class="sb-label">Masterplan <span style="font-weight:300;letter-spacing:0;">(optional)</span></div>
-    <div class="mp-btn" onclick="document.getElementById('mpInput').click()">
-      <span class="mp-icon">🏗</span>
-      <div class="mp-info"><div class="mp-title">Upload floor plan</div><div class="mp-sub">Enables compass zone analysis</div></div>
-    </div>
-    <input type="file" id="mpInput" accept="image/jpeg,image/png,image/webp">
-    <div id="mpStatus" style="display:none;" class="mp-status"></div>
-    <div id="mpRooms"></div>
-  </div>
-</aside>
-
-<!-- MAIN -->
-<main class="main" id="mainPanel">
-  <div class="empty-state" id="emptyState">
-    <div class="empty-icon">🏠</div>
-    <div class="empty-title">Upload a room to begin</div>
-    <div class="empty-sub">Select a room type, upload a photo, and Griha's AI will analyse your space and generate 3–5 Vastu-compliant design options you can shop from.</div>
-  </div>
-
-  <!-- Step tabs (hidden until first upload) -->
-  <div class="step-tabs" id="stepTabs" style="display:none;">
-    <div class="step-tab active" id="tab-analysis" onclick="showTab('analysis')">Analysis</div>
-    <div class="step-tab disabled" id="tab-designs" onclick="showTab('designs')">Design options</div>
-  </div>
-
-  <!-- Analysis panel -->
-  <div class="step-panel active" id="panel-analysis"></div>
-
-  <!-- Designs panel -->
-  <div class="step-panel" id="panel-designs"></div>
-</main>
-
-<!-- CHAT -->
-<aside class="chat-panel">
-  <div class="chat-hd">
-    <div class="chat-hd-title">Ask Griha</div>
-    <div class="chat-hd-sub">Refine designs or ask Vastu questions</div>
-  </div>
-  <div id="chatMessages">
-    <div class="chat-empty-msg">After your first room is analysed, ask things like:<br><br>"Can you make option 2 more traditional?"<br><br>"What Vastu says about mirrors in bedrooms?"<br><br>"Suggest cheaper furniture alternatives."</div>
-  </div>
-  <div class="chat-input-row">
-    <textarea id="chatInput" placeholder="Ask anything…" rows="1"></textarea>
-    <button id="chatSend">Send</button>
-  </div>
-</aside>
-
-</div><!-- .layout -->
+<!-- Analysing overlay -->
+<div class="analysing-overlay" id="analysingOverlay" style="display:none">
+  <div class="ao-spinner"></div>
+  <div class="ao-title">Analysing your home</div>
+  <div class="ao-sub">This takes about 15–20 seconds per room</div>
+  <div class="ao-progress" id="aoProgress"></div>
+</div>
 
 <script type="module">
 import { AIAnalyzer }      from './js/ai-analyzer.js';
@@ -351,566 +415,651 @@ import { VastuEngine }     from './js/vastu-engine.js';
 import { PaletteEngine }   from './js/palette-engine.js';
 import { ProductCatalog }  from './js/product-catalog.js';
 import { DesignGenerator } from './js/design-generator.js';
-import { CarpenterSpec, CARPENTER_PIECES } from './js/carpenter-spec.js';
+import { LightingEngine }  from './js/lighting-engine.js';
+import { CarpenterSpec }   from './js/carpenter-spec.js';
 
-/* ─── STATE ─── */
-const S = {
-  rooms: [], activeRoom: null, masterplan: null, chatHistory: [],
-  modules: { ai: null, vastu: null, palettes: null, catalog: null, designer: null, carpenter: null }
+// ── Upload state ───────────────────────────────────────────────────────────
+// Each room: { id, label, photos:[File|null,File|null,File|null], previews:[url|null,...] }
+const UPLOAD = {
+  rooms: [],
+  masterplanFile: null,
+  masterplanPreview: null,
+  nextId: 1
 };
 
-/* ─── INIT ─── */
+// ── Analysis state ─────────────────────────────────────────────────────────
+const S = {
+  rooms: [],    // analysed rooms with vastu, lighting, designs, products
+  masterplan: null,
+  activeRoom: 0,
+  chatHistory: [],
+  M: { ai:null, vastu:null, palette:null, catalog:null, designer:null, lighting:null, carpSpec:null }
+};
+
+const SLOT_LABELS = ['Main view', 'Another angle', 'Third angle'];
+const ROOM_TYPES = [
+  'Master bedroom','Living room','Kitchen','Washroom','Balcony',
+  'Pooja room','Kids bedroom','Guest bedroom','Study','Dining room'
+];
+
+// ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
   try {
     const [vd, pd] = await Promise.all([
-      fetch('./data/vastu-rules.json').then(r => r.json()),
-      fetch('./data/palettes.json').then(r => r.json())
+      fetch('./data/vastu-rules.json').then(r=>r.json()),
+      fetch('./data/palettes.json').then(r=>r.json())
     ]);
-    const ai = new AIAnalyzer();
-    S.modules.ai        = ai;
-    S.modules.vastu     = new VastuEngine(vd);
-    S.modules.palettes  = new PaletteEngine(pd);
-    S.modules.catalog   = new ProductCatalog();
-    S.modules.designer  = new DesignGenerator(ai.workerUrl);
-    S.modules.carpenter = new CarpenterSpec(ai.workerUrl);
-    setupListeners();
+    S.M.ai       = new AIAnalyzer();
+    S.M.vastu    = new VastuEngine(vd);
+    S.M.palette  = new PaletteEngine(pd);
+    S.M.catalog  = new ProductCatalog();
+    S.M.designer = new DesignGenerator(S.M.catalog);
+    S.M.lighting = new LightingEngine();
+    S.M.carpSpec = new CarpenterSpec();
   } catch(e) {
-    showError('Failed to load modules: ' + e.message);
+    console.error('Module load failed:', e);
+    alert('Could not load Griha modules. Check your internet connection and refresh.');
+    return;
   }
+
+  // Start with one room card
+  addRoom();
+  setupListeners();
+  restoreSession();
 }
 
-/* ─── PIPELINE ─── */
-async function analyzeRoom(file, label, idx) {
-  setStatus('Analysing photo…');
-  const aiRes = await S.modules.ai.analyzeRoom(file, label);
-  if (!aiRes.ok) { setRoomStatus(idx, 'error'); setStatus(''); showAnalysisError(idx, aiRes.error); return; }
-  S.rooms[idx].analysis = aiRes;
+// ── Room card management ───────────────────────────────────────────────────
+function addRoom(label) {
+  const id = UPLOAD.nextId++;
+  UPLOAD.rooms.push({ id, label: label || ROOM_TYPES[0], photos:[null,null,null], previews:[null,null,null] });
+  renderAllRoomCards();
+  updateFooter();
+}
 
-  setStatus('Running Vastu check…');
-  const zone  = getMpZone(label);
-  const vastu = S.modules.vastu.analyzeRoom({
-    room_type:       norm(label),
-    compass_zone:    zone,
-    ai_observations: aiRes.observations || {}
+function removeRoom(id) {
+  const idx = UPLOAD.rooms.findIndex(r=>r.id===id);
+  if(idx === -1) return;
+  // Revoke object URLs to free memory
+  UPLOAD.rooms[idx].previews.forEach(url=>{ if(url) URL.revokeObjectURL(url); });
+  UPLOAD.rooms.splice(idx,1);
+  if(UPLOAD.rooms.length === 0) addRoom();
+  renderAllRoomCards();
+  updateFooter();
+}
+
+function updateRoomLabel(id, label) {
+  const room = UPLOAD.rooms.find(r=>r.id===id);
+  if(room) room.label = label;
+  updateFooter();
+}
+
+function addPhoto(roomId, slotIdx, file) {
+  const room = UPLOAD.rooms.find(r=>r.id===roomId);
+  if(!room) return;
+  // Validate file
+  if(!file.type.startsWith('image/')) { alert('Please upload a JPG, PNG, or WebP image.'); return; }
+  if(file.size > 5 * 1024 * 1024)    { alert('Image is too large. Please use a photo under 5MB.'); return; }
+  // Revoke old URL if replacing
+  if(room.previews[slotIdx]) URL.revokeObjectURL(room.previews[slotIdx]);
+  // Store file in memory and create preview URL
+  room.photos[slotIdx]   = file;
+  room.previews[slotIdx] = URL.createObjectURL(file);
+  renderAllRoomCards();
+  updateFooter();
+}
+
+function removePhoto(roomId, slotIdx, e) {
+  e.stopPropagation();
+  const room = UPLOAD.rooms.find(r=>r.id===roomId);
+  if(!room) return;
+  if(room.previews[slotIdx]) URL.revokeObjectURL(room.previews[slotIdx]);
+  room.photos[slotIdx]   = null;
+  room.previews[slotIdx] = null;
+  renderAllRoomCards();
+  updateFooter();
+}
+
+// ── Render room cards ──────────────────────────────────────────────────────
+function renderAllRoomCards() {
+  const container = document.getElementById('roomCardsContainer');
+  container.innerHTML = UPLOAD.rooms.map((room,i) => renderRoomCard(room, i+1)).join('');
+
+  // Re-attach event listeners for file inputs
+  UPLOAD.rooms.forEach(room => {
+    for(let slot=0; slot<3; slot++) {
+      const inp = document.getElementById(`file-${room.id}-${slot}`);
+      if(inp) inp.addEventListener('change', e => {
+        if(e.target.files[0]) addPhoto(room.id, slot, e.target.files[0]);
+      });
+    }
+    const select = document.getElementById(`roomtype-${room.id}`);
+    if(select) select.addEventListener('change', e => updateRoomLabel(room.id, e.target.value));
+
+    // Drag and drop for each empty slot
+    for(let slot=0; slot<3; slot++) {
+      const slotEl = document.getElementById(`slot-${room.id}-${slot}`);
+      if(slotEl && !room.photos[slot]) {
+        slotEl.addEventListener('dragover',  e => { e.preventDefault(); slotEl.classList.add('drag-over'); });
+        slotEl.addEventListener('dragleave', ()  => slotEl.classList.remove('drag-over'));
+        slotEl.addEventListener('drop', e => {
+          e.preventDefault();
+          slotEl.classList.remove('drag-over');
+          const file = e.dataTransfer.files[0];
+          if(file) addPhoto(room.id, slot, file);
+        });
+      }
+    }
   });
-  S.rooms[idx].vastu = vastu;
-  S.rooms[idx].zone  = zone;
-  S.rooms[idx].status = 'done';
-  setRoomStatus(idx, 'done');
-
-  if (S.activeRoom === idx) {
-    renderAnalysisPanel(idx);
-    enableDesignTab();
-  }
-  setStatus('');
 }
 
-async function generateDesigns(idx) {
-  const room = S.rooms[idx];
-  if (!room) return;
-  setRoomStatus(idx, 'generating');
-  setStatus('Generating 5 design concepts…');
-  enableDesignTab();
-  showTab('designs');
-  showGenerating('Asking AI to design 5 options for your room… this takes about 20 seconds.');
+function renderRoomCard(room, num) {
+  const filledCount = room.photos.filter(Boolean).length;
+  const dots = [0,1,2].map(i=>`<div class="photo-count-dot${room.photos[i]?' filled':''}"></div>`).join('');
 
-  try {
-    const concepts = await S.modules.designer.generate({
-      roomType:      norm(room.label),
-      roomLabel:     room.label,
-      zone:          room.zone,
-      sqft:          room.analysis?.observations?.estimated_sqft,
-      styleDetected: room.analysis?.observations?.style_detected || [],
-      vastuViolations: room.vastu?.violated_rules || [],
-      onProgress:    setStatus
-    });
-    room.concepts = concepts;
-    setRoomStatus(idx, 'done');
-    renderDesignsPanel(idx);
-    setStatus('');
-  } catch(e) {
-    setRoomStatus(idx, 'error');
-    setStatus('');
-    showGeneratingError(e.message);
-  }
-}
-
-/* ─── MASTERPLAN ─── */
-async function processMp(file) {
-  showMpStatus('Reading floor plan…', '');
-  const res = await S.modules.ai.analyzeMasterplan(file);
-  if (!res.ok) { showMpStatus(res.error, 'error'); return; }
-  S.masterplan = res;
-  showMpStatus(`✓ ${res.building?.bhk_type||'Home'} · ${res.building?.total_sqft||'?'} sqft · ${res.rooms?.length||0} rooms`, 'success');
-  document.getElementById('mpRooms').innerHTML = (res.rooms||[]).map(r =>
-    `<div class="mp-chip">${r.name} <span class="mp-chip-zone">${r.compass_zone||'?'}</span></div>`
-  ).join('');
-}
-
-/* ─── RENDER: ANALYSIS ─── */
-function renderAnalysisPanel(idx) {
-  const room  = S.rooms[idx];
-  const vastu = room.vastu;
-  const obs   = room.analysis?.observations || {};
-  const zone  = room.zone;
-
-  const violations = [...(vastu?.violated_rules||[]), ...(vastu?.warning_rules||[])];
-
-  document.getElementById('panel-analysis').innerHTML = `
-    <div class="analysis-content">
-      <div class="analysis-header">
-        <div>
-          <div class="analysis-room-title">${room.label}</div>
-          <div class="analysis-meta">
-            ${obs.estimated_sqft ? obs.estimated_sqft + ' sqft · ' : ''}
-            ${obs.light_direction ? cap(obs.light_direction) + '-facing · ' : ''}
-            Zone: ${zone !== 'unknown' ? zone : 'Upload masterplan for zone'}
-          </div>
+  const slotsHTML = [0,1,2].map(slot => {
+    if(room.previews[slot]) {
+      return `<div class="photo-slot photo-slot-filled" id="slot-${room.id}-${slot}">
+        <img src="${room.previews[slot]}" alt="${SLOT_LABELS[slot]}">
+        <div class="slot-overlay">
+          <button class="slot-remove" onclick="window.removePhoto(${room.id},${slot},event)">Remove</button>
         </div>
-        <div class="vastu-score" style="--score-col:${vastu?.grade?.colour||'#888'}">
-          <div class="score-num">${vastu?.score??'--'}</div>
-          <div class="score-label">${vastu?.grade?.label||'Vastu score'}</div>
+        <div class="slot-angle-label">${SLOT_LABELS[slot]}</div>
+      </div>`;
+    } else {
+      return `<div class="photo-slot photo-slot-empty" id="slot-${room.id}-${slot}"
+        onclick="document.getElementById('file-${room.id}-${slot}').click()">
+        <input type="file" id="file-${room.id}-${slot}" accept="image/jpeg,image/png,image/webp" style="display:none">
+        <div class="slot-icon">${slot===0?'📷':slot===1?'📸':'+'}</div>
+        <div class="slot-label">
+          ${slot===0?'<strong>Add main photo</strong>Click or drag here':
+            slot===1?'<strong>Add another angle</strong>Optional — helps AI':
+                     '<strong>Third angle</strong>Optional'}
         </div>
-      </div>
-
-      <div class="insights-grid">
-        ${ic('Light', cap(obs.light_direction||'unknown'), cap(obs.light_quality||''))}
-        ${ic('Electrical', obs.electrical_points_visible!=null ? obs.electrical_points_visible+' points' : 'Unknown', (obs.electrical_point_positions||[]).slice(0,2).join(', '))}
-        ${ic('Ceiling', cap(obs.ceiling_height||'unknown'), obs.overhead_beams_detected ? '⚠ Beam detected' : 'No beams')}
-        ${ic('Style', cap((obs.style_detected||['unknown'])[0]), cap(obs.flooring_type||'unknown'))}
-      </div>
-
-      <div>
-        <div class="section-hd" style="margin-bottom:8px;">Vastu compliance</div>
-        ${renderVastuRules(vastu)}
-      </div>
-
-      <button class="gen-btn" onclick="startGenerating()">
-        ✦ Generate 5 design options for this room
-      </button>
-      <div class="gen-btn-note">Generates AI room renders + matched products · ~₹40–60 in API cost · takes ~20 seconds</div>
-    </div>`;
-}
-
-function renderVastuRules(vastu) {
-  if (!vastu) return '<div style="color:var(--ch40);font-size:12px;">No data</div>';
-  const groups = [
-    { rules: vastu.violated_rules,  icon:'✗', cls:'violated' },
-    { rules: vastu.warning_rules,   icon:'!', cls:'warning'  },
-    { rules: vastu.compliant_rules, icon:'✓', cls:'compliant'}
-  ];
-  return groups.map(g => (g.rules||[]).map(r => `
-    <div class="vastu-rule vastu-${g.cls}">
-      <div class="vr-icon">${g.icon}</div>
-      <div>
-        <div class="vr-title">${r.title}</div>
-        <div class="vr-desc">${r.message || r.user_explanation || ''}</div>
-        <div class="vr-source">${r.source || ''}</div>
-      </div>
-    </div>`).join('')).join('');
-}
-
-/* ─── RENDER: DESIGNS ─── */
-function showGenerating(msg) {
-  document.getElementById('panel-designs').innerHTML = `
-    <div class="designs-generating">
-      <div class="generating-dots"><div class="gdot"></div><div class="gdot"></div><div class="gdot"></div></div>
-      <div class="generating-text">${msg}</div>
-    </div>`;
-}
-
-function showGeneratingError(msg) {
-  document.getElementById('panel-designs').innerHTML = `
-    <div class="designs-generating">
-      <div style="color:var(--terra);font-size:13px;font-weight:500;">Design generation failed</div>
-      <div style="color:var(--ch40);font-size:12px;max-width:320px;text-align:center;">${msg}</div>
-    </div>`;
-}
-
-function renderDesignsPanel(idx) {
-  const room = S.rooms[idx];
-  if (!room?.concepts?.length) { showGeneratingError('No concepts returned.'); return; }
-
-  const stripsHTML = room.concepts.map((c, i) => `
-    <div class="design-option-card ${i===0?'selected':''}" id="doc-${i}" onclick="selectConcept(${i})">
-      ${c.image_url
-        ? `<img class="doc-image" src="${c.image_url}" alt="${c.name}" loading="lazy">`
-        : `<div class="doc-image-placeholder">🏠</div>`}
-      <div class="doc-info">
-        <div class="doc-name">${c.name}</div>
-        <div class="doc-tagline">${c.tagline || ''}</div>
-        <div class="doc-price">~₹${fmt(c.estimated_total_inr)}</div>
-      </div>
-    </div>`).join('');
-
-  document.getElementById('panel-designs').innerHTML = `
-    <div class="design-options-strip" id="designStrip">${stripsHTML}</div>
-    <div class="design-detail" id="designDetail"></div>`;
-
-  selectConcept(0);
-}
-
-window.selectConcept = function(i) {
-  const idx  = S.activeRoom;
-  const room = S.rooms[idx];
-  if (!room?.concepts) return;
-
-  document.querySelectorAll('.design-option-card').forEach((el, j) =>
-    el.classList.toggle('selected', j === i)
-  );
-
-  const c = room.concepts[i];
-  const obs = room.analysis?.observations || {};
-  const pieces = S.modules.carpenter.getPiecesForRoom(norm(room.label));
-
-  const productsByCat = c.products_by_category || {};
-  const cats = [
-    { key: 'furniture', label: 'Furniture', icon: '🛋' },
-    { key: 'lighting',  label: 'Lighting',  icon: '💡' },
-    { key: 'textiles',  label: 'Textiles & rugs', icon: '🔲' },
-    { key: 'decor',     label: 'Decor & plants', icon: '🪴' },
-    { key: 'wallpaper', label: 'Wallpaper', icon: '🖼' },
-  ];
-
-  const shoppingHTML = cats.map(cat => {
-    const products = productsByCat[cat.key] || [];
-    if (products.length === 0) return '';
-    return `<div class="cat-section">
-      <div class="cat-hd">
-        <div class="cat-title">${cat.icon} ${cat.label}</div>
-        <div class="cat-count">${products.length} item${products.length>1?'s':''}</div>
-      </div>
-      <div class="products-list">${products.map(renderProductRow).join('')}</div>
-    </div>`;
+      </div>`;
+    }
   }).join('');
 
-  const lightingItems = parseLightingPlan(c.lighting_plan || '');
+  const options = ROOM_TYPES.map(t=>`<option${t===room.label?' selected':''}>${t}</option>`).join('');
 
-  document.getElementById('designDetail').innerHTML = `
-    <div class="dd-hero">
-      ${c.image_url
-        ? `<img src="${c.image_url}" alt="${c.name}">`
-        : `<div class="dd-hero-placeholder">🏠</div>`}
-      <div class="dd-hero-overlay">
-        <div class="dd-name">${c.name}</div>
-        <div class="dd-tagline">${c.tagline || ''}</div>
+  return `<div class="room-card" id="roomcard-${room.id}">
+    <div class="room-card-header">
+      <div class="room-card-left">
+        <div class="room-num">${num}</div>
+        <select class="room-label-select" id="roomtype-${room.id}">${options}</select>
       </div>
+      ${UPLOAD.rooms.length > 1 ? `<button class="room-remove-btn" onclick="window.removeRoom(${room.id})">Remove room</button>` : ''}
     </div>
-    <div class="dd-body">
+    <div class="photo-slots">${slotsHTML}</div>
+    <div class="room-photo-count">${dots}&nbsp;${filledCount} of 3 photo${filledCount===1?'':'s'} added${filledCount===0?' · Add at least 1 photo to analyse':''}</div>
+  </div>`;
+}
 
-      <div class="dd-meta-strip">
-        <div class="dd-meta-card">
-          <div class="dd-meta-label">Colours</div>
-          <div class="colour-swatches">
-            ${[c.primary_hex, c.secondary_hex, c.accent_hex].filter(Boolean).map(h =>
-              `<div class="colour-swatch" style="background:${h}" title="${h}"></div>`).join('')}
-          </div>
-          <div class="dd-meta-val" style="margin-top:6px;">${c.wall_treatment || ''}</div>
-        </div>
-        <div class="dd-meta-card">
-          <div class="dd-meta-label">Key materials</div>
-          <div class="dd-meta-val">${(c.key_materials || []).join(' · ')}</div>
-        </div>
-        <div class="dd-meta-card">
-          <div class="dd-meta-label">Estimated total</div>
-          <div class="dd-meta-val" style="font-size:16px;font-weight:500;color:var(--terra);">₹${fmt(c.estimated_total_inr)}</div>
-        </div>
-      </div>
+// ── Footer update ──────────────────────────────────────────────────────────
+function updateFooter() {
+  const readyRooms = UPLOAD.rooms.filter(r => r.photos.some(Boolean));
+  const totalPhotos = UPLOAD.rooms.reduce((n,r) => n + r.photos.filter(Boolean).length, 0);
+  const btn = document.getElementById('analyseBtn');
+  const countEl = document.getElementById('footerRoomCount');
+  const photoEl = document.getElementById('footerPhotoCount');
 
-      ${c.vastu_address ? `
-      <div class="vastu-address-box">
-        <strong>Vastu:</strong> ${c.vastu_address}
-      </div>` : ''}
+  const isReady = readyRooms.length > 0;
+  btn.disabled = !isReady;
+  countEl.textContent = isReady
+    ? `${readyRooms.length} room${readyRooms.length>1?'s':''} · ${totalPhotos} photo${totalPhotos>1?'s':''}`
+    : '0 rooms ready';
+  photoEl.textContent = isReady
+    ? `Ready to analyse${UPLOAD.masterplanFile ? ' · Masterplan uploaded ✓' : ' · Add masterplan for zone analysis'}`
+    : 'Add at least one room photo to begin';
+}
 
-      <div>
-        <div class="section-hd" style="margin-bottom:10px;">Shopping list — buy all items online</div>
-        <div class="shopping-list">
-          ${shoppingHTML || '<div style="color:var(--ch40);font-size:12px;">No matched products yet. Add products to your Airtable catalog.</div>'}
-        </div>
-      </div>
+// ── Masterplan upload ──────────────────────────────────────────────────────
+function setupListeners() {
+  document.getElementById('addRoomBtn').addEventListener('click', ()=>addRoom());
 
-      <div>
-        <div class="section-hd" style="margin-bottom:10px;">Lighting plan</div>
-        <div class="lighting-plan">
-          <div class="lp-title">Recommended lighting</div>
-          ${lightingItems}
-        </div>
-      </div>
+  document.getElementById('mpFileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    if(UPLOAD.masterplanPreview) URL.revokeObjectURL(UPLOAD.masterplanPreview);
+    UPLOAD.masterplanFile    = file;
+    UPLOAD.masterplanPreview = URL.createObjectURL(file);
+    const card = document.getElementById('masterplanCard');
+    card.classList.add('uploaded');
+    card.innerHTML = `
+      <div class="mp-icon-wrap">✓</div>
+      <div><div class="mp-text-title" style="color:var(--sage)">Masterplan uploaded</div>
+      <div class="mp-text-sub">Compass zone analysis enabled</div></div>
+      <img class="mp-uploaded-preview" src="${UPLOAD.masterplanPreview}" alt="Masterplan">
+      <button class="mp-remove" onclick="removeMasterplan(event)">Remove</button>`;
+    updateFooter();
+  });
 
-      ${c.wallpaper_note ? `
-      <div>
-        <div class="section-hd" style="margin-bottom:10px;">Wallpaper option</div>
-        <div class="wallpaper-box">
-          <div class="wp-preview" style="background:repeating-linear-gradient(45deg,${c.secondary_hex||'#F6F1EB'} 0,${c.secondary_hex||'#F6F1EB'} 10px,${c.primary_hex||'#C47040'}22 10px,${c.primary_hex||'#C47040'}22 20px);"></div>
-          <div class="wp-info"><div class="wp-note">💡 ${c.wallpaper_note}</div></div>
-        </div>
-      </div>` : ''}
+  document.getElementById('chatSend').addEventListener('click',
+    () => handleChat(document.getElementById('chatInput').value));
+  document.getElementById('chatInput').addEventListener('keydown', e => {
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleChat(document.getElementById('chatInput').value);}
+  });
+}
 
-      ${pieces.length ? `
-      <div>
-        <div class="section-hd" style="margin-bottom:10px;">Custom carpenter pieces — get a spec sheet</div>
-        <div class="carpenter-section">
-          <div class="carp-hd" onclick="toggleCarp(this)">
-            <div>
-              <div class="carp-hd-title">Get carpenter specification</div>
-              <div class="carp-hd-sub">Dimensions, materials, hardware list, cost estimate</div>
-            </div>
-            <span class="carp-chevron">▼</span>
-          </div>
-          <div class="carp-body" id="carpBody-${i}">
-            <div style="font-size:11px;color:var(--ch40);">Select a piece to generate its full spec sheet:</div>
-            <div class="carp-pieces">
-              ${pieces.map(p => `<button class="carp-piece-btn" onclick="getCarpSpec('${p}', ${i})">${p}</button>`).join('')}
-            </div>
-            <div id="carpResult-${i}"></div>
-          </div>
-        </div>
-      </div>` : ''}
-
-      <div class="cost-summary">
-        <div>
-          <div class="cs-label">Estimated shopping total</div>
-          <div class="cs-amount">₹${fmt(c.products_total_inr || c.estimated_total_inr)}</div>
-          <div class="cs-note">Based on current catalog prices · does not include custom carpenter work</div>
-        </div>
-      </div>
-
-      <button class="select-design-btn" onclick="alert('Design saved! In the full version this locks your selection and creates a project.')">
-        Select this design →
-      </button>
-
-    </div>`;
-
-  document.getElementById('designDetail').classList.add('visible');
+window.removeMasterplan = function(e) {
+  e.stopPropagation();
+  UPLOAD.masterplanFile = null;
+  if(UPLOAD.masterplanPreview) URL.revokeObjectURL(UPLOAD.masterplanPreview);
+  UPLOAD.masterplanPreview = null;
+  const card = document.getElementById('masterplanCard');
+  card.classList.remove('uploaded');
+  card.onclick = () => document.getElementById('mpFileInput').click();
+  card.innerHTML = `
+    <div class="mp-icon-wrap">🏗</div>
+    <div><div class="mp-text-title">Upload your floor plan</div>
+    <div class="mp-text-sub">Enables compass zone analysis and Vastu zone mapping</div></div>`;
+  updateFooter();
 };
 
-/* ─── CARPENTER SPEC ─── */
-window.toggleCarp = function(hd) {
-  const body = hd.nextElementSibling;
-  const chevron = hd.querySelector('.carp-chevron');
-  body.classList.toggle('open');
-  chevron.classList.toggle('open');
-};
+// ── Start analysis ─────────────────────────────────────────────────────────
+async function startAnalysis() {
+  const roomsToAnalyse = UPLOAD.rooms.filter(r => r.photos.some(Boolean));
+  if(!roomsToAnalyse.length) return;
 
-window.getCarpSpec = async function(piece, conceptIdx) {
-  const room = S.rooms[S.activeRoom];
-  if (!room) return;
-  const c = room.concepts?.[conceptIdx];
-  const resultEl = document.getElementById(`carpResult-${conceptIdx}`);
-  if (!resultEl) return;
+  // Show overlay
+  const overlay = document.getElementById('analysingOverlay');
+  overlay.style.display = 'flex';
+  document.getElementById('aoProgress').innerHTML = roomsToAnalyse.map(r=>
+    `<div class="ao-room-progress">
+      <span>${r.label}</span>
+      <span class="ao-room-status pending" id="ao-${r.id}">Waiting…</span>
+    </div>`).join('');
 
-  resultEl.innerHTML = `<div class="carp-loading">Generating spec for ${piece}…</div>`;
+  // Analyse masterplan if provided
+  if(UPLOAD.masterplanFile) {
+    try {
+      const mpResult = await S.M.ai.analyzeMasterplan(UPLOAD.masterplanFile);
+      if(mpResult.ok) S.masterplan = mpResult;
+    } catch(e) { console.warn('Masterplan analysis failed:', e); }
+  }
 
-  try {
-    const spec = await S.modules.carpenter.getSpec({
-      roomType:  room.label,
-      piece,
-      sqft:      room.analysis?.observations?.estimated_sqft,
-      styleName: c?.name || 'contemporary indian'
+  // Analyse each room (sequentially to respect API rate limits)
+  S.rooms = [];
+  for(const uploadRoom of roomsToAnalyse) {
+    const statusEl = document.getElementById(`ao-${uploadRoom.id}`);
+    if(statusEl) { statusEl.textContent = 'Analysing…'; statusEl.className = 'ao-room-status analysing'; }
+
+    const photos = uploadRoom.photos.filter(Boolean);
+    const ai     = await S.M.ai.analyzeRoom(photos[0], uploadRoom.label);
+    // If multiple photos, note them for UI (future: send all to AI)
+    const zone   = getZone(uploadRoom.label);
+    const vastu  = S.M.vastu.analyzeRoom({
+      room_type: normalise(uploadRoom.label), compass_zone: zone,
+      ai_observations: ai.observations || {}
+    });
+    const lighting = S.M.lighting.plan({
+      room_type: normalise(uploadRoom.label),
+      sqft: ai.observations?.estimated_sqft || 150,
+      compass_zone: zone,
+      electrical_points: ai.observations?.electrical_points_visible || 2,
+      ceiling_height: ai.observations?.ceiling_height || 'standard'
     });
 
-    resultEl.innerHTML = `
-      <div class="carp-result">
-        <div class="carp-result-name">${spec.piece_name || piece}</div>
-        <div class="carp-result-dims">
-          ${spec.overall_dimensions?.length_mm || '?'}mm × ${spec.overall_dimensions?.depth_mm || '?'}mm × ${spec.overall_dimensions?.height_mm || '?'}mm
-        </div>
-        <div class="carp-result-total">Total estimate: ₹${fmt(spec.grand_total_inr)}</div>
-        <button class="carp-print-btn" onclick="printSpec(${JSON.stringify(spec).replace(/"/g,'&quot;')})">
-          Print full spec sheet →
-        </button>
-      </div>`;
-  } catch(e) {
-    resultEl.innerHTML = `<div class="carp-loading" style="color:var(--terra);">${e.message}</div>`;
+    S.rooms.push({
+      label:    uploadRoom.label,
+      photos:   uploadRoom.photos.filter(Boolean),
+      previews: uploadRoom.previews.filter(Boolean),
+      ai, vastu, lighting,
+      designOptions: null,
+      status: ai.ok ? 'done' : 'error'
+    });
+
+    if(statusEl) {
+      statusEl.textContent = ai.ok ? '✓ Done' : '✗ Failed';
+      statusEl.className   = `ao-room-status ${ai.ok ? 'done' : 'error'}`;
+    }
   }
-};
 
-window.printSpec = function(specStr) {
-  let spec;
-  try { spec = typeof specStr === 'string' ? JSON.parse(specStr) : specStr; } catch { return; }
-  S.modules.carpenter.renderPrintableSpec(spec);
-};
+  saveSession();
 
-/* ─── PRODUCT ROW RENDER ─── */
-function renderProductRow(p) {
-  const cls = (p.platform||'').toLowerCase().replace(/\s+/g,'-');
-  return `<div class="product-row">
-    <div class="pr-emoji">${p.emoji||'🛋'}</div>
-    <div class="pr-info">
-      <div class="pr-name">${p.name}</div>
-      <div class="pr-brand">${p.brand}</div>
-      ${p.vastu_note ? `<div class="pr-vastu">✓ Vastu aligned</div>` : ''}
+  // Hide overlay and show results
+  overlay.style.display = 'none';
+  document.getElementById('uploadPhase').style.display  = 'none';
+  document.getElementById('resultsPhase').style.display = 'block';
+  renderResultsSidebar();
+  selectResultRoom(0);
+}
+
+function goBackToUpload() {
+  document.getElementById('resultsPhase').style.display = 'none';
+  document.getElementById('uploadPhase').style.display  = 'block';
+}
+
+// ── Results sidebar ────────────────────────────────────────────────────────
+function renderResultsSidebar() {
+  const list = document.getElementById('resultRoomList');
+  list.innerHTML = S.rooms.map((room, idx) => `
+    <div class="r-room-item${idx===S.activeRoom?' active':''}" onclick="window.selectResultRoom(${idx})">
+      ${room.previews[0]
+        ? `<img class="r-room-thumb" src="${room.previews[0]}" alt="${room.label}">`
+        : `<div class="r-room-thumb-placeholder">🏠</div>`}
+      <span class="r-room-name">${room.label}</span>
+      <div class="r-room-dot ${room.status}"></div>
+    </div>`).join('');
+}
+
+function selectResultRoom(idx) {
+  S.activeRoom = idx;
+  document.querySelectorAll('.r-room-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  renderRoomResults(idx);
+}
+
+// ── Render room results ────────────────────────────────────────────────────
+function renderRoomResults(idx) {
+  const room    = S.rooms[idx];
+  const vastu   = room.vastu;
+  const obs     = room.ai?.observations || {};
+  const zone    = getZone(room.label);
+  const lighting = room.lighting;
+  const area    = document.getElementById('resultsArea');
+
+  if(!room.ai?.ok) {
+    area.innerHTML = `<div style="padding:24px;color:var(--terra);">
+      <strong>Analysis failed for ${room.label}</strong><br>
+      <span style="font-size:13px;color:var(--ch70);">${room.ai?.error || 'Unknown error. Check your worker is deployed.'}</span>
+    </div>`;
+    return;
+  }
+
+  const rulesHTML = [
+    {rules:vastu.violated_rules||[],  icon:'✗',cls:'violated'},
+    {rules:vastu.warning_rules||[],   icon:'!',cls:'warning'},
+    {rules:vastu.compliant_rules||[], icon:'✓',cls:'compliant'}
+  ].map(g=>g.rules.slice(0,3).map(r=>`
+    <div class="vastu-rule vastu-${g.cls}">
+      <div class="vr-icon">${g.icon}</div>
+      <div><div class="vr-title">${r.title}</div><div class="vr-desc">${r.message||r.user_explanation||''}</div><div class="vr-source">${r.source||''}</div></div>
+    </div>`).join('')).join('');
+
+  const lightingHTML = (lighting?.zones||[]).map(z=>`
+    <div class="lp-zone">
+      <div class="lp-zone-title">${z.zone} · ${z.colour_temp}</div>
+      <div class="lp-zone-desc">${z.description}</div>
+      <div class="lp-fixtures">${z.fixtures.map(f=>`<div class="lp-fixture">${f.name} × ${f.qty||1}</div>`).join('')}</div>
+    </div>`).join('');
+
+  const lCost   = lighting?.cost_estimate;
+  const vastuNotes = (lighting?.vastu_notes||[]).map(n=>`<div class="lp-vastu-note">${n}</div>`).join('');
+  const photosStrip = room.previews.map(url=>`<img class="rps-thumb" src="${url}" alt="Room photo">`).join('');
+
+  area.innerHTML = `
+    <div class="r-header">
+      <div>
+        <div class="r-room-title">${room.label}</div>
+        <div class="r-meta">${obs.estimated_sqft?obs.estimated_sqft+' sqft · ':''}${obs.light_direction?cap(obs.light_direction)+'-facing · ':''}Zone: ${zone!=='unknown'?zone:'Upload masterplan for zone'}</div>
+        <div class="room-photos-strip" style="margin-top:10px;">${photosStrip}</div>
+      </div>
+      <div class="vastu-score" style="--score-colour:${vastu?.grade?.colour||'#888'}">
+        <div class="vs-num">${vastu?.score??'--'}</div>
+        <div class="vs-label">${vastu?.grade?.label||'Vastu score'}</div>
+      </div>
     </div>
-    <div class="pr-right">
-      <div class="pr-price">₹${(p.price_inr||0).toLocaleString('en-IN')}</div>
-      <span class="pr-platform pp-${cls}">${p.platform||''}</span>
-      ${p.affiliate_url ? `<a href="${p.affiliate_url}" target="_blank" rel="noopener" class="pr-buy">Buy →</a>` : ''}
+
+    <div class="insights">
+      ${ins('Light',    cap(obs.light_direction||'unknown'),  cap(obs.light_quality||''))}
+      ${ins('Electrical',obs.electrical_points_visible!=null?obs.electrical_points_visible+' points':'Unknown',(obs.electrical_point_positions||[]).slice(0,2).join(', '))}
+      ${ins('Ceiling',  cap(obs.ceiling_height||'unknown'),   obs.overhead_beams_detected?'⚠ Beam detected':'No beams')}
+      ${ins('Style',    cap((obs.style_detected||['unknown'])[0]), cap(obs.flooring_type||'unknown')+' floor')}
+    </div>
+
+    <div class="section-block">
+      <div class="section-title">Vastu compliance</div>
+      ${rulesHTML || '<div style="font-size:13px;color:var(--ch40);">Upload masterplan for full zone analysis.</div>'}
+    </div>
+
+    ${lighting ? `
+    <div class="section-block">
+      <div class="section-title">Lighting plan</div>
+      <div class="lighting-plan">${lightingHTML}</div>
+      ${lCost ? `<div class="lp-cost">
+        <div class="lp-cost-item"><div class="lp-cost-label">Products</div><div class="lp-cost-val">₹${lCost.products.toLocaleString('en-IN')}</div></div>
+        <div class="lp-cost-item"><div class="lp-cost-label">Installation</div><div class="lp-cost-val">₹${lCost.installation.toLocaleString('en-IN')}</div></div>
+        <div class="lp-cost-item"><div class="lp-cost-label">Total</div><div class="lp-cost-val" style="color:var(--terra)">₹${lCost.total.toLocaleString('en-IN')}</div></div>
+      </div>` : ''}
+      ${vastuNotes ? `<div class="lp-vastu-notes">${vastuNotes}</div>` : ''}
+    </div>` : ''}
+
+    <div class="section-block" id="designSection-${idx}">
+      <div class="section-title">Design options</div>
+      <button class="gen-btn" onclick="window.generateDesigns(${idx})">✦ Generate 4 design options</button>
+      <div class="gen-btn-note">Creates 4 complete room design concepts — each with matching furniture, lighting, wallpaper, accessories, and a carpenter spec.</div>
+    </div>`;
+}
+
+// ── Generate design options ────────────────────────────────────────────────
+async function generateDesigns(idx) {
+  const room = S.rooms[idx];
+  const zone = getZone(room.label);
+  const options = S.M.designer.generateOptions({
+    room_type: normalise(room.label), compass_zone: zone,
+    ai_observations: room.ai?.observations || {}, vastu_result: room.vastu || {}
+  });
+  room.designOptions = options;
+
+  const section = document.getElementById(`designSection-${idx}`);
+  if(!section) return;
+  section.innerHTML = `
+    <div class="section-title">Design options — pick one</div>
+    <div class="design-options-grid">${options.map((opt,i)=>designCardHTML(opt,i,idx)).join('')}</div>`;
+}
+
+function designCardHTML(opt, optIdx, roomIdx) {
+  const s = opt.style;
+  const swatches = Object.values(s.colours).map(c=>`<div class="dc-swatch" style="background:${c.hex}"></div>`).join('');
+  const features = opt.key_features.slice(0,4).map(f=>`<div class="dc-feature">${f}</div>`).join('');
+  return `<div class="design-card">
+    <div class="dc-colours">${swatches}</div>
+    <div class="dc-body">
+      <div class="dc-name">${s.name}</div>
+      <div class="dc-tagline">${s.tagline}</div>
+      <div class="dc-features">${features}</div>
+      <div class="dc-footer">
+        <div class="dc-budget">Est. <strong>${opt.budget_estimate}</strong></div>
+        <div class="dc-vastu"><div class="dc-vastu-dot"></div>${opt.vastu_fit_score}% fit</div>
+        <button class="dc-select-btn" onclick="window.selectDesign(${optIdx},${roomIdx})">Select →</button>
+      </div>
     </div>
   </div>`;
 }
 
-/* ─── LIGHTING PLAN PARSER ─── */
-function parseLightingPlan(text) {
-  if (!text) return '<div class="lp-item"><div class="lp-dot lp-ambient"></div><div>Warm white ambient lighting recommended for this space.</div></div>';
-  const parts = text.split(/\+|;|\.|,/).filter(p => p.trim().length > 5);
-  return parts.map((p, i) => {
-    const cls = i === 0 ? 'lp-ambient' : i === 1 ? 'lp-accent' : 'lp-task';
-    return `<div class="lp-item"><div class="lp-dot ${cls}"></div><div>${p.trim()}</div></div>`;
-  }).join('') || `<div class="lp-item"><div class="lp-dot lp-ambient"></div><div>${text}</div></div>`;
+async function selectDesign(optIdx, roomIdx) {
+  const room = S.rooms[roomIdx];
+  const opt  = room.designOptions[optIdx];
+  const zone = getZone(room.label);
+  const prods = await S.M.designer.loadProducts(opt, normalise(room.label), zone);
+  opt.products = prods;
+
+  const section = document.getElementById(`designSection-${roomIdx}`);
+  if(!section) return;
+  const s = opt.style;
+  const swatches = Object.values(s.colours).map(c=>`<div class="dc-swatch" style="background:${c.hex}"></div>`).join('');
+
+  const wallHTML = `
+    <div class="wall-colours-row">
+      ${Object.entries(s.colours).map(([role,c])=>`
+        <div class="wc-card">
+          <div class="wc-swatch" style="background:${c.hex}"></div>
+          <div class="wc-body">
+            <div class="wc-name">${c.name}</div>
+            <div class="wc-code">${c.paint_code||''}${c.berger_code?' · Berger '+c.berger_code:''}</div>
+            <div class="wc-role">${role.replace(/_/g,' ')}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="wallpaper-block">
+      <div class="wp-icon">🪟</div>
+      <div>
+        <div class="wp-title">Wallpaper recommendation</div>
+        <div class="wp-desc">${s.wallpaper.description}</div>
+        <div class="wp-vendor">Available from ${s.wallpaper.vendor}</div>
+      </div>
+    </div>`;
+
+  const specChips = ['wardrobe','tv_unit','bed_with_storage'].map(id=>`<div class="spec-item-chip selected" data-spec="${id}" onclick="this.classList.toggle('selected')">${id.replace(/_/g,' ')}</div>`).join('');
+
+  section.innerHTML = `
+    <div class="section-title">Selected design</div>
+    <div class="selected-design">
+      <div class="sd-header">
+        <div><div class="sd-title">${s.name}</div><div class="sd-tagline">${s.tagline}</div></div>
+        <button class="sd-change" onclick="window.generateDesigns(${roomIdx})">Change design</button>
+      </div>
+      <div class="sd-colours">${swatches}</div>
+      <div class="sd-desc">${s.description}</div>
+      <div class="sd-vastu-points">${s.vastu_strengths.map(v=>`<div class="sd-vp">${v}</div>`).join('')}</div>
+      <div class="prod-tabs">
+        ${['furniture','lighting','walls','accessories','spec'].map((tab,i)=>`<button class="prod-tab${i===0?' active':''}" onclick="window.switchTab('${tab}',${roomIdx})">${tab==='walls'?'Walls & Paint':tab==='spec'?'Carpenter spec':cap(tab)}</button>`).join('')}
+      </div>
+      <div class="prod-panel active" id="tab-furniture-${roomIdx}"><div class="prod-grid">${(prods.furniture||[]).map(prodCard).join('')}</div></div>
+      <div class="prod-panel" id="tab-lighting-${roomIdx}"><div class="prod-grid">${(prods.lighting||[]).map(prodCard).join('')}</div></div>
+      <div class="prod-panel" id="tab-walls-${roomIdx}">${wallHTML}</div>
+      <div class="prod-panel" id="tab-accessories-${roomIdx}"><div class="prod-grid">${[...(prods.wallDecor||[]),...(prods.accessories||[])].map(prodCard).join('')}</div></div>
+      <div class="prod-panel" id="tab-spec-${roomIdx}">
+        <div style="font-size:12px;color:var(--ch70);margin-bottom:10px;line-height:1.6;">Select the custom items to include in the spec sheet:</div>
+        <div class="spec-items" id="spec-chips-${roomIdx}">${specChips}</div>
+        <button class="spec-btn" onclick="window.downloadSpec(${roomIdx},${optIdx})">📄 Download carpenter spec sheet</button>
+        <div style="margin-top:8px;font-size:11px;color:var(--ch40);">Opens in a new tab — use browser Print → Save as PDF to share with your carpenter.</div>
+      </div>
+    </div>`;
+  saveSession();
 }
 
-/* ─── TAB / ROOM MANAGEMENT ─── */
-window.showTab = function(tab) {
-  ['analysis','designs'].forEach(t => {
-    document.getElementById('panel-'+t)?.classList.toggle('active', t===tab);
-    document.getElementById('tab-'+t)?.classList.toggle('active', t===tab);
-  });
-};
-
-function enableDesignTab() {
-  const dt = document.getElementById('tab-designs');
-  if (dt) dt.classList.remove('disabled');
+function prodCard(p) {
+  const cls = (p.platform||'').toLowerCase().replace(/\s+/g,'-');
+  return `<div class="prod-card">
+    <div class="pc-img">${p.emoji||'🛋'}<div class="pc-platform pp-${cls}">${p.platform||''}</div></div>
+    <div class="pc-body">
+      <div class="pc-name">${p.name}</div><div class="pc-brand">${p.brand}</div>
+      ${p.vastu_note?`<div class="pc-vastu">${p.vastu_note.slice(0,60)}…</div>`:''}
+      <div class="pc-footer">
+        <div class="pc-price">₹${(p.price_inr||0).toLocaleString('en-IN')}</div>
+        ${p.affiliate_url?`<a href="${p.affiliate_url}" target="_blank" rel="noopener" class="pc-buy">Buy →</a>`:''}
+      </div>
+    </div>
+  </div>`;
 }
 
-window.startGenerating = function() {
-  if (S.activeRoom === null) return;
-  generateDesigns(S.activeRoom);
-};
-
-function addRoom(file) {
-  const label = document.getElementById('roomSelect').value;
-  const idx   = S.rooms.length;
-  S.rooms.push({ label, file, preview: URL.createObjectURL(file), status:'analysing', analysis:null, vastu:null, zone:'unknown', concepts:null });
-  renderRoomTab(idx);
-  selectRoom(idx);
-  analyzeRoom(file, label, idx);
-}
-
-function selectRoom(idx) {
-  S.activeRoom = idx;
-  document.querySelectorAll('.room-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
-  document.getElementById('emptyState').style.display = 'none';
-  document.getElementById('stepTabs').style.display   = 'flex';
-  const room = S.rooms[idx];
-  if (room?.status === 'done') {
-    renderAnalysisPanel(idx);
-    showTab('analysis');
-    if (room.concepts) enableDesignTab();
-  } else {
-    document.getElementById('panel-analysis').innerHTML = `
-      <div class="designs-generating">
-        <div class="generating-dots"><div class="gdot"></div><div class="gdot"></div><div class="gdot"></div></div>
-        <div class="generating-text">Analysing ${room?.label||'room'}…</div>
-      </div>`;
-  }
-}
-
-function renderRoomTab(idx) {
-  const room = S.rooms[idx];
-  const tabs = document.getElementById('roomTabs');
-  const empty = tabs.querySelector('.chat-empty-msg');
-  if (empty) empty.remove();
-  const tab = document.createElement('div');
-  tab.className = 'room-tab';
-  tab.innerHTML = `<img src="${room.preview}" alt="${room.label}"><span>${room.label}</span><div class="rt-status analysing" id="rt-${idx}"></div>`;
-  tab.addEventListener('click', () => selectRoom(idx));
-  tabs.appendChild(tab);
-}
-
-function setRoomStatus(idx, status) {
-  const dot = document.getElementById(`rt-${idx}`);
-  if (dot) dot.className = `rt-status ${status}`;
-}
-
-function showAnalysisError(idx, msg) {
-  if (S.activeRoom === idx) {
-    document.getElementById('panel-analysis').innerHTML = `
-      <div style="padding:20px;color:var(--terra);">
-        <div style="font-size:14px;font-weight:500;margin-bottom:6px;">Analysis failed</div>
-        <div style="font-size:12px;color:var(--ch70);">${msg}</div>
-      </div>`;
-  }
-}
-
-/* ─── CHAT ─── */
+// ── Chat ───────────────────────────────────────────────────────────────────
 async function handleChat(msg) {
-  if (!msg.trim()) return;
-  const inp = document.getElementById('chatInput');
-  inp.value = '';
+  if(!msg.trim()) return;
   appendChat('user', msg);
-  appendChat('assistant', '…', true);
+  document.getElementById('chatInput').value='';
+  appendChat('assistant','…',true);
   try {
     const room = S.rooms[S.activeRoom];
-    const res = await fetch(`${S.modules.ai.workerUrl}/suggest-changes`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        userMessage: msg,
-        currentAnalysis: room ? { vastu: room.vastu, selectedConcept: room.concepts?.[0] } : null,
-        conversationHistory: S.chatHistory
-      })
+    const res  = await fetch(`${S.M.ai.workerUrl}/suggest-changes`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ userMessage:msg, currentAnalysis:room?{vastu:room.vastu,analysis:room.ai}:null, conversationHistory:S.chatHistory })
     });
-    const d = await res.json();
-    const reply = d.reply || 'Could not generate a response.';
-    updateLastChat(reply);
-    S.chatHistory.push({role:'user',content:msg},{role:'assistant',content:reply});
-    if (S.chatHistory.length > 20) S.chatHistory = S.chatHistory.slice(-20);
-  } catch { updateLastChat('Connection error. Check your internet.'); }
+    const data = await res.json();
+    updateLastChat(data.reply||'Could not generate a response.');
+    S.chatHistory.push({role:'user',content:msg},{role:'assistant',content:data.reply||''});
+    if(S.chatHistory.length>20) S.chatHistory=S.chatHistory.slice(-20);
+  } catch { updateLastChat('Connection error. Check your internet and Worker deployment.'); }
 }
-
-function appendChat(role, text, loading=false) {
-  const c = document.getElementById('chatMessages');
-  const empty = c.querySelector('.chat-empty-msg');
-  if (empty) empty.remove();
-  const el = document.createElement('div');
-  el.className = `chat-msg chat-${role}${loading?' loading':''}`;
-  el.textContent = text;
-  c.appendChild(el);
-  c.scrollTop = c.scrollHeight;
+function appendChat(role,text,loading=false) {
+  const c=document.getElementById('chatMsgs');
+  const empty=c.querySelector('.chat-empty-msg'); if(empty) empty.remove();
+  const el=document.createElement('div');
+  el.className=`chat-msg chat-${role}${loading?' loading':''}`;
+  el.textContent=text; c.appendChild(el); c.scrollTop=c.scrollHeight;
 }
-
 function updateLastChat(text) {
-  const last = document.querySelector('#chatMessages .loading');
-  if (last) { last.textContent = text; last.classList.remove('loading'); }
+  const last=document.querySelector('#chatMsgs .loading');
+  if(last){last.textContent=text;last.classList.remove('loading');}
 }
 
-/* ─── LISTENERS ─── */
-function setupListeners() {
-  document.getElementById('mpInput').addEventListener('change', e => { if(e.target.files[0]) processMp(e.target.files[0]); });
-  document.getElementById('roomInput').addEventListener('change', e => { Array.from(e.target.files).forEach(f => addRoom(f)); });
-  const dz = document.getElementById('dropZone');
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(f=>addRoom(f)); });
-  document.getElementById('chatSend').addEventListener('click', () => handleChat(document.getElementById('chatInput').value));
-  document.getElementById('chatInput').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleChat(e.target.value);} });
+// ── Session save/restore ───────────────────────────────────────────────────
+const SESSION_KEY = 'griha_upload_v1';
+function saveSession() {
+  try {
+    // Save analysis results (not File objects — those can't be serialised)
+    const data = { savedAt: new Date().toISOString(), masterplan: S.masterplan,
+      rooms: S.rooms.map(r => ({ label:r.label, status:r.status, ai:r.ai, vastu:r.vastu, lighting:r.lighting,
+        designOptions: r.designOptions ? r.designOptions.map(o=>({...o,products:null})) : null
+      }))
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+  } catch(e) { console.warn('Session save failed:', e); }
+}
+function restoreSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if(!raw) return;
+    const data = JSON.parse(raw);
+    if(!data?.rooms?.length) return;
+    if(data.masterplan) S.masterplan = data.masterplan;
+    S.rooms = data.rooms.map(r=>({...r, photos:[], previews:[]}));
+    // Show restore banner
+    const ago = _timeAgo(data.savedAt);
+    const banner=document.createElement('div');
+    banner.className='restore-banner';
+    banner.innerHTML=`<span>✓ Previous session from ${ago} — <a href="#" onclick="showRestoredResults(event)" style="color:var(--terra);">View saved results</a> or continue uploading below</span>
+      <button onclick="this.parentElement.remove();localStorage.removeItem('${SESSION_KEY}')">Clear session</button>`;
+    document.body.insertBefore(banner, document.getElementById('uploadPhase'));
+  } catch(e) { console.warn('Restore failed:', e); }
+}
+function showRestoredResults(e) {
+  e.preventDefault();
+  document.getElementById('uploadPhase').style.display='none';
+  document.getElementById('resultsPhase').style.display='block';
+  renderResultsSidebar();
+  if(S.rooms.length>0) selectResultRoom(0);
+}
+function _timeAgo(iso) {
+  try {
+    const m=Math.round((Date.now()-new Date(iso).getTime())/60000);
+    if(m<2) return 'just now'; if(m<60) return m+'m ago';
+    const h=Math.round(m/60); if(h<24) return h+'h ago';
+    return Math.round(h/24)+'d ago';
+  } catch { return 'earlier'; }
 }
 
-/* ─── UTILS ─── */
-function ic(label, val, sub) { return `<div class="insight-card"><div class="ic-label">${label}</div><div class="ic-val">${val}</div>${sub?`<div class="ic-sub">${sub}</div>`:''}</div>`; }
-function cap(s='') { return s.charAt(0).toUpperCase()+s.slice(1); }
-function fmt(n) { return (n||0).toLocaleString('en-IN'); }
-function norm(label) {
+// ── Helpers ────────────────────────────────────────────────────────────────
+function ins(label,val,sub) {
+  return `<div class="insight"><div class="i-label">${label}</div><div class="i-val">${val}</div>${sub?`<div class="i-sub">${sub}</div>`:''}</div>`;
+}
+function cap(s=''){return s.charAt(0).toUpperCase()+s.slice(1);}
+function normalise(label) {
   const m={'master bedroom':'master_bedroom','living room':'living_room','kitchen':'kitchen','washroom':'washroom','bathroom':'washroom','balcony':'balcony','pooja room':'pooja_room','kids bedroom':'kids_bedroom','guest bedroom':'guest_bedroom','study':'study','dining room':'dining_room'};
-  return m[label.toLowerCase()] || label.toLowerCase().replace(/\s+/g,'_');
+  return m[label.toLowerCase()]||label.toLowerCase().replace(/\s+/g,'_');
 }
-function getMpZone(label) {
-  if (!S.masterplan?.rooms) return 'unknown';
-  const kw = label.toLowerCase().split(' ')[0];
-  return S.masterplan.rooms.find(r=>r.name.toLowerCase().includes(kw))?.compass_zone || 'unknown';
+function getZone(label) {
+  if(!S.masterplan?.rooms) return 'unknown';
+  const kw=label.toLowerCase().split(' ')[0];
+  const m=S.masterplan.rooms.find(r=>r.name.toLowerCase().includes(kw));
+  return m?.compass_zone||'unknown';
 }
-function setStatus(msg) {
-  const el = document.getElementById('topStatus');
-  el.textContent = msg;
-  el.style.display = msg ? 'inline' : 'none';
-}
-function showMpStatus(msg, type) {
-  const el = document.getElementById('mpStatus');
-  el.textContent = msg; el.className = `mp-status ${type}`; el.style.display='block';
-}
-function showError(msg) {
-  const el = document.getElementById('globalError');
-  el.textContent = msg; el.style.display='block';
-}
+
+// ── Expose globals ─────────────────────────────────────────────────────────
+window.removeRoom         = (id)  => removeRoom(id);
+window.removePhoto        = (rid,slot,e) => removePhoto(rid,slot,e);
+window.selectResultRoom   = (idx) => selectResultRoom(idx);
+window.generateDesigns    = (idx) => generateDesigns(idx);
+window.selectDesign       = (optIdx,roomIdx) => selectDesign(optIdx,roomIdx);
+window.switchTab          = (tab,roomIdx) => {
+  document.querySelectorAll(`[id^="tab-"][id$="-${roomIdx}"]`).forEach(p=>p.classList.remove('active'));
+  const p = document.getElementById(`tab-${tab}-${roomIdx}`); if(p) p.classList.add('active');
+  document.querySelectorAll('.prod-tab').forEach(t=>t.classList.toggle('active', t.textContent.toLowerCase().includes(tab)||t.getAttribute('onclick')?.includes(`'${tab}'`)));
+};
+window.downloadSpec       = (roomIdx,optIdx) => {
+  const room=S.rooms[roomIdx]; const opt=room.designOptions?.[optIdx];
+  const chips=document.querySelectorAll(`#spec-chips-${roomIdx} .spec-item-chip.selected`);
+  const ids=[...chips].map(c=>c.dataset.spec);
+  if(!ids.length){alert('Select at least one furniture item.');return;}
+  const zone=getZone(room.label);
+  const spec=S.M.carpSpec.generate({
+    design_brief:{...opt?.style?.carpenter,style_id:opt?.style?.id,compass_zone:zone},
+    furniture_ids:ids, room_label:room.label,
+    room_sqft:room.ai?.observations?.estimated_sqft||150
+  });
+  S.M.carpSpec.downloadHTML(spec);
+};
+window.showRestoredResults = showRestoredResults;
 
 init();
 </script>
