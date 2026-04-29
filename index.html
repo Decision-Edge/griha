@@ -3,578 +3,366 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Griha — AI-Powered Vastu Interior Design for Indian Homes</title>
-<meta name="description" content="Upload your room photos and builder masterplan. Griha's AI analyses space, light, and Vastu to recommend furniture, colours, and decor — shoppable in one click.">
+<title>Griha — AI Vastu Interior Design for Indian Homes</title>
+<meta name="description" content="Upload your room photos. Griha's AI analyses space, light, and Vastu to recommend furniture, colours, and decor — all shoppable in one click.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
 <style>
-/* ─── TOKENS ─── */
-:root {
-  --cream: #F6F1EB;
-  --warm-white: #FDFAF6;
-  --parchment: #EDE8E0;
-  --charcoal: #1A1714;
-  --charcoal-70: rgba(26,23,20,0.7);
-  --charcoal-40: rgba(26,23,20,0.4);
-  --charcoal-12: rgba(26,23,20,0.12);
-  --charcoal-06: rgba(26,23,20,0.06);
-  --terracotta: #C0502A;
-  --terracotta-hover: #A3431F;
-  --terracotta-light: #F3E8E3;
-  --gold: #B07D20;
-  --gold-light: #F4EAD5;
-  --sage: #4F6250;
-  --sage-light: #E5EDE4;
-  --border: rgba(26,23,20,0.09);
-  --border-md: rgba(26,23,20,0.14);
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --shadow-sm: 0 2px 8px rgba(26,23,20,0.06);
-  --shadow-md: 0 8px 32px rgba(26,23,20,0.10);
-  --transition: all 0.22s cubic-bezier(0.4,0,0.2,1);
+:root{
+  --cream:#F6F1EB;--warm-white:#FDFAF6;--parchment:#EDE8E0;
+  --charcoal:#1A1714;--ch70:rgba(26,23,20,0.7);--ch40:rgba(26,23,20,0.4);
+  --ch12:rgba(26,23,20,0.12);--ch06:rgba(26,23,20,0.05);
+  --terra:#C0502A;--terra-l:#F3E8E3;--terra-h:#A3431F;
+  --gold:#B07D20;--gold-l:#F4EAD5;
+  --sage:#4F6250;--sage-l:#E5EDE4;
+  --border:rgba(26,23,20,0.09);--border-md:rgba(26,23,20,0.14);
+  --font-d:'Cormorant Garamond',Georgia,serif;
+  --font-b:'DM Sans',system-ui,sans-serif;
+  --r-sm:8px;--r-md:12px;--r-lg:20px;
+  --shadow-sm:0 2px 8px rgba(26,23,20,0.06);
+  --shadow-md:0 8px 32px rgba(26,23,20,0.10);
 }
-
-/* ─── RESET ─── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;}
-body{font-family:var(--font-body);background:var(--warm-white);color:var(--charcoal);font-size:15px;line-height:1.65;overflow-x:hidden;}
+body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal);font-size:15px;line-height:1.65;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
 img{max-width:100%;display:block;}
-a{color:inherit;text-decoration:none;}
-button,input,textarea,select{font-family:inherit;font-size:inherit;}
 
-/* ─── UTILITY ─── */
-.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
-.fade-up{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease;}
-.fade-up.visible{opacity:1;transform:translateY(0);}
-
-/* ─── NAVIGATION ─── */
-.nav{
-  position:fixed;top:0;left:0;right:0;z-index:200;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 52px;height:66px;
-  background:rgba(253,250,246,0.88);
-  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--border);
-  transition:var(--transition);
-}
-.nav.scrolled{background:rgba(253,250,246,0.97);box-shadow:var(--shadow-sm);}
-.nav-logo{font-family:var(--font-display);font-size:27px;font-weight:500;letter-spacing:-0.02em;color:var(--charcoal);}
-.nav-logo em{color:var(--terracotta);font-style:normal;}
-.nav-links{display:flex;align-items:center;gap:36px;}
-.nav-links a{font-size:13px;font-weight:400;color:var(--charcoal-70);letter-spacing:0.01em;transition:color .18s;}
+/* ── NAV ── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:200;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 52px;background:rgba(253,250,246,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);transition:box-shadow .2s;}
+.nav.scrolled{box-shadow:var(--shadow-sm);}
+.nav-logo{font-family:var(--font-d);font-size:26px;font-weight:500;letter-spacing:-0.02em;}
+.nav-logo em{color:var(--terra);font-style:normal;}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{font-size:13px;color:var(--ch70);transition:color .15s;}
 .nav-links a:hover{color:var(--charcoal);}
-.nav-contact{
-  background:var(--terracotta);color:#fff!important;
-  padding:9px 22px;border-radius:100px;
-  font-size:13px;font-weight:500;letter-spacing:0.01em;
-  transition:var(--transition);border:none;cursor:pointer;
-}
-.nav-contact:hover{background:var(--terracotta-hover);transform:translateY(-1px);box-shadow:0 4px 16px rgba(192,80,42,0.28);}
+.nav-cta{background:var(--terra);color:#fff!important;padding:9px 22px;border-radius:100px;font-size:13px;font-weight:500;transition:all .2s;}
+.nav-cta:hover{background:var(--terra-h);transform:translateY(-1px);}
 .nav-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;}
-.nav-hamburger span{display:block;width:22px;height:1.5px;background:var(--charcoal);border-radius:2px;transition:var(--transition);}
+.nav-hamburger span{display:block;width:22px;height:1.5px;background:var(--charcoal);border-radius:2px;}
 .mobile-menu{display:none;position:fixed;inset:0;z-index:190;background:var(--warm-white);padding:80px 32px 40px;flex-direction:column;gap:0;}
 .mobile-menu.open{display:flex;}
-.mobile-menu a{font-size:28px;font-family:var(--font-display);font-weight:400;color:var(--charcoal);padding:16px 0;border-bottom:1px solid var(--border);}
-.mobile-menu a:last-child{border-bottom:none;margin-top:24px;background:var(--terracotta);color:#fff;padding:16px 24px;border-radius:100px;text-align:center;font-size:16px;font-family:var(--font-body);}
+.mobile-menu a{font-size:26px;font-family:var(--font-d);color:var(--charcoal);padding:14px 0;border-bottom:1px solid var(--border);}
+.mobile-menu a:last-child{border-bottom:none;margin-top:20px;background:var(--terra);color:#fff;padding:14px 24px;border-radius:100px;text-align:center;font-size:15px;font-family:var(--font-b);}
 
-/* ─── HERO ─── */
-.hero{
-  min-height:100vh;display:grid;grid-template-columns:1fr 1fr;
-  padding-top:66px;
-}
-.hero-left{
-  display:flex;flex-direction:column;justify-content:center;
-  padding:80px 56px 80px 80px;
-  background:var(--cream);
-  position:relative;overflow:hidden;
-}
-.hero-left::before{
-  content:'';position:absolute;top:-80px;right:-80px;
-  width:360px;height:360px;
-  background:radial-gradient(circle,rgba(192,80,42,0.06) 0%,transparent 70%);
-  pointer-events:none;
-}
-.hero-eyebrow{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--terracotta);margin-bottom:28px;
-}
-.hero-eyebrow::before{content:'';display:block;width:24px;height:1px;background:var(--terracotta);}
-.hero-title{
-  font-family:var(--font-display);font-size:68px;font-weight:400;
-  line-height:1.04;letter-spacing:-0.025em;color:var(--charcoal);margin-bottom:24px;
-}
-.hero-title em{font-style:italic;color:var(--terracotta);}
-.hero-sub{
-  font-size:16px;color:var(--charcoal-70);line-height:1.75;
-  max-width:400px;margin-bottom:44px;font-weight:300;
-}
+/* ── UTILITY ── */
+.fade-up{opacity:0;transform:translateY(24px);transition:opacity .65s ease,transform .65s ease;}
+.fade-up.visible{opacity:1;transform:translateY(0);}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--terra);margin-bottom:18px;}
+.eyebrow::before{content:'';display:block;width:20px;height:1px;background:var(--terra);}
+.section-title{font-family:var(--font-d);font-size:50px;font-weight:400;line-height:1.08;letter-spacing:-0.025em;margin-bottom:18px;}
+.section-sub{font-size:16px;color:var(--ch70);max-width:500px;line-height:1.75;font-weight:300;}
+section{padding:96px 80px;}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;padding-top:64px;}
+.hero-left{display:flex;flex-direction:column;justify-content:center;padding:80px 56px 80px 80px;background:var(--cream);position:relative;overflow:hidden;}
+.hero-left::before{content:'';position:absolute;top:-80px;right:-80px;width:360px;height:360px;background:radial-gradient(circle,rgba(192,80,42,0.07) 0%,transparent 70%);pointer-events:none;}
+.hero-title{font-family:var(--font-d);font-size:66px;font-weight:400;line-height:1.04;letter-spacing:-0.025em;margin-bottom:24px;}
+.hero-title em{font-style:italic;color:var(--terra);}
+.hero-sub{font-size:16px;color:var(--ch70);line-height:1.75;max-width:400px;margin-bottom:44px;font-weight:300;}
+.hero-eyebrow{font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--terra);margin-bottom:28px;display:flex;align-items:center;gap:8px;}
+.hero-eyebrow::before{content:'';display:block;width:24px;height:1px;background:var(--terra);}
+
+/* CTA buttons */
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--terra);color:#fff;padding:15px 30px;border-radius:100px;font-size:14px;font-weight:500;border:none;cursor:pointer;transition:all .2s;letter-spacing:.01em;}
+.btn-primary:hover{background:var(--terra-h);transform:translateY(-2px);box-shadow:0 6px 20px rgba(192,80,42,0.3);}
+.btn-ghost{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--charcoal);padding:15px 30px;border-radius:100px;font-size:14px;font-weight:400;border:1.5px solid var(--border-md);cursor:pointer;transition:all .2s;}
+.btn-ghost:hover{border-color:var(--charcoal);background:var(--ch06);}
 .hero-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;}
-.btn-primary{
-  background:var(--terracotta);color:#fff;
-  padding:15px 30px;border-radius:100px;
-  font-size:14px;font-weight:500;
-  border:none;cursor:pointer;
-  transition:var(--transition);letter-spacing:0.01em;
-  display:inline-flex;align-items:center;gap:8px;
-}
-.btn-primary:hover{background:var(--terracotta-hover);transform:translateY(-2px);box-shadow:0 6px 20px rgba(192,80,42,0.3);}
-.btn-ghost{
-  background:transparent;color:var(--charcoal);
-  padding:15px 30px;border-radius:100px;
-  font-size:14px;font-weight:400;
-  border:1px solid var(--border-md);cursor:pointer;
-  transition:var(--transition);
-}
-.btn-ghost:hover{border-color:var(--charcoal);background:var(--charcoal-06);}
-.hero-trust{
-  display:flex;align-items:center;gap:10px;
-  margin-top:40px;padding-top:32px;border-top:1px solid var(--border);
-  font-size:12px;color:var(--charcoal-40);
-}
+.hero-trust{display:flex;align-items:center;gap:10px;margin-top:40px;padding-top:32px;border-top:1px solid var(--border);font-size:12px;color:var(--ch40);}
 .trust-dot{width:5px;height:5px;border-radius:50%;background:var(--sage);flex-shrink:0;}
 .trust-dot.gold{background:var(--gold);}
-.hero-stats{display:flex;gap:0;margin-top:32px;}
+.hero-stats{display:flex;gap:0;margin-top:28px;}
 .stat-item{flex:1;padding-right:24px;border-right:1px solid var(--border);}
 .stat-item:last-child{border-right:none;padding-left:24px;padding-right:0;}
 .stat-item:first-child{padding-left:0;}
-.stat-num{font-family:var(--font-display);font-size:34px;font-weight:400;color:var(--charcoal);line-height:1;}
-.stat-label{font-size:11px;color:var(--charcoal-40);margin-top:4px;line-height:1.4;}
+.stat-num{font-family:var(--font-d);font-size:34px;font-weight:400;line-height:1;}
+.stat-label{font-size:11px;color:var(--ch40);margin-top:4px;}
 
-/* HERO RIGHT */
-.hero-right{
-  background:var(--charcoal);
-  position:relative;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;padding:48px;
-}
-.hero-right::before{
-  content:'';position:absolute;inset:0;
-  background:
-    radial-gradient(ellipse 50% 60% at 20% 70%,rgba(192,80,42,0.18) 0%,transparent 70%),
-    radial-gradient(ellipse 60% 40% at 80% 30%,rgba(176,125,32,0.10) 0%,transparent 70%);
-}
-.room-card{
-  position:relative;width:100%;max-width:400px;
-  border-radius:18px;overflow:hidden;
-  border:1px solid rgba(255,255,255,0.07);
-  background:#231F1B;
-}
-.room-visual{
-  height:260px;position:relative;
-  background:linear-gradient(160deg,#2A2420 0%,#1E1B18 100%);
-  overflow:hidden;
-}
-.room-scene{position:absolute;inset:0;}
-/* minimalist room illustration */
-.wall-left{position:absolute;left:0;top:0;bottom:0;width:30%;background:rgba(180,150,110,0.08);}
-.floor{position:absolute;bottom:0;left:0;right:0;height:35%;background:rgba(140,110,80,0.12);clip-path:polygon(0 40%,100% 0,100% 100%,0 100%);}
-.sofa-body{position:absolute;bottom:28%;left:18%;width:64%;height:22%;background:rgba(160,125,90,0.45);border-radius:6px 6px 0 0;}
-.sofa-seat{position:absolute;bottom:22%;left:18%;width:64%;height:14%;background:rgba(140,105,70,0.5);border-radius:0 0 4px 4px;}
-.sofa-leg{position:absolute;bottom:14%;width:5%;height:8%;background:rgba(100,75,50,0.5);border-radius:2px;}
-.sofa-leg.l1{left:20%;}
-.sofa-leg.l2{left:77%;}
-.cushion{position:absolute;border-radius:4px;background:rgba(196,85,42,0.45);}
-.cushion.c1{bottom:38%;left:24%;width:12%;height:14%;}
-.cushion.c2{bottom:38%;left:65%;width:12%;height:14%;}
-.table-top{position:absolute;bottom:19%;left:35%;width:30%;height:4%;background:rgba(120,90,60,0.4);border-radius:3px;}
-.lamp-stand{position:absolute;bottom:18%;right:16%;width:2%;height:30%;background:rgba(160,140,100,0.35);}
-.lamp-shade{position:absolute;bottom:44%;right:14%;width:8%;height:8%;background:rgba(200,170,100,0.3);border-radius:50% 50% 0 0;}
-.lamp-glow{position:absolute;bottom:44%;right:11%;width:14%;height:24%;background:radial-gradient(ellipse at center top,rgba(200,160,80,0.18) 0%,transparent 70%);}
-.plant-pot{position:absolute;bottom:18%;left:10%;width:5%;height:8%;background:rgba(80,60,40,0.4);border-radius:0 0 3px 3px;}
-.plant-leaves{position:absolute;bottom:24%;left:7%;width:11%;height:16%;background:rgba(70,90,60,0.45);border-radius:50% 50% 30% 60%;}
-.window-light{position:absolute;top:0;right:0;width:28%;height:55%;background:linear-gradient(180deg,rgba(200,170,120,0.1) 0%,transparent 100%);border-left:1px solid rgba(200,170,120,0.1);}
-
-.room-tag{
-  position:absolute;font-size:11px;font-weight:500;
-  padding:5px 12px;border-radius:100px;
-  border:1px solid rgba(255,255,255,0.12);
-  backdrop-filter:blur(8px);color:#fff;
-  background:rgba(255,255,255,0.08);
-}
-.room-tag.rt-living{top:16px;left:16px;}
-.room-tag.rt-vastu{top:16px;right:16px;background:rgba(192,80,42,0.45);border-color:rgba(192,80,42,0.5);}
-.ai-analysis{
-  margin:0;padding:16px;
-  border-top:1px solid rgba(255,255,255,0.05);
-  background:#1A1714;
-}
-.ai-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.ai-pulse{display:flex;gap:4px;}
+/* Hero right — animated room card */
+.hero-right{background:var(--charcoal);display:flex;align-items:center;justify-content:center;padding:48px;position:relative;overflow:hidden;}
+.hero-right::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 60% at 20% 70%,rgba(192,80,42,0.2) 0%,transparent 70%),radial-gradient(ellipse 60% 40% at 80% 30%,rgba(176,125,32,0.12) 0%,transparent 70%);}
+.hero-card{position:relative;width:100%;max-width:400px;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:#231F1B;}
+.hero-room-vis{height:240px;position:relative;overflow:hidden;background:linear-gradient(160deg,#2A2420 0%,#1E1B18 100%);}
+/* simple CSS room illustration */
+.rv-window{position:absolute;top:0;right:0;width:30%;height:60%;background:linear-gradient(180deg,rgba(200,170,120,0.12) 0%,transparent 100%);border-left:1px solid rgba(200,170,120,0.08);}
+.rv-floor{position:absolute;bottom:0;left:0;right:0;height:35%;background:rgba(140,110,80,0.1);clip-path:polygon(0 40%,100% 0,100% 100%,0 100%);}
+.rv-sofa{position:absolute;bottom:28%;left:18%;width:62%;height:20%;background:rgba(160,125,90,0.4);border-radius:6px 6px 0 0;}
+.rv-sofa::after{content:'';position:absolute;bottom:-14%;left:0;right:0;height:14%;background:rgba(140,105,70,0.45);border-radius:0 0 3px 3px;}
+.rv-cushion{position:absolute;border-radius:3px;background:rgba(192,80,42,0.4);}
+.rv-c1{bottom:46%;left:23%;width:11%;height:13%;}
+.rv-c2{bottom:46%;left:64%;width:11%;height:13%;}
+.rv-table{position:absolute;bottom:20%;left:36%;width:28%;height:3%;background:rgba(120,90,60,0.4);border-radius:2px;}
+.rv-lamp{position:absolute;bottom:18%;right:14%;width:2%;height:28%;background:rgba(160,140,100,0.3);}
+.rv-lamp::before{content:'';position:absolute;bottom:100%;left:-300%;width:700%;height:180%;background:radial-gradient(ellipse,rgba(200,160,80,0.2) 0%,transparent 70%);}
+.rv-plant{position:absolute;bottom:18%;left:9%;width:5%;height:26%;background:rgba(79,98,80,0.4);border-radius:50% 50% 30% 30%;}
+.rv-tag{position:absolute;font-size:10px;font-weight:500;padding:4px 10px;border-radius:100px;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(6px);color:#fff;background:rgba(255,255,255,0.07);}
+.rv-t1{top:14px;left:14px;}
+.rv-t2{top:14px;right:14px;background:rgba(192,80,42,0.4);border-color:rgba(192,80,42,0.5);}
+.hero-ai-bar{padding:14px 16px;background:#1A1714;border-top:1px solid rgba(255,255,255,0.04);}
+.ai-bar-label{font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:8px;}
+.ai-dots{display:flex;gap:4px;margin-bottom:6px;}
 .ai-dot{width:6px;height:6px;border-radius:50%;animation:pulse 1.5s ease-in-out infinite;}
-.ai-dot.d1{background:var(--terracotta);animation-delay:0s;}
+.ai-dot.d1{background:var(--terra);animation-delay:0s;}
 .ai-dot.d2{background:var(--gold);animation-delay:.25s;}
 .ai-dot.d3{background:var(--sage);animation-delay:.5s;}
 @keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
-.ai-label{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.3);}
-.ai-insights{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-.ai-insight{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:8px 10px;}
-.ai-insight-label{font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;}
-.ai-insight-val{font-size:11px;font-weight:500;color:rgba(255,255,255,0.75);}
+.ai-bar-text{font-size:11px;color:rgba(255,255,255,0.55);line-height:1.5;}
+.ai-insights{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;}
+.ai-insight{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.05);border-radius:7px;padding:7px 9px;}
+.ai-ins-label{font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px;}
+.ai-ins-val{font-size:11px;font-weight:500;color:rgba(255,255,255,0.72);}
 
-/* ─── SHARED SECTION STYLES ─── */
-section{padding:96px 80px;}
-.section-eyebrow{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--terracotta);margin-bottom:18px;
-}
-.section-eyebrow::before{content:'';display:block;width:20px;height:1px;background:var(--terracotta);}
-.section-title{font-family:var(--font-display);font-size:52px;font-weight:400;line-height:1.08;letter-spacing:-0.025em;margin-bottom:18px;}
-.section-sub{font-size:16px;color:var(--charcoal-70);max-width:500px;line-height:1.75;font-weight:300;}
-
-/* ─── HOW IT WORKS ─── */
+/* ── HOW IT WORKS ── */
 .how-section{background:var(--cream);}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:64px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;}
-.step{background:var(--warm-white);padding:44px 40px;transition:var(--transition);cursor:default;position:relative;}
-.step::after{content:'';position:absolute;bottom:0;left:40px;right:40px;height:2px;background:var(--terracotta);transform:scaleX(0);transform-origin:left;transition:transform .35s ease;}
-.step:hover{background:var(--terracotta-light);}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:64px;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.step{background:var(--warm-white);padding:44px 40px;position:relative;transition:background .2s;}
+.step::after{content:'';position:absolute;bottom:0;left:40px;right:40px;height:2px;background:var(--terra);transform:scaleX(0);transform-origin:left;transition:transform .35s ease;}
+.step:hover{background:var(--terra-l);}
 .step:hover::after{transform:scaleX(1);}
-.step-num{font-family:var(--font-display);font-size:80px;font-weight:300;color:var(--charcoal-12);line-height:1;margin-bottom:24px;display:block;}
-.step-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:22px;}
-.si-1{background:var(--terracotta-light);}
-.si-2{background:var(--gold-light);}
-.si-3{background:var(--sage-light);}
-.step-title{font-family:var(--font-display);font-size:26px;font-weight:500;margin-bottom:12px;}
-.step-desc{font-size:14px;color:var(--charcoal-70);line-height:1.7;font-weight:300;}
+.step-num{font-family:var(--font-d);font-size:72px;font-weight:300;color:var(--ch12);line-height:1;margin-bottom:20px;display:block;}
+.step-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px;}
+.si-1{background:var(--terra-l);}
+.si-2{background:var(--gold-l);}
+.si-3{background:var(--sage-l);}
+.step-title{font-family:var(--font-d);font-size:24px;font-weight:500;margin-bottom:10px;}
+.step-desc{font-size:14px;color:var(--ch70);line-height:1.7;font-weight:300;}
 
-/* ─── APP DEMO ─── */
+/* ── DEMO SECTION — interactive ── */
 .demo-section{background:var(--charcoal);padding:96px 0;overflow:hidden;}
 .demo-inner{padding:0 80px;}
 .demo-section .section-title{color:var(--warm-white);}
 .demo-section .section-sub{color:rgba(253,250,246,0.45);}
-.demo-section .section-eyebrow{color:var(--gold);}
-.demo-section .section-eyebrow::before{background:var(--gold);}
-.browser{
-  margin-top:56px;border-radius:var(--radius-lg);overflow:hidden;
-  border:1px solid rgba(255,255,255,0.07);
-  background:#111009;box-shadow:0 40px 80px rgba(0,0,0,0.5);
-}
-.browser-bar{
-  background:#1C1914;padding:14px 18px;
-  display:flex;align-items:center;gap:12px;
-  border-bottom:1px solid rgba(255,255,255,0.04);
-}
-.browser-dots{display:flex;gap:6px;}
-.bd{width:11px;height:11px;border-radius:50%;}
-.bd-r{background:#FF5F57;}.bd-y{background:#FEBC2E;}.bd-g{background:#28C840;}
-.browser-url{
-  flex:1;background:rgba(255,255,255,0.05);border-radius:6px;
-  padding:6px 14px;font-size:12px;color:rgba(255,255,255,0.28);
-}
-.browser-layout{display:grid;grid-template-columns:280px 1fr;min-height:560px;}
-.b-sidebar{
-  background:#171410;border-right:1px solid rgba(255,255,255,0.04);
-  padding:20px;display:flex;flex-direction:column;gap:20px;
-}
-.b-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:6px;}
-.room-list{display:flex;flex-direction:column;gap:3px;}
-.room-item{
-  display:flex;align-items:center;gap:10px;
-  padding:8px 10px;border-radius:7px;
-  font-size:12px;color:rgba(255,255,255,0.45);
-  cursor:pointer;transition:all .14s;border:1px solid transparent;
-}
-.room-item.active{background:rgba(192,80,42,0.14);color:#EFA882;border-color:rgba(192,80,42,0.25);}
-.room-item:not(.active):hover{background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.65);}
-.room-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6;flex-shrink:0;}
-.upload-box{
-  border:1.5px dashed rgba(255,255,255,0.12);border-radius:10px;
-  padding:18px;text-align:center;cursor:pointer;transition:border-color .2s;
-}
-.upload-box:hover{border-color:var(--terracotta);}
-.upload-icon-txt{font-size:20px;margin-bottom:6px;}
-.upload-hint{font-size:11px;color:rgba(255,255,255,0.28);line-height:1.5;}
-.plan-box{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:10px;}
-.plan-map{width:100%;height:90px;background:rgba(255,255,255,0.02);border-radius:5px;position:relative;overflow:hidden;}
-.pm-room{position:absolute;border:1px solid rgba(255,255,255,0.12);border-radius:2px;}
-.pm-r1{left:8%;top:10%;width:36%;height:44%;background:rgba(192,80,42,0.1);}
-.pm-r2{left:48%;top:10%;width:44%;height:44%;background:rgba(176,125,32,0.08);}
-.pm-r3{left:8%;top:58%;width:28%;height:34%;background:rgba(79,98,80,0.12);}
-.pm-r4{left:40%;top:58%;width:52%;height:34%;background:rgba(255,255,255,0.03);}
-.pm-lbl{position:absolute;font-size:7px;color:rgba(255,255,255,0.25);}
-.pm-compass{position:absolute;bottom:5px;right:5px;width:18px;height:18px;border:1px solid rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;color:rgba(255,255,255,0.4);font-weight:600;}
-.b-main{padding:24px;display:flex;flex-direction:column;gap:18px;overflow:hidden;}
-.b-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.05);}
-.b-room-title{font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);}
-.vastu-chip{
-  display:flex;align-items:center;gap:5px;
-  background:rgba(79,98,80,0.18);border:1px solid rgba(79,98,80,0.3);
-  border-radius:100px;padding:4px 12px;
-  font-size:11px;color:#86AD84;
-}
-.v-dot{width:5px;height:5px;border-radius:50%;background:#86AD84;animation:pulse 2s ease-in-out infinite;}
-.insights{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.insight{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:9px;padding:12px 14px;}
-.i-label{font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
-.i-val{font-size:12px;font-weight:500;color:rgba(255,255,255,0.78);}
-.i-sub{font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;}
-.prod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.prod{
-  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
-  border-radius:10px;overflow:hidden;cursor:pointer;
-  transition:border-color .2s,transform .2s;
-}
-.prod:hover{border-color:rgba(192,80,42,0.4);transform:translateY(-2px);}
-.prod-img{width:100%;height:90px;display:flex;align-items:center;justify-content:center;font-size:28px;background:rgba(255,255,255,0.02);position:relative;}
-.prod-platform{position:absolute;top:7px;right:7px;font-size:9px;font-weight:500;padding:2px 7px;border-radius:100px;}
-.pp-amazon{background:rgba(255,153,0,0.18);color:#FFAB40;}
-.pp-pepperfry{background:rgba(192,80,42,0.2);color:#EFA882;}
-.pp-ul{background:rgba(79,98,80,0.2);color:#86AD84;}
-.prod-info{padding:10px 11px 12px;}
-.prod-name{font-size:11px;font-weight:500;color:rgba(255,255,255,0.72);margin-bottom:2px;line-height:1.3;}
-.prod-brand{font-size:10px;color:rgba(255,255,255,0.28);}
-.prod-vastu{font-size:9px;color:#86AD84;margin-top:3px;}
-.prod-vastu::before{content:'✓ ';}
-.prod-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
-.prod-price{font-size:12px;font-weight:600;color:rgba(255,255,255,0.8);}
-.prod-buy{font-size:10px;font-weight:500;padding:4px 10px;border-radius:100px;background:var(--terracotta);color:#fff;}
+.demo-section .eyebrow{color:var(--gold);}
+.demo-section .eyebrow::before{background:var(--gold);}
+.demo-tabs{display:flex;gap:0;margin-top:40px;border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;width:fit-content;}
+.demo-tab{padding:10px 20px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.45);cursor:pointer;border-right:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);transition:all .15s;}
+.demo-tab:last-child{border-right:none;}
+.demo-tab.active{background:var(--terra);color:#fff;}
+.demo-panel{display:none;}
+.demo-panel.active{display:block;}
+.demo-browser{margin-top:24px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:#111009;box-shadow:0 40px 80px rgba(0,0,0,0.5);}
+.demo-bar{background:#1C1914;padding:13px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.demo-dots-row{display:flex;gap:6px;}
+.dd{width:11px;height:11px;border-radius:50%;}
+.dd-r{background:#FF5F57;}.dd-y{background:#FEBC2E;}.dd-g{background:#28C840;}
+.demo-url{flex:1;background:rgba(255,255,255,0.05);border-radius:6px;padding:6px 14px;font-size:11px;color:rgba(255,255,255,0.28);}
 
-/* ─── VASTU SECTION ─── */
+/* Demo panel 1 — upload */
+.demo-upload-screen{padding:40px;display:flex;flex-direction:column;align-items:center;gap:20px;min-height:360px;justify-content:center;}
+.demo-upload-area{width:100%;max-width:500px;border:2px dashed rgba(255,255,255,0.12);border-radius:16px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;}
+.demo-upload-area:hover{border-color:var(--terra);background:rgba(192,80,42,0.05);}
+.dua-icon{font-size:40px;margin-bottom:14px;opacity:.5;}
+.dua-title{font-size:18px;font-weight:500;color:rgba(255,255,255,0.8);margin-bottom:6px;}
+.dua-sub{font-size:13px;color:rgba(255,255,255,0.35);}
+.demo-room-chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;}
+.demo-room-chip{padding:7px 16px;border-radius:100px;font-size:12px;font-weight:500;border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);cursor:pointer;transition:all .15s;}
+.demo-room-chip.active{background:rgba(192,80,42,0.25);color:#EFA882;border-color:rgba(192,80,42,0.4);}
+
+/* Demo panel 2 — analysis */
+.demo-analysis-screen{display:grid;grid-template-columns:260px 1fr;min-height:400px;}
+.das-sidebar{background:#171410;border-right:1px solid rgba(255,255,255,0.04);padding:20px;display:flex;flex-direction:column;gap:16px;}
+.das-sb-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:4px;}
+.das-room-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:rgba(192,80,42,0.14);border:1px solid rgba(192,80,42,0.25);}
+.das-room-dot{width:6px;height:6px;border-radius:50%;background:#EFA882;}
+.das-room-name{font-size:12px;color:#EFA882;font-weight:500;}
+.das-score-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:16px;text-align:center;}
+.das-score-num{font-family:var(--font-d);font-size:52px;font-weight:400;color:#86AD84;line-height:1;}
+.das-score-label{font-size:11px;color:rgba(255,255,255,0.3);margin-top:4px;}
+.das-main{padding:20px;display:flex;flex-direction:column;gap:14px;}
+.das-insights{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+.das-insight{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:10px 12px;}
+.das-i-label{font-size:9px;color:rgba(255,255,255,0.28);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.das-i-val{font-size:12px;font-weight:500;color:rgba(255,255,255,0.75);}
+.das-rules{display:flex;flex-direction:column;gap:6px;}
+.das-rule{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:7px;}
+.das-rule.good{background:rgba(79,98,80,0.15);border:1px solid rgba(79,98,80,0.2);}
+.das-rule.warn{background:rgba(176,125,32,0.12);border:1px solid rgba(176,125,32,0.18);}
+.das-rule-icon{font-size:10px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.das-rule.good .das-rule-icon{background:var(--sage);color:#fff;}
+.das-rule.warn .das-rule-icon{background:var(--gold);color:#fff;}
+.das-rule-title{font-size:11px;font-weight:500;color:rgba(255,255,255,0.75);margin-bottom:1px;}
+.das-rule-desc{font-size:10px;color:rgba(255,255,255,0.38);line-height:1.5;}
+
+/* Demo panel 3 — designs */
+.demo-designs-screen{padding:20px;display:flex;flex-direction:column;gap:16px;min-height:400px;}
+.demo-design-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.demo-design-card{border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;cursor:pointer;transition:all .2s;}
+.demo-design-card:hover,.demo-design-card.active{border-color:rgba(192,80,42,0.5);transform:translateY(-2px);}
+.ddc-colours{height:48px;display:flex;}
+.ddc-swatch{flex:1;}
+.ddc-body{padding:10px 12px;}
+.ddc-name{font-size:12px;font-weight:500;color:rgba(255,255,255,0.8);margin-bottom:3px;}
+.ddc-desc{font-size:10px;color:rgba(255,255,255,0.35);line-height:1.4;}
+.ddc-btn{width:100%;margin-top:8px;padding:6px;border-radius:100px;background:var(--terra);border:none;color:#fff;font-size:10px;font-weight:500;cursor:pointer;}
+.demo-render-area{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;height:160px;display:flex;align-items:center;justify-content:center;gap:12px;flex-direction:column;}
+.dra-icon{font-size:28px;opacity:.3;}
+.dra-text{font-size:12px;color:rgba(255,255,255,0.3);text-align:center;}
+
+/* ── VASTU SECTION — professional compass ── */
 .vastu-section{background:var(--warm-white);}
-.vastu-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start;margin-top:64px;}
-.vastu-visual{
-  background:var(--cream);border-radius:var(--radius-lg);
-  padding:36px;border:1px solid var(--border);
-}
-.bagua{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
-.bc{
-  aspect-ratio:1;border-radius:10px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:4px;font-size:11px;font-weight:500;text-align:center;
-  padding:8px;line-height:1.2;cursor:default;transition:transform .2s;
-}
-.bc:hover{transform:scale(1.05);}
-.bc-good{background:var(--sage-light);color:var(--sage);border:1px solid rgba(79,98,80,0.15);}
-.bc-warn{background:var(--gold-light);color:var(--gold);border:1px solid rgba(176,125,32,0.15);}
-.bc-active{background:var(--terracotta);color:#fff;}
-.bc-neutral{background:var(--charcoal-06);color:var(--charcoal-70);border:1px solid var(--border);}
-.bc-center{background:var(--charcoal);color:var(--warm-white);font-size:10px;}
-.bc-icon{font-size:16px;}
+.vastu-grid{display:grid;grid-template-columns:580px 1fr;gap:64px;align-items:start;margin-top:64px;}
+
+/* Compass visual */
+.compass-container{position:relative;width:100%;aspect-ratio:1;max-width:520px;}
+.compass-outer{position:relative;width:100%;aspect-ratio:1;border-radius:50%;background:var(--cream);border:1px solid var(--border-md);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow-md);}
+.compass-ring{position:absolute;inset:0;border-radius:50%;}
+/* Direction labels around the compass */
+.compass-dir{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:default;transition:all .2s;}
+.compass-dir:hover .compass-zone-card{opacity:1;transform:scale(1.05);}
+.compass-zone-card{width:88px;padding:10px 8px;border-radius:10px;text-align:center;border:1.5px solid transparent;transition:all .2s;}
+.compass-zone-card .zone-icon{font-size:22px;margin-bottom:4px;}
+.compass-zone-card .zone-dir{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px;}
+.compass-zone-card .zone-name{font-family:var(--font-d);font-size:14px;font-weight:500;}
+.compass-zone-card .zone-quality{font-size:10px;line-height:1.3;margin-top:3px;}
+
+/* Position each direction */
+.compass-dir.N {top:2%;left:50%;transform:translateX(-50%);}
+.compass-dir.NE{top:9%;right:9%;}
+.compass-dir.E {top:50%;right:2%;transform:translateY(-50%);}
+.compass-dir.SE{bottom:9%;right:9%;}
+.compass-dir.S {bottom:2%;left:50%;transform:translateX(-50%);}
+.compass-dir.SW{bottom:9%;left:9%;}
+.compass-dir.W {top:50%;left:2%;transform:translateY(-50%);}
+.compass-dir.NW{top:9%;left:9%;}
+
+/* Zone colours */
+.z-ne{background:var(--gold-l);border-color:rgba(176,125,32,0.2);color:var(--gold);}
+.z-ne .zone-quality{color:var(--ch70);}
+.z-n{background:var(--sage-l);border-color:rgba(79,98,80,0.2);color:var(--sage);}
+.z-n .zone-quality{color:var(--ch70);}
+.z-e{background:#E8F4FD;border-color:rgba(12,68,124,0.15);color:#0C447C;}
+.z-e .zone-quality{color:var(--ch70);}
+.z-se{background:#FEF0E6;border-color:rgba(192,80,42,0.2);color:var(--terra);}
+.z-se .zone-quality{color:var(--ch70);}
+.z-s{background:#FDE8E8;border-color:rgba(180,50,50,0.15);color:#9A2525;}
+.z-s .zone-quality{color:var(--ch70);}
+.z-sw{background:var(--terra-l);border-color:rgba(192,80,42,0.2);color:var(--terra);}
+.z-sw .zone-quality{color:var(--ch70);}
+.z-w{background:#F0EBF8;border-color:rgba(80,40,120,0.15);color:#4A2880;}
+.z-w .zone-quality{color:var(--ch70);}
+.z-nw{background:var(--sage-l);border-color:rgba(79,98,80,0.15);color:var(--sage);}
+.z-nw .zone-quality{color:var(--ch70);}
+
+/* Centre of compass */
+.compass-centre{position:absolute;inset:30%;border-radius:50%;background:var(--charcoal);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 4px 24px rgba(26,23,20,0.2);}
+.cc-logo{font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--warm-white);}
+.cc-logo em{color:var(--terra);font-style:normal;}
+.cc-sub{font-size:8px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-top:2px;}
+
+/* Compass needle */
+.compass-needle{position:absolute;inset:0;pointer-events:none;}
+.needle-line{position:absolute;top:50%;left:50%;width:38%;height:2px;background:linear-gradient(to right,var(--terra),transparent);transform-origin:left center;transform:rotate(-45deg) translateY(-50%);border-radius:2px;}
+
+/* Vastu rules panel */
 .vastu-rules{display:flex;flex-direction:column;gap:0;}
-.vastu-rule{
-  display:flex;gap:14px;align-items:flex-start;
-  padding:20px 0;border-bottom:1px solid var(--border);
-}
+.vastu-rule{display:flex;gap:14px;align-items:flex-start;padding:20px 0;border-bottom:1px solid var(--border);}
 .vastu-rule:first-child{padding-top:0;}
-.rule-icon{
-  width:38px;height:38px;border-radius:9px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;font-size:15px;
-}
-.ri-good{background:var(--sage-light);}
-.ri-warn{background:var(--gold-light);}
+.vastu-rule:last-child{border-bottom:none;}
+.rule-icon-wrap{width:44px;height:44px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.ri-good{background:var(--sage-l);}
+.ri-warn{background:var(--gold-l);}
 .ri-fix{background:#FDECEA;}
-.rule-content{flex:1;min-width:0;}
-.rule-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:5px;}
-.rule-title{font-size:14px;font-weight:500;}
-.rule-status{font-size:10px;font-weight:500;padding:2px 8px;border-radius:100px;flex-shrink:0;}
-.rs-good{background:var(--sage-light);color:var(--sage);}
-.rs-warn{background:var(--gold-light);color:var(--gold);}
+.rule-content{flex:1;}
+.rule-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+.rule-title{font-size:15px;font-weight:500;}
+.rule-status{font-size:10px;font-weight:500;padding:3px 10px;border-radius:100px;flex-shrink:0;}
+.rs-good{background:var(--sage-l);color:var(--sage);}
+.rs-warn{background:var(--gold-l);color:var(--gold);}
 .rs-fix{background:#FDECEA;color:#B83232;}
-.rule-desc{font-size:13px;color:var(--charcoal-70);line-height:1.6;font-weight:300;}
+.rule-desc{font-size:13px;color:var(--ch70);line-height:1.65;font-weight:300;}
+.rule-source{font-size:11px;color:var(--ch40);margin-top:4px;font-style:italic;}
 
-/* ─── CREDIBILITY SECTION ─── */
-.cred-section{background:var(--cream);}
-.cred-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:64px;align-items:start;}
-.cred-left{display:flex;flex-direction:column;gap:16px;}
-.cred-card{
-  background:var(--warm-white);border:1px solid var(--border);
-  border-radius:var(--radius-md);padding:24px;
-  transition:var(--transition);
-}
-.cred-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
-.cred-card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
-.cred-icon{
-  width:40px;height:40px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;
-}
-.ci-sage{background:var(--sage-light);}
-.ci-gold{background:var(--gold-light);}
-.ci-terra{background:var(--terracotta-light);}
-.cred-card-title{font-size:15px;font-weight:500;}
-.cred-card-desc{font-size:13px;color:var(--charcoal-70);line-height:1.65;font-weight:300;}
-.cred-right{display:flex;flex-direction:column;gap:16px;}
-.sources-card{
-  background:var(--warm-white);border:1px solid var(--border);
-  border-radius:var(--radius-md);padding:24px;
-}
-.sources-title{font-size:13px;font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
-.sources-title::after{content:'';flex:1;height:1px;background:var(--border);}
-.source-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
-.source-row:last-child{border-bottom:none;padding-bottom:0;}
-.source-yr{
-  font-family:var(--font-display);font-size:11px;font-weight:400;
-  color:var(--terracotta);min-width:48px;padding-top:2px;
-  letter-spacing:0.02em;
-}
-.source-name{font-size:13px;font-weight:500;color:var(--charcoal);margin-bottom:2px;}
-.source-desc{font-size:12px;color:var(--charcoal-70);line-height:1.5;font-weight:300;}
-.positioning-note{
-  background:var(--charcoal);color:rgba(253,250,246,0.8);
-  border-radius:var(--radius-md);padding:20px 24px;
-  font-size:13px;line-height:1.65;font-weight:300;
-}
-.positioning-note strong{color:var(--warm-white);font-weight:500;}
-
-/* ─── COLOUR PALETTES ─── */
-.palette-section{background:var(--warm-white);}
+/* ── PALETTE ── */
+.palette-section{background:var(--cream);}
 .palettes{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:64px;}
-.palette-card{
-  border-radius:var(--radius-md);overflow:hidden;
-  border:1px solid var(--border);cursor:pointer;
-  transition:var(--transition);
-}
+.palette-card{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:all .2s;}
 .palette-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-md);}
 .palette-swatches{display:flex;height:130px;}
 .swatch{flex:1;}
 .palette-meta{background:var(--warm-white);padding:16px 18px;}
-.palette-name{font-family:var(--font-display);font-size:20px;font-weight:500;color:var(--charcoal);margin-bottom:4px;}
+.palette-name{font-family:var(--font-d);font-size:20px;font-weight:500;margin-bottom:4px;}
 .palette-vastu{font-size:11px;color:var(--sage);font-weight:500;}
 .palette-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
-.ptag{padding:3px 9px;border-radius:100px;background:var(--charcoal-06);font-size:11px;color:var(--charcoal-70);}
+.ptag{padding:3px 9px;border-radius:100px;background:var(--ch06);font-size:11px;color:var(--ch70);}
 
-/* ─── NEWSLETTER ─── */
-.newsletter-section{background:var(--charcoal);padding:80px;}
-.newsletter-inner{
-  display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;
-  max-width:1000px;margin:0 auto;
-}
-.nl-left .section-eyebrow{color:var(--gold);}
-.nl-left .section-eyebrow::before{background:var(--gold);}
-.nl-title{font-family:var(--font-display);font-size:44px;font-weight:400;line-height:1.1;color:var(--warm-white);letter-spacing:-0.02em;margin-bottom:14px;}
+/* ── NEWSLETTER ── */
+.nl-section{background:var(--charcoal);padding:80px;}
+.nl-inner{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;max-width:1000px;margin:0 auto;}
+.nl-title{font-family:var(--font-d);font-size:44px;font-weight:400;line-height:1.1;color:var(--warm-white);letter-spacing:-0.02em;margin-bottom:14px;}
 .nl-title em{font-style:italic;color:var(--gold);}
-.nl-desc{font-size:14px;color:rgba(253,250,246,0.45);line-height:1.75;font-weight:300;margin-bottom:0;}
-.nl-right{display:flex;flex-direction:column;gap:12px;}
-.nl-preview{
-  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
-  border-radius:var(--radius-md);padding:20px;margin-bottom:8px;
-}
-.nl-prev-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:8px;}
-.nl-prev-title{font-family:var(--font-display);font-size:18px;font-weight:500;color:rgba(255,255,255,0.85);margin-bottom:6px;}
-.nl-prev-desc{font-size:12px;color:rgba(255,255,255,0.4);line-height:1.55;font-weight:300;}
+.nl-desc{font-size:14px;color:rgba(253,250,246,0.45);line-height:1.75;font-weight:300;}
+.nl-preview{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:var(--r-md);padding:18px;margin-bottom:10px;}
+.nl-prev-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:8px;}
+.nl-prev-title{font-family:var(--font-d);font-size:18px;font-weight:500;color:rgba(255,255,255,0.85);margin-bottom:5px;}
+.nl-prev-desc{font-size:12px;color:rgba(255,255,255,0.38);line-height:1.55;}
 .nl-form{display:flex;gap:8px;}
-.nl-input{
-  flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);
-  border-radius:100px;padding:12px 20px;font-size:13px;color:var(--warm-white);
-  outline:none;transition:border-color .2s;
-}
-.nl-input::placeholder{color:rgba(255,255,255,0.3);}
+.nl-input{flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:100px;padding:12px 20px;font-size:13px;color:var(--warm-white);outline:none;font-family:var(--font-b);}
+.nl-input::placeholder{color:rgba(255,255,255,0.28);}
 .nl-input:focus{border-color:rgba(255,255,255,0.3);}
-.nl-btn{
-  background:var(--gold);color:var(--charcoal);
-  padding:12px 22px;border-radius:100px;
-  font-size:13px;font-weight:500;border:none;cursor:pointer;
-  transition:var(--transition);white-space:nowrap;
-}
-.nl-btn:hover{background:#C8912A;transform:translateY(-1px);}
-.nl-note{font-size:11px;color:rgba(255,255,255,0.25);text-align:center;}
+.nl-btn{background:var(--gold);color:var(--charcoal);padding:12px 22px;border-radius:100px;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.nl-btn:hover{background:#C8912A;}
+.nl-note{font-size:11px;color:rgba(255,255,255,0.22);text-align:center;margin-top:8px;}
 
-/* ─── PARTNER STRIP ─── */
-.partner-section{
-  padding:44px 80px;
-  background:var(--warm-white);
-  border-top:1px solid var(--border);
-  border-bottom:1px solid var(--border);
-}
-.partner-label{font-size:11px;color:var(--charcoal-40);letter-spacing:.1em;text-transform:uppercase;text-align:center;margin-bottom:28px;}
-.partner-logos{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap;}
-.partner-logo{
-  font-family:var(--font-display);font-size:17px;font-weight:500;
-  color:var(--charcoal-40);letter-spacing:-0.01em;
-  transition:color .2s;cursor:default;
-}
-.partner-logo:hover{color:var(--terracotta);}
+/* ── PARTNERS ── */
+.partners-section{padding:44px 80px;background:var(--warm-white);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.partners-label{font-size:11px;color:var(--ch40);letter-spacing:.1em;text-transform:uppercase;text-align:center;margin-bottom:28px;}
+.partners-grid{display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;}
+.partner-item{flex:1;min-width:140px;padding:20px 24px;text-align:center;border-right:1px solid var(--border);transition:background .2s;cursor:pointer;}
+.partner-item:last-child{border-right:none;}
+.partner-item:hover{background:var(--cream);}
+.partner-item-logo{font-family:var(--font-d);font-size:18px;font-weight:500;color:var(--ch70);display:block;margin-bottom:3px;transition:color .2s;}
+.partner-item:hover .partner-item-logo{color:var(--terra);}
+.partner-item-type{font-size:10px;color:var(--ch40);letter-spacing:.04em;text-transform:uppercase;}
+.partner-item-link{font-size:10px;color:var(--terra);margin-top:4px;display:block;opacity:0;transition:opacity .2s;}
+.partner-item:hover .partner-item-link{opacity:1;}
 
-/* ─── CONTACT SECTION ─── */
+/* ── CONTACT ── */
 .contact-section{background:var(--cream);padding:96px 80px;}
 .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;margin-top:64px;align-items:start;}
-.contact-left{display:flex;flex-direction:column;gap:32px;}
-.contact-info-title{font-family:var(--font-display);font-size:32px;font-weight:400;line-height:1.15;margin-bottom:12px;}
-.contact-info-desc{font-size:15px;color:var(--charcoal-70);line-height:1.75;font-weight:300;}
-.contact-items{display:flex;flex-direction:column;gap:0;}
-.contact-item{
-  display:flex;align-items:flex-start;gap:16px;
-  padding:18px 0;border-bottom:1px solid var(--border);
-}
+.contact-info-title{font-family:var(--font-d);font-size:32px;font-weight:400;line-height:1.15;margin-bottom:12px;}
+.contact-info-desc{font-size:15px;color:var(--ch70);line-height:1.75;font-weight:300;}
+.contact-items{display:flex;flex-direction:column;gap:0;margin-top:28px;}
+.contact-item{display:flex;align-items:flex-start;gap:16px;padding:18px 0;border-bottom:1px solid var(--border);}
 .contact-item:last-child{border-bottom:none;}
-.ci-icon{
-  width:40px;height:40px;border-radius:10px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:17px;flex-shrink:0;background:var(--warm-white);
-  border:1px solid var(--border);
-}
-.ci-text{}
-.ci-label{font-size:11px;color:var(--charcoal-40);letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px;}
-.ci-val{font-size:14px;font-weight:500;color:var(--charcoal);}
-.ci-note{font-size:12px;color:var(--charcoal-70);margin-top:2px;font-weight:300;}
-.who-section{background:var(--parchment);border-radius:var(--radius-md);padding:24px;}
-.who-title{font-size:13px;font-weight:500;margin-bottom:14px;}
-.who-items{display:flex;flex-direction:column;gap:8px;}
-.who-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--charcoal-70);font-weight:300;line-height:1.5;}
-.who-arrow{color:var(--terracotta);flex-shrink:0;font-size:12px;margin-top:2px;}
+.ci-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:var(--warm-white);border:1px solid var(--border);}
+.ci-label{font-size:11px;color:var(--ch40);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;}
+.ci-val{font-size:14px;font-weight:500;}
+.ci-note{font-size:12px;color:var(--ch70);margin-top:2px;font-weight:300;}
+.who-section{background:var(--parchment);border-radius:var(--r-md);padding:20px 24px;margin-top:20px;}
+.who-title{font-size:13px;font-weight:500;margin-bottom:12px;}
+.who-item{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--ch70);font-weight:300;line-height:1.5;margin-bottom:7px;}
+.who-arrow{color:var(--terra);flex-shrink:0;}
 
-/* CONTACT FORM */
-.contact-form{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;}
-.form-grid{display:flex;flex-direction:column;gap:20px;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-.form-group{display:flex;flex-direction:column;gap:7px;}
+/* Contact form */
+.contact-form-wrap{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--r-lg);padding:36px;}
+.form-grid{display:flex;flex-direction:column;gap:18px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;}
 .form-group.full{grid-column:1/-1;}
-.form-label{font-size:12px;font-weight:500;color:var(--charcoal);letter-spacing:0.01em;}
-.form-label span{color:var(--terracotta);}
-.form-input,.form-textarea,.form-select{
-  background:var(--cream);border:1px solid var(--border-md);
-  border-radius:var(--radius-sm);padding:12px 16px;
-  font-size:14px;color:var(--charcoal);
-  outline:none;transition:border-color .2s,box-shadow .2s;
-  font-weight:300;
-}
-.form-input::placeholder,.form-textarea::placeholder{color:var(--charcoal-40);}
-.form-input:focus,.form-textarea:focus,.form-select:focus{
-  border-color:var(--terracotta);
-  box-shadow:0 0 0 3px rgba(192,80,42,0.08);
-}
-.form-textarea{resize:vertical;min-height:120px;font-family:inherit;}
-.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%231A1714' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;padding-right:40px;cursor:pointer;}
-.form-checks{display:flex;flex-direction:column;gap:8px;}
-.form-check{display:flex;align-items:center;gap:10px;cursor:pointer;}
-.form-check input[type=checkbox]{
-  width:16px;height:16px;
-  border:1.5px solid var(--border-md);border-radius:4px;
-  appearance:none;cursor:pointer;flex-shrink:0;
-  background:var(--cream);transition:all .15s;position:relative;
-}
-.form-check input[type=checkbox]:checked{background:var(--terracotta);border-color:var(--terracotta);}
-.form-check input[type=checkbox]:checked::after{
-  content:'✓';position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;color:#fff;
-}
-.form-check-label{font-size:13px;color:var(--charcoal-70);font-weight:300;}
-.form-submit{
-  width:100%;padding:16px;border-radius:100px;
-  background:var(--terracotta);color:#fff;
-  font-size:15px;font-weight:500;border:none;cursor:pointer;
-  transition:var(--transition);letter-spacing:0.01em;
-}
-.form-submit:hover{background:var(--terracotta-hover);transform:translateY(-2px);box-shadow:0 6px 20px rgba(192,80,42,0.3);}
-.form-note{text-align:center;font-size:12px;color:var(--charcoal-40);margin-top:4px;}
-.form-success{
-  display:none;text-align:center;padding:40px 20px;
-}
+.form-label{font-size:12px;font-weight:500;color:var(--charcoal);}
+.form-label span{color:var(--terra);}
+.form-input,.form-textarea,.form-select{background:var(--cream);border:1px solid var(--border-md);border-radius:var(--r-sm);padding:11px 14px;font-size:14px;color:var(--charcoal);outline:none;transition:border-color .2s;font-family:var(--font-b);font-weight:300;}
+.form-input::placeholder,.form-textarea::placeholder{color:var(--ch40);}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--terra);box-shadow:0 0 0 3px rgba(192,80,42,0.07);}
+.form-textarea{resize:vertical;min-height:110px;}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231A1714' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer;background-color:var(--cream);}
+.form-submit{width:100%;padding:15px;border-radius:100px;background:var(--terra);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;transition:all .2s;}
+.form-submit:hover{background:var(--terra-h);transform:translateY(-1px);}
+.form-note{text-align:center;font-size:12px;color:var(--ch40);margin-top:4px;}
+.form-success{display:none;text-align:center;padding:40px 20px;}
 .form-success.show{display:block;}
 .form-success-icon{font-size:40px;margin-bottom:16px;}
-.form-success-title{font-family:var(--font-display);font-size:28px;font-weight:400;margin-bottom:8px;}
-.form-success-desc{font-size:14px;color:var(--charcoal-70);line-height:1.65;font-weight:300;}
+.form-success-title{font-family:var(--font-d);font-size:28px;margin-bottom:8px;}
+.form-success-desc{font-size:14px;color:var(--ch70);line-height:1.65;}
 
-/* ─── FOOTER ─── */
+/* ── FOOTER ── */
 .footer{background:#100E0C;padding:56px 80px 36px;}
 .footer-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px;}
-.footer-brand{}
-.footer-logo{font-family:var(--font-display);font-size:30px;font-weight:400;color:rgba(253,250,246,0.8);}
-.footer-logo em{color:var(--terracotta);font-style:normal;}
+.footer-logo{font-family:var(--font-d);font-size:30px;font-weight:400;color:rgba(253,250,246,0.8);}
+.footer-logo em{color:var(--terra);font-style:normal;}
 .footer-tagline{font-size:13px;color:rgba(255,255,255,0.25);margin-top:6px;max-width:220px;line-height:1.6;font-weight:300;}
 .footer-links-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;}
 .footer-col-title{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-bottom:16px;}
@@ -583,15 +371,13 @@ section{padding:96px 80px;}
 .footer-links a:hover{color:rgba(255,255,255,0.75);}
 .footer-bottom{border-top:1px solid rgba(255,255,255,0.05);padding-top:24px;display:flex;align-items:center;justify-content:space-between;}
 .footer-copy{font-size:12px;color:rgba(255,255,255,0.18);font-weight:300;}
-.footer-made{font-size:12px;color:rgba(255,255,255,0.18);font-weight:300;}
 
-/* ─── RESPONSIVE ─── */
-@media(max-width:1024px){
-  section{padding:72px 48px;}
-  .hero-title{font-size:52px;}
-  .section-title{font-size:42px;}
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .vastu-grid{grid-template-columns:1fr 1fr;gap:40px;}
+  .compass-container{max-width:100%;}
 }
-@media(max-width:768px){
+@media(max-width:900px){
   .nav{padding:0 24px;}
   .nav-links{display:none;}
   .nav-hamburger{display:flex;}
@@ -599,53 +385,44 @@ section{padding:96px 80px;}
   .hero-right{display:none;}
   .hero-left{padding:56px 24px;}
   .hero-title{font-size:44px;}
-  section{padding:60px 24px;}
+  section{padding:64px 24px;}
   .steps{grid-template-columns:1fr;}
-  .vastu-grid,.cred-grid,.contact-grid,.newsletter-inner,.footer-top{grid-template-columns:1fr;}
+  .vastu-grid{grid-template-columns:1fr;}
   .palettes{grid-template-columns:1fr 1fr;}
-  .browser-layout{grid-template-columns:1fr;}
-  .b-sidebar{display:none;}
-  .prod-grid{grid-template-columns:repeat(2,1fr);}
-  .insights{grid-template-columns:repeat(2,1fr);}
-  .form-row{grid-template-columns:1fr;}
-  .footer{padding:48px 24px 32px;}
+  .contact-grid{grid-template-columns:1fr;}
+  .nl-inner{grid-template-columns:1fr;}
+  .footer-top{flex-direction:column;gap:32px;}
   .footer-links-wrap{grid-template-columns:1fr 1fr;}
-  .partner-section{padding:40px 24px;}
-  .newsletter-section{padding:60px 24px;}
-  .contact-section{padding:60px 24px;}
-  .nl-form{flex-direction:column;}
-  .nl-btn{width:100%;text-align:center;}
+  .partners-section,.nl-section{padding:48px 24px;}
   .demo-inner{padding:0 24px;}
+  .demo-analysis-screen{grid-template-columns:1fr;}
+  .das-sidebar{display:none;}
+  .demo-design-grid{grid-template-columns:1fr 1fr;}
+  .form-row{grid-template-columns:1fr;}
 }
 </style>
 </head>
 <body>
 
-<!-- NAVIGATION -->
+<!-- NAV -->
 <nav class="nav" id="nav">
   <a href="#" class="nav-logo">Gri<em>ha</em></a>
   <div class="nav-links">
     <a href="#how">How it works</a>
     <a href="#vastu">Vastu</a>
-    <a href="#trust">Our approach</a>
     <a href="#palettes">Colours</a>
-    <a href="#newsletter">Newsletter</a>
     <a href="#contact">Contact</a>
   </div>
-  <a href="#contact" class="nav-contact">Get in touch</a>
-  <div class="nav-hamburger" onclick="toggleMenu()" aria-label="Open menu">
-    <span></span><span></span><span></span>
-  </div>
+  <a href="app.html" class="nav-cta">Start designing →</a>
+  <div class="nav-hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
 </nav>
 
-<!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu">
   <a href="#how" onclick="toggleMenu()">How it works</a>
   <a href="#vastu" onclick="toggleMenu()">Vastu</a>
-  <a href="#trust" onclick="toggleMenu()">Our approach</a>
   <a href="#palettes" onclick="toggleMenu()">Colours</a>
-  <a href="#newsletter" onclick="toggleMenu()">Newsletter</a>
-  <a href="#contact" onclick="toggleMenu()">Get in touch</a>
+  <a href="#contact" onclick="toggleMenu()">Contact</a>
+  <a href="app.html" onclick="toggleMenu()">Start designing →</a>
 </div>
 
 <!-- HERO -->
@@ -653,78 +430,39 @@ section{padding:96px 80px;}
   <div class="hero-left">
     <div class="hero-eyebrow">AI-powered · Vastu compliant · Indian homes</div>
     <h1 class="hero-title">Your home,<br><em>designed</em><br>intelligently.</h1>
-    <p class="hero-sub">Upload your room photos and builder masterplan. Griha's AI — backed by classical Vastu texts and certified consultants — recommends furniture, colours, and decor you can shop in one click.</p>
+    <p class="hero-sub">Upload your room photos and builder masterplan. Griha's AI analyses space, light, and Vastu to recommend furniture, colours, and decor — all shoppable with one click.</p>
     <div class="hero-actions">
-      <a href="#contact" class="btn-primary">Start your design journey →</a>
+      <a href="app.html" class="btn-primary">Upload your rooms →</a>
       <a href="#how" class="btn-ghost">See how it works</a>
     </div>
     <div class="hero-trust">
-      <div class="trust-dot"></div>
-      Vastu intelligence sourced from Manasara &amp; Mayamata
-      <div class="trust-dot gold"></div>
-      Reviewed by IAVA-affiliated consultants
+      <div class="trust-dot"></div>Vastu sourced from Manasara &amp; Mayamata
+      <div class="trust-dot gold"></div>IAVA-affiliated consultants
     </div>
-    <div class="hero-stats" style="margin-top:32px;">
-      <div class="stat-item">
-        <div class="stat-num">2,400+</div>
-        <div class="stat-label">Curated products</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">94%</div>
-        <div class="stat-label">Avg Vastu score</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">8</div>
-        <div class="stat-label">Affiliate platforms</div>
-      </div>
+    <div class="hero-stats">
+      <div class="stat-item"><div class="stat-num">2,400+</div><div class="stat-label">Curated products</div></div>
+      <div class="stat-item"><div class="stat-num">94%</div><div class="stat-label">Avg Vastu score</div></div>
+      <div class="stat-item"><div class="stat-num">8</div><div class="stat-label">Platforms</div></div>
     </div>
   </div>
-
   <div class="hero-right">
-    <div class="room-card fade-up">
-      <div class="room-visual">
-        <div class="room-scene">
-          <div class="window-light"></div>
-          <div class="wall-left"></div>
-          <div class="floor"></div>
-          <div class="lamp-glow"></div>
-          <div class="lamp-stand"></div>
-          <div class="lamp-shade"></div>
-          <div class="plant-leaves"></div>
-          <div class="plant-pot"></div>
-          <div class="sofa-body"></div>
-          <div class="sofa-seat"></div>
-          <div class="sofa-leg l1"></div>
-          <div class="sofa-leg l2"></div>
-          <div class="cushion c1"></div>
-          <div class="cushion c2"></div>
-          <div class="table-top"></div>
-        </div>
-        <div class="room-tag rt-living">Living room</div>
-        <div class="room-tag rt-vastu">Vastu ✓ 94%</div>
+    <div class="hero-card fade-up">
+      <div class="hero-room-vis">
+        <div class="rv-window"></div><div class="rv-floor"></div>
+        <div class="rv-lamp"></div><div class="rv-plant"></div>
+        <div class="rv-sofa"></div>
+        <div class="rv-cushion rv-c1"></div><div class="rv-cushion rv-c2"></div>
+        <div class="rv-table"></div>
+        <div class="rv-tag rv-t1">Living room</div>
+        <div class="rv-tag rv-t2">Vastu ✓ 94%</div>
       </div>
-      <div class="ai-analysis">
-        <div class="ai-header">
-          <div class="ai-pulse">
-            <div class="ai-dot d1"></div>
-            <div class="ai-dot d2"></div>
-            <div class="ai-dot d3"></div>
-          </div>
-          <div class="ai-label">AI analysing room</div>
-        </div>
+      <div class="hero-ai-bar">
+        <div class="ai-bar-label">AI analysing room</div>
+        <div class="ai-dots"><div class="ai-dot d1"></div><div class="ai-dot d2"></div><div class="ai-dot d3"></div></div>
         <div class="ai-insights">
-          <div class="ai-insight">
-            <div class="ai-insight-label">Light</div>
-            <div class="ai-insight-val">East window</div>
-          </div>
-          <div class="ai-insight">
-            <div class="ai-insight-label">Zone</div>
-            <div class="ai-insight-val">SW — Nairutya</div>
-          </div>
-          <div class="ai-insight">
-            <div class="ai-insight-label">Palette</div>
-            <div class="ai-insight-val">Warm earthy</div>
-          </div>
+          <div class="ai-insight"><div class="ai-ins-label">Light</div><div class="ai-ins-val">East window</div></div>
+          <div class="ai-insight"><div class="ai-ins-label">Zone</div><div class="ai-ins-val">SW — Nairutya</div></div>
+          <div class="ai-insight"><div class="ai-ins-label">Palette</div><div class="ai-ins-val">Warm earthy</div></div>
         </div>
       </div>
     </div>
@@ -733,116 +471,123 @@ section{padding:96px 80px;}
 
 <!-- HOW IT WORKS -->
 <section class="how-section" id="how">
-  <div class="section-eyebrow">The process</div>
+  <div class="eyebrow">The process</div>
   <h2 class="section-title">Three steps to your<br>dream home</h2>
   <div class="steps fade-up">
     <div class="step">
       <span class="step-num">01</span>
       <div class="step-icon si-1">📷</div>
       <div class="step-title">Upload your space</div>
-      <p class="step-desc">Label and upload photos of each room — master bedroom, kitchen, living room, washroom, balcony, pooja room. Add your builder's masterplan so Griha understands dimensions, directions, and natural light sources.</p>
+      <p class="step-desc">Upload up to 3 photos per room — master bedroom, kitchen, living room, washroom, balcony, pooja room. Add your builder's masterplan to unlock compass zone analysis.</p>
     </div>
     <div class="step">
       <span class="step-num">02</span>
       <div class="step-icon si-2">✦</div>
       <div class="step-title">AI designs your rooms</div>
-      <p class="step-desc">Our AI analyses electric points, light direction, square footage, and Vastu zones — cross-referenced against classical texts including Manasara (5th century CE) — to suggest personalised furniture, colour palettes, and decor layouts.</p>
+      <p class="step-desc">Our AI analyses electrical points, light direction, square footage and Vastu zones — cross-referenced against Manasara (5th century CE) — to suggest 4 complete design options per room with AI-rendered previews.</p>
     </div>
     <div class="step">
       <span class="step-num">03</span>
       <div class="step-icon si-3">🛋</div>
-      <div class="step-title">Shop curated picks</div>
-      <p class="step-desc">Every suggestion links directly to IKEA, Pepperfry, Amazon, Urban Ladder and more. One click and you're at checkout. Change your mind? Tell Griha, and the suggestions adapt. Every item is chosen for your specific space and Vastu zone.</p>
+      <div class="step-title">Shop &amp; build</div>
+      <p class="step-desc">Every suggestion links directly to IKEA, Pepperfry, Amazon, Urban Ladder and more. Download a carpenter spec sheet for custom joinery. One click from design to checkout.</p>
     </div>
   </div>
 </section>
 
-<!-- APP DEMO -->
+<!-- DEMO SECTION — interactive tabs -->
 <section class="demo-section" id="demo" style="padding:96px 0;">
   <div class="demo-inner">
-    <div class="section-eyebrow">The platform</div>
-    <h2 class="section-title">See it in action</h2>
-    <p class="section-sub">Here's what the Griha design tool looks like after uploading your master bedroom photo and builder masterplan.</p>
+    <div class="eyebrow">See it in action</div>
+    <h2 class="section-title">A walkthrough of the platform</h2>
+    <p class="section-sub">Click through the three stages below to see exactly what happens after you upload your room photos.</p>
+    <div class="demo-tabs">
+      <div class="demo-tab active" onclick="showDemo('upload')">① Upload rooms</div>
+      <div class="demo-tab" onclick="showDemo('analysis')">② AI analysis</div>
+      <div class="demo-tab" onclick="showDemo('designs')">③ Design options</div>
+    </div>
   </div>
   <div class="demo-inner">
-    <div class="browser fade-up">
-      <div class="browser-bar">
-        <div class="browser-dots"><div class="bd bd-r"></div><div class="bd bd-y"></div><div class="bd bd-g"></div></div>
-        <div class="browser-url">griha.design/project/sharma-3bhk-bengaluru</div>
+    <div class="demo-browser fade-up">
+      <div class="demo-bar">
+        <div class="demo-dots-row"><div class="dd dd-r"></div><div class="dd dd-y"></div><div class="dd dd-g"></div></div>
+        <div class="demo-url" id="demoUrl">griha.design/app.html</div>
+        <a href="app.html" style="font-size:11px;color:rgba(255,255,255,0.4);white-space:nowrap;">Try it live →</a>
       </div>
-      <div class="browser-layout">
-        <div class="b-sidebar">
-          <div>
-            <div class="b-label">Rooms</div>
-            <div class="room-list">
-              <div class="room-item active"><div class="room-dot"></div>Master bedroom</div>
-              <div class="room-item"><div class="room-dot"></div>Living room</div>
-              <div class="room-item"><div class="room-dot"></div>Kitchen</div>
-              <div class="room-item"><div class="room-dot"></div>Washroom</div>
-              <div class="room-item"><div class="room-dot"></div>Balcony</div>
-              <div class="room-item"><div class="room-dot"></div>Pooja room</div>
-              <div class="room-item"><div class="room-dot"></div>+ Add room</div>
+
+      <!-- Panel 1: Upload -->
+      <div class="demo-panel active" id="demo-upload">
+        <div class="demo-upload-screen">
+          <div class="demo-room-chips">
+            <div class="demo-room-chip active">Master bedroom</div>
+            <div class="demo-room-chip">Living room</div>
+            <div class="demo-room-chip">Kitchen</div>
+            <div class="demo-room-chip">Washroom</div>
+            <div class="demo-room-chip">Balcony</div>
+          </div>
+          <div class="demo-upload-area" onclick="window.location='app.html'">
+            <div class="dua-icon">📷</div>
+            <div class="dua-title" style="color:rgba(255,255,255,0.8);">Upload room photos</div>
+            <div class="dua-sub">Up to 3 photos per room · JPG, PNG · Click to try it live</div>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.25);text-align:center;">Optionally upload your builder masterplan to enable<br>compass zone and Vastu zone mapping</div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Analysis -->
+      <div class="demo-panel" id="demo-analysis">
+        <div class="demo-analysis-screen">
+          <div class="das-sidebar">
+            <div>
+              <div class="das-sb-label">Rooms</div>
+              <div class="das-room-item"><div class="das-room-dot"></div><div class="das-room-name">Master bedroom</div></div>
+            </div>
+            <div class="das-score-card">
+              <div class="das-score-num">94</div>
+              <div class="das-score-label">Vastu score · Excellent</div>
             </div>
           </div>
-          <div>
-            <div class="b-label">Upload photos</div>
-            <div class="upload-box">
-              <div class="upload-icon-txt">⬆</div>
-              <div class="upload-hint">Drop room photos here<br>JPG, PNG up to 20MB</div>
+          <div class="das-main">
+            <div class="das-insights">
+              <div class="das-insight"><div class="das-i-label">Light source</div><div class="das-i-val">East-facing window</div></div>
+              <div class="das-insight"><div class="das-i-label">Electrical points</div><div class="das-i-val">4 detected</div></div>
+              <div class="das-insight"><div class="das-i-label">Ideal bed direction</div><div class="das-i-val">South head</div></div>
+              <div class="das-insight"><div class="das-i-label">Overhead beams</div><div class="das-i-val">None detected ✓</div></div>
             </div>
-          </div>
-          <div class="plan-box">
-            <div class="b-label">Masterplan · 2BHK · 1,200 sqft</div>
-            <div class="plan-map">
-              <div class="pm-room pm-r1"><div class="pm-lbl" style="top:3px;left:3px;">MB</div></div>
-              <div class="pm-room pm-r2"><div class="pm-lbl" style="top:3px;left:3px;">LR</div></div>
-              <div class="pm-room pm-r3"><div class="pm-lbl" style="top:3px;left:3px;">K</div></div>
-              <div class="pm-room pm-r4"><div class="pm-lbl" style="top:3px;left:3px;">WR</div></div>
-              <div class="pm-compass">N</div>
+            <div class="das-rules">
+              <div class="das-rule good"><div class="das-rule-icon">✓</div><div><div class="das-rule-title">Bed head direction — south</div><div class="das-rule-desc">Aligns with Earth's magnetic field · Manasara Ch.42</div></div></div>
+              <div class="das-rule good"><div class="das-rule-icon">✓</div><div><div class="das-rule-title">SW zone — Nairutya</div><div class="das-rule-desc">Ideal zone for master bedroom · promotes stability</div></div></div>
+              <div class="das-rule warn"><div class="das-rule-icon">!</div><div><div class="das-rule-title">Mirror placement advisory</div><div class="das-rule-desc">Place mirrors on north wall only · Mayamata Ch.12</div></div></div>
             </div>
           </div>
         </div>
-        <div class="b-main">
-          <div class="b-header">
-            <div class="b-room-title">Master bedroom · SW zone · 180 sqft</div>
-            <div class="vastu-chip"><div class="v-dot"></div>Vastu compliant · 94%</div>
-          </div>
-          <div class="insights">
-            <div class="insight"><div class="i-label">Light source</div><div class="i-val">East-facing window</div><div class="i-sub">Morning natural light</div></div>
-            <div class="insight"><div class="i-label">Electric points</div><div class="i-val">4 detected</div><div class="i-sub">2 near bedhead wall</div></div>
-            <div class="insight"><div class="i-label">Ideal bed direction</div><div class="i-val">South head</div><div class="i-sub">Per Vastu Shastra</div></div>
-          </div>
-          <div>
-            <div class="b-label" style="margin-bottom:10px;">Recommended for you — master bedroom</div>
-            <div class="prod-grid">
-              <div class="prod">
-                <div class="prod-img" style="background:rgba(160,120,80,0.08);">🛏<div class="prod-platform pp-pepperfry">Pepperfry</div></div>
-                <div class="prod-info">
-                  <div class="prod-name">Scandinavian Sheesham Queen Bed</div>
-                  <div class="prod-brand">Woodsworth</div>
-                  <div class="prod-vastu">SW placement · south-head compliant</div>
-                  <div class="prod-footer"><div class="prod-price">₹28,500</div><div class="prod-buy">Shop →</div></div>
-                </div>
-              </div>
-              <div class="prod">
-                <div class="prod-img" style="background:rgba(176,125,32,0.07);">💡<div class="prod-platform pp-amazon">Amazon</div></div>
-                <div class="prod-info">
-                  <div class="prod-name">HEKTAR Floor Lamp with LED</div>
-                  <div class="prod-brand">IKEA India</div>
-                  <div class="prod-vastu">SE corner · warm light per Vastu</div>
-                  <div class="prod-footer"><div class="prod-price">₹3,999</div><div class="prod-buy">Shop →</div></div>
-                </div>
-              </div>
-              <div class="prod">
-                <div class="prod-img" style="background:rgba(79,98,80,0.08);">🪴<div class="prod-platform pp-ul">Urban Ladder</div></div>
-                <div class="prod-info">
-                  <div class="prod-name">Boho Macramé Planter Stand</div>
-                  <div class="prod-brand">Elista</div>
-                  <div class="prod-vastu">NE corner · positive energy</div>
-                  <div class="prod-footer"><div class="prod-price">₹1,800</div><div class="prod-buy">Shop →</div></div>
-                </div>
-              </div>
+      </div>
+
+      <!-- Panel 3: Design options -->
+      <div class="demo-panel" id="demo-designs">
+        <div class="demo-designs-screen">
+          <div style="font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,0.3);margin-bottom:4px;">4 design options for your master bedroom</div>
+          <div class="demo-design-grid">
+            <div class="demo-design-card active">
+              <div class="ddc-colours"><div class="ddc-swatch" style="background:#EAE1D5"></div><div class="ddc-swatch" style="background:#C47040"></div><div class="ddc-swatch" style="background:#8E6D4E"></div></div>
+              <div class="ddc-body"><div class="ddc-name">Contemporary Indian</div><div class="ddc-desc">Sheesham wood · terracotta · brass accents</div><button class="ddc-btn" onclick="window.location='app.html'">Select →</button></div>
             </div>
+            <div class="demo-design-card">
+              <div class="ddc-colours"><div class="ddc-swatch" style="background:#F5F0E8"></div><div class="ddc-swatch" style="background:#5B8FAE"></div><div class="ddc-swatch" style="background:#2C2C2A"></div></div>
+              <div class="ddc-body"><div class="ddc-name">Minimalist Modern</div><div class="ddc-desc">White · cerulean · clean lines</div><button class="ddc-btn" onclick="window.location='app.html'">Select →</button></div>
+            </div>
+            <div class="demo-design-card">
+              <div class="ddc-colours"><div class="ddc-swatch" style="background:#F5ECE1"></div><div class="ddc-swatch" style="background:#9A4820"></div><div class="ddc-swatch" style="background:#B07D20"></div></div>
+              <div class="ddc-body"><div class="ddc-name">Traditional Heritage</div><div class="ddc-desc">Carved teak · jewel tones · brass</div><button class="ddc-btn" onclick="window.location='app.html'">Select →</button></div>
+            </div>
+            <div class="demo-design-card">
+              <div class="ddc-colours"><div class="ddc-swatch" style="background:#F4EAD5"></div><div class="ddc-swatch" style="background:#4E7848"></div><div class="ddc-swatch" style="background:#C8A882"></div></div>
+              <div class="ddc-body"><div class="ddc-name">Boho Chic</div><div class="ddc-desc">Rattan · sage green · macramé</div><button class="ddc-btn" onclick="window.location='app.html'">Select →</button></div>
+            </div>
+          </div>
+          <div class="demo-render-area">
+            <div class="dra-icon">🎨</div>
+            <div class="dra-text">Click "Preview this design" in the live tool<br>to generate an AI-rendered image of your room<br><a href="app.html" style="color:var(--terra);font-weight:500;">Try it live →</a></div>
           </div>
         </div>
       </div>
@@ -850,111 +595,59 @@ section{padding:96px 80px;}
   </div>
 </section>
 
-<!-- VASTU INTELLIGENCE -->
+<!-- VASTU — professional compass -->
 <section class="vastu-section" id="vastu">
-  <div class="section-eyebrow">Vastu intelligence</div>
+  <div class="eyebrow">Vastu intelligence</div>
   <h2 class="section-title">Ancient wisdom,<br>modern spaces</h2>
-  <p class="section-sub">Every suggestion is cross-referenced against Vastu Shastra principles specific to your flat's orientation, zone, and layout — sourced from classical Sanskrit texts.</p>
+  <p class="section-sub">Every recommendation is cross-referenced against classical Vastu Shastra texts — mapped to your flat's exact compass orientation from the builder masterplan.</p>
   <div class="vastu-grid fade-up">
-    <div class="vastu-visual">
-      <div class="bagua">
-        <div class="bc bc-good"><div class="bc-icon">🌿</div><div>NW · Vayu</div></div>
-        <div class="bc bc-warn"><div class="bc-icon">🌊</div><div>N · Kubera</div></div>
-        <div class="bc bc-good"><div class="bc-icon">⚡</div><div>NE · Ishanya</div></div>
-        <div class="bc bc-neutral"><div class="bc-icon">☀️</div><div>W · Varuna</div></div>
-        <div class="bc bc-center">Your home</div>
-        <div class="bc bc-active"><div class="bc-icon">🛏</div><div>E · Indra</div></div>
-        <div class="bc bc-good"><div class="bc-icon">🏠</div><div>SW · Nairutya</div></div>
-        <div class="bc bc-active"><div class="bc-icon">🍳</div><div>S · Yama</div></div>
-        <div class="bc bc-warn"><div class="bc-icon">✨</div><div>SE · Agni</div></div>
-      </div>
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-        <p style="font-size:12px;color:var(--charcoal-40);line-height:1.6;font-weight:300;">Directional zones per Vastu Shastra. Griha maps your masterplan to these zones and tailors every suggestion accordingly.</p>
+    <div class="compass-container">
+      <div class="compass-outer">
+        <!-- 8 directional zone cards -->
+        <div class="compass-dir N"><div class="compass-zone-card z-n"><div class="zone-icon">💧</div><div class="zone-dir">N</div><div class="zone-name">Kubera</div><div class="zone-quality">Wealth &amp; abundance</div></div></div>
+        <div class="compass-dir NE"><div class="compass-zone-card z-ne"><div class="zone-icon">✨</div><div class="zone-dir">NE</div><div class="zone-name">Ishanya</div><div class="zone-quality">Sacred &amp; divine clarity</div></div></div>
+        <div class="compass-dir E"><div class="compass-zone-card z-e"><div class="zone-icon">☀️</div><div class="zone-dir">E</div><div class="zone-name">Indra</div><div class="zone-quality">Prosperity &amp; growth</div></div></div>
+        <div class="compass-dir SE"><div class="compass-zone-card z-se"><div class="zone-icon">🔥</div><div class="zone-dir">SE</div><div class="zone-name">Agni</div><div class="zone-quality">Fire · Kitchen zone</div></div></div>
+        <div class="compass-dir S"><div class="compass-zone-card z-s"><div class="zone-icon">⚖️</div><div class="zone-dir">S</div><div class="zone-name">Yama</div><div class="zone-quality">Discipline &amp; longevity</div></div></div>
+        <div class="compass-dir SW"><div class="compass-zone-card z-sw"><div class="zone-icon">🏠</div><div class="zone-dir">SW</div><div class="zone-name">Nairutya</div><div class="zone-quality">Stability · Master bedroom</div></div></div>
+        <div class="compass-dir W"><div class="compass-zone-card z-w"><div class="zone-icon">🌙</div><div class="zone-dir">W</div><div class="zone-name">Varuna</div><div class="zone-quality">Knowledge &amp; reflection</div></div></div>
+        <div class="compass-dir NW"><div class="compass-zone-card z-nw"><div class="zone-icon">🌬️</div><div class="zone-dir">NW</div><div class="zone-name">Vayu</div><div class="zone-quality">Movement &amp; communication</div></div></div>
+        <!-- Centre -->
+        <div class="compass-centre"><div class="cc-logo">Gri<em>ha</em></div><div class="cc-sub">Vastu Engine</div></div>
       </div>
     </div>
+
     <div class="vastu-rules">
       <div class="vastu-rule">
-        <div class="rule-icon ri-good">✓</div>
+        <div class="rule-icon-wrap ri-good">✓</div>
         <div class="rule-content">
           <div class="rule-top"><div class="rule-title">Bed placement — south head</div><div class="rule-status rs-good">Compliant</div></div>
-          <div class="rule-desc">Your master bedroom is in the SW (Nairutya) zone. Sleeping with head pointing south aligns with Earth's magnetic field and promotes deeper, more restful sleep — per Manasara Chapter 42.</div>
+          <div class="rule-desc">SW (Nairutya) zone is governed by the earth element — ideal for the head of household's bedroom. Sleeping with head pointing south aligns with Earth's magnetic field and promotes restful sleep.</div>
+          <div class="rule-source">Manasara Ch. 42</div>
         </div>
       </div>
       <div class="vastu-rule">
-        <div class="rule-icon ri-good">✓</div>
+        <div class="rule-icon-wrap ri-good">✓</div>
         <div class="rule-content">
           <div class="rule-top"><div class="rule-title">Kitchen in SE zone</div><div class="rule-status rs-good">Compliant</div></div>
-          <div class="rule-desc">Your kitchen sits in the Agni (fire) corner — the ideal Vastu placement for cooking spaces. The SE receives morning and afternoon sun, supporting natural ventilation and hygiene.</div>
+          <div class="rule-desc">SE is ruled by Agni (fire) — the ideal placement for all cooking spaces. SE-facing kitchens in India receive morning light, maximising natural ventilation and reducing humidity.</div>
+          <div class="rule-source">Manasara Ch. 11</div>
         </div>
       </div>
       <div class="vastu-rule">
-        <div class="rule-icon ri-warn">!</div>
+        <div class="rule-icon-wrap ri-warn">!</div>
         <div class="rule-content">
-          <div class="rule-top"><div class="rule-title">Mirror placement</div><div class="rule-status rs-warn">Review</div></div>
-          <div class="rule-desc">The north wall is ideal for mirrors — we've avoided suggesting mirrors on south or west walls in your bedroom. The north is associated with Kubera, the deity of wealth and prosperity.</div>
+          <div class="rule-top"><div class="rule-title">Mirror placement advisory</div><div class="rule-status rs-warn">Review</div></div>
+          <div class="rule-desc">The north wall is ideal for mirrors — associated with Kubera, the deity of wealth. We avoid suggesting mirrors on south or west bedroom walls in all our designs.</div>
+          <div class="rule-source">Mayamata Ch. 12</div>
         </div>
       </div>
-      <div class="vastu-rule" style="border-bottom:none;">
-        <div class="rule-icon ri-fix">✗</div>
+      <div class="vastu-rule">
+        <div class="rule-icon-wrap ri-fix">✗</div>
         <div class="rule-content">
-          <div class="rule-top"><div class="rule-title">Overhead beam detected</div><div class="rule-status rs-fix">Fix suggested</div></div>
-          <div class="rule-desc">Photo analysis detected a structural beam above the intended bed position. We've suggested a canopy bed frame and a fabric drape to neutralise this Vastu concern without structural changes.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CREDIBILITY / OUR APPROACH -->
-<section class="cred-section" id="trust">
-  <div class="section-eyebrow">Our approach</div>
-  <h2 class="section-title">Why you can trust<br>Griha's recommendations</h2>
-  <p class="section-sub">We don't claim to replace centuries of tradition. We make it accessible, accurate, and actionable for modern Indian home buyers.</p>
-  <div class="cred-grid fade-up">
-    <div class="cred-left">
-      <div class="cred-card">
-        <div class="cred-card-header">
-          <div class="cred-icon ci-sage">🧭</div>
-          <div class="cred-card-title">Backed by certified Vastu consultants</div>
-        </div>
-        <div class="cred-card-desc">Every Vastu rule in Griha's engine is reviewed and approved by consultants affiliated with the Indian Association of Vastu Architects (IAVA). Our "Expert in Residence" signs off on our analysis logic before any recommendation reaches you.</div>
-      </div>
-      <div class="cred-card">
-        <div class="cred-card-header">
-          <div class="cred-icon ci-gold">📜</div>
-          <div class="cred-card-title">Sourced from classical Sanskrit texts</div>
-        </div>
-        <div class="cred-card-desc">Griha's Vastu intelligence is rooted in the Manasara (c. 5th century CE), the Mayamata (c. 8th century CE), and the Samarangana Sutradhara (11th century CE). We cite chapter and verse — not internet summaries.</div>
-      </div>
-      <div class="cred-card">
-        <div class="cred-card-header">
-          <div class="cred-icon ci-terra">🔬</div>
-          <div class="cred-card-title">Bridged with modern science</div>
-        </div>
-        <div class="cred-card-desc">Where Vastu principles align with environmental psychology, circadian rhythm research, or BIS National Building Code guidelines, we surface that connection — so sceptical buyers and traditional families alike find value in every recommendation.</div>
-      </div>
-      <div class="positioning-note">
-        <strong>Our honest positioning:</strong> Griha surfaces Vastu intelligence — we are a platform, not a personal consulting practice. For complex cases or large homes, we recommend working with a certified Vastu consultant alongside our tool. We can connect you with one.
-      </div>
-    </div>
-    <div class="cred-right">
-      <div class="sources-card">
-        <div class="sources-title">Classical sources we cite</div>
-        <div class="source-row">
-          <div class="source-yr">c. 5th CE</div>
-          <div><div class="source-name">Manasara</div><div class="source-desc">The most comprehensive classical Vastu text. Covers building orientation, room placement, and proportions. Primary source for our structural Vastu rules. English translation by P.K. Acharya.</div></div>
-        </div>
-        <div class="source-row">
-          <div class="source-yr">c. 8th CE</div>
-          <div><div class="source-name">Mayamata</div><div class="source-desc">Tamil classical text on architecture and Vastu. Particularly relevant for South Indian buyers. Translation by Bruno Dagen (French Institute of Pondicherry).</div></div>
-        </div>
-        <div class="source-row">
-          <div class="source-yr">11th CE</div>
-          <div><div class="source-name">Samarangana Sutradhara</div><div class="source-desc">Written by King Bhoja of Dhar. Covers directional energies, compass orientation, and interior arrangements. Source for our Vastu zone mapping logic.</div></div>
-        </div>
-        <div class="source-row">
-          <div class="source-yr">Modern</div>
-          <div><div class="source-name">IIT Research + BIS NBC 2016</div><div class="source-desc">IIT Kharagpur and IIT Roorkee research on the climatic and scientific basis of Vastu principles, cross-referenced with the National Building Code of India.</div></div>
+          <div class="rule-top"><div class="rule-title">Overhead beam detection</div><div class="rule-status rs-fix">Fix suggested</div></div>
+          <div class="rule-desc">When our AI detects a structural beam above the sleeping position from your room photo, we immediately suggest a canopy bed or fabric drape to neutralise this without structural changes.</div>
+          <div class="rule-source">Samarangana Sutradhara Ch. 14</div>
         </div>
       </div>
     </div>
@@ -963,78 +656,62 @@ section{padding:96px 80px;}
 
 <!-- COLOUR PALETTES -->
 <section class="palette-section" id="palettes">
-  <div class="section-eyebrow">Colour &amp; wallpaper</div>
+  <div class="eyebrow">Colour &amp; wallpaper</div>
   <h2 class="section-title">Palettes curated<br>for your home</h2>
-  <p class="section-sub">Every palette is Vastu-aligned for your room's direction, and links directly to Asian Paints, Berger, and Nippon shades you can order immediately.</p>
+  <p class="section-sub">Every palette is Vastu-aligned for your room's compass direction. All paint codes link directly to Asian Paints, Berger, and Nippon so you can order immediately.</p>
   <div class="palettes fade-up">
-    <div class="palette-card">
+    <div class="palette-card" onclick="window.location='app.html'">
       <div class="palette-swatches">
-        <div class="swatch" style="background:#EAE1D5;"></div>
-        <div class="swatch" style="background:#C8A882;"></div>
-        <div class="swatch" style="background:#8E6D4E;"></div>
-        <div class="swatch" style="background:#5C3D2C;"></div>
-        <div class="swatch" style="background:#2E1B0D;"></div>
+        <div class="swatch" style="background:#EAE1D5"></div><div class="swatch" style="background:#C8A882"></div>
+        <div class="swatch" style="background:#8E6D4E"></div><div class="swatch" style="background:#5C3D2C"></div>
+        <div class="swatch" style="background:#2E1B0D"></div>
       </div>
       <div class="palette-meta">
         <div class="palette-name">Warm Earthen</div>
         <div class="palette-vastu">✓ SW zone · promotes stability &amp; grounding</div>
-        <div class="palette-tags">
-          <span class="ptag">Asian Paints</span>
-          <span class="ptag">Berger</span>
-          <span class="ptag">Linen wallpaper</span>
-        </div>
+        <div class="palette-tags"><span class="ptag">Asian Paints 9282</span><span class="ptag">Berger P110-2</span><span class="ptag">Linen wallpaper</span></div>
       </div>
     </div>
-    <div class="palette-card">
+    <div class="palette-card" onclick="window.location='app.html'">
       <div class="palette-swatches">
-        <div class="swatch" style="background:#E8EEE6;"></div>
-        <div class="swatch" style="background:#B5CDAC;"></div>
-        <div class="swatch" style="background:#779971;"></div>
-        <div class="swatch" style="background:#4E7848;"></div>
-        <div class="swatch" style="background:#2B4D25;"></div>
+        <div class="swatch" style="background:#E8EEE6"></div><div class="swatch" style="background:#B5CDAC"></div>
+        <div class="swatch" style="background:#779971"></div><div class="swatch" style="background:#4E7848"></div>
+        <div class="swatch" style="background:#2B4D25"></div>
       </div>
       <div class="palette-meta">
         <div class="palette-name">Sage Serenity</div>
         <div class="palette-vastu">✓ NE zone · clarity, calm &amp; prosperity</div>
-        <div class="palette-tags">
-          <span class="ptag">Nippon Paint</span>
-          <span class="ptag">Botanical print</span>
-        </div>
+        <div class="palette-tags"><span class="ptag">Nippon NP GN 1024</span><span class="ptag">Botanical print</span></div>
       </div>
     </div>
-    <div class="palette-card">
+    <div class="palette-card" onclick="window.location='app.html'">
       <div class="palette-swatches">
-        <div class="swatch" style="background:#F5ECE1;"></div>
-        <div class="swatch" style="background:#E0B090;"></div>
-        <div class="swatch" style="background:#C47040;"></div>
-        <div class="swatch" style="background:#9A4820;"></div>
-        <div class="swatch" style="background:#5C2510;"></div>
+        <div class="swatch" style="background:#F5ECE1"></div><div class="swatch" style="background:#E0B090"></div>
+        <div class="swatch" style="background:#C47040"></div><div class="swatch" style="background:#9A4820"></div>
+        <div class="swatch" style="background:#5C2510"></div>
       </div>
       <div class="palette-meta">
         <div class="palette-name">Terracotta Dawn</div>
         <div class="palette-vastu">✓ SE zone · energises the morning mind</div>
-        <div class="palette-tags">
-          <span class="ptag">Asian Paints</span>
-          <span class="ptag">Geometric tile</span>
-        </div>
+        <div class="palette-tags"><span class="ptag">Asian Paints 9183</span><span class="ptag">Geometric tile</span></div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- NEWSLETTER -->
-<section class="newsletter-section" id="newsletter" style="padding:80px;">
-  <div class="newsletter-inner">
-    <div class="nl-left">
-      <div class="section-eyebrow" style="color:var(--gold);">The Griha Letter</div>
+<section class="nl-section" id="newsletter" style="padding:80px;">
+  <div class="nl-inner">
+    <div>
+      <div class="eyebrow" style="color:var(--gold);">The Griha Letter</div>
       <div class="nl-title">Vastu, <em>decoded</em><br>fortnightly.</div>
-      <p class="nl-desc">Each edition: one Vastu principle explained with its classical source, the modern science that backs it, and one real room application with product recommendations you can act on today.</p>
+      <p class="nl-desc">Each edition: one Vastu principle with its classical source, the modern science that backs it, and one real room application with product recommendations you can act on today.</p>
     </div>
-    <div class="nl-right">
+    <div>
       <div class="nl-preview">
         <div class="nl-prev-label">Latest issue · Vol. 01</div>
-        <div class="nl-prev-title">Why your master bedroom direction affects your sleep — and what to do about it</div>
-        <div class="nl-prev-desc">Manasara Chapter 42 prescribes sleeping with your head pointing south. Circadian rhythm research from IIT Roorkee explains why. Here's how to implement it in your flat without moving walls.</div>
+        <div class="nl-prev-title">Why your bedroom direction affects your sleep — and what to do about it</div>
+        <div class="nl-prev-desc">Manasara Ch.42 prescribes sleeping with head pointing south. Circadian rhythm research explains why. Here's how to implement it in your flat without moving walls.</div>
       </div>
       <div class="nl-form" id="nlForm">
         <input type="email" class="nl-input" placeholder="Your email address" id="nlEmail">
@@ -1045,132 +722,109 @@ section{padding:96px 80px;}
   </div>
 </section>
 
-<!-- AFFILIATE PARTNERS -->
-<div class="partner-section">
-  <div class="partner-label">Shop from your favourite platforms — all curated by Griha</div>
-  <div class="partner-logos">
-    <div class="partner-logo">Amazon India</div>
-    <div class="partner-logo">IKEA</div>
-    <div class="partner-logo">Pepperfry</div>
-    <div class="partner-logo">Urban Ladder</div>
-    <div class="partner-logo">Asian Paints</div>
-    <div class="partner-logo">Berger</div>
-    <div class="partner-logo">Nippon Paint</div>
+<!-- PARTNERS — all clickable -->
+<div class="partners-section" id="partners">
+  <div class="partners-label">Shop from your favourite platforms — all curated by Griha</div>
+  <div class="partners-grid">
+    <a class="partner-item" href="https://www.amazon.in/s?k=furniture+home+decor" target="_blank" rel="noopener">
+      <span class="partner-item-logo">Amazon India</span>
+      <span class="partner-item-type">Marketplace</span>
+      <span class="partner-item-link">Shop furniture &amp; decor →</span>
+    </a>
+    <a class="partner-item" href="https://www.ikea.com/in/en/cat/furniture-fu001/" target="_blank" rel="noopener">
+      <span class="partner-item-logo">IKEA</span>
+      <span class="partner-item-type">Furniture</span>
+      <span class="partner-item-link">Browse IKEA India →</span>
+    </a>
+    <a class="partner-item" href="https://www.pepperfry.com/furniture.html" target="_blank" rel="noopener">
+      <span class="partner-item-logo">Pepperfry</span>
+      <span class="partner-item-type">Furniture &amp; decor</span>
+      <span class="partner-item-link">Explore catalogue →</span>
+    </a>
+    <a class="partner-item" href="https://www.urbanladder.com/categories/furniture" target="_blank" rel="noopener">
+      <span class="partner-item-logo">Urban Ladder</span>
+      <span class="partner-item-type">Premium furniture</span>
+      <span class="partner-item-link">View collection →</span>
+    </a>
+    <a class="partner-item" href="https://www.asianpaints.com/colour-palette.html" target="_blank" rel="noopener">
+      <span class="partner-item-logo">Asian Paints</span>
+      <span class="partner-item-type">Wall colours</span>
+      <span class="partner-item-link">Explore palettes →</span>
+    </a>
+    <a class="partner-item" href="https://www.bergerpaints.com/colourise/choose-colour" target="_blank" rel="noopener">
+      <span class="partner-item-logo">Berger</span>
+      <span class="partner-item-type">Wall colours</span>
+      <span class="partner-item-link">Colour visualiser →</span>
+    </a>
+    <a class="partner-item" href="https://www.nipponpaint.co.in/colour-solutions/" target="_blank" rel="noopener">
+      <span class="partner-item-logo">Nippon Paint</span>
+      <span class="partner-item-type">Wall colours</span>
+      <span class="partner-item-link">Browse shades →</span>
+    </a>
   </div>
 </div>
 
 <!-- CONTACT -->
 <section class="contact-section" id="contact">
-  <div class="section-eyebrow">Get started</div>
+  <div class="eyebrow">Get started</div>
   <h2 class="section-title">Let's design your<br>home together</h2>
-  <p class="section-sub">We're onboarding a small group of early users. Tell us about your home and we'll be in touch to set up your first design session — completely free.</p>
+  <p class="section-sub">We're onboarding a small group of early users. Tell us about your home and we'll set up your first design session — free.</p>
   <div class="contact-grid">
-    <div class="contact-left">
-      <div>
-        <div class="contact-info-title">What happens after you reach out</div>
-        <div class="contact-info-desc">We'll review your details and reach out within 48 hours to schedule a short discovery call. You'll then get access to Griha's design tool and a dedicated session with our team to walk you through your first room analysis.</div>
-      </div>
+    <div>
+      <div class="contact-info-title">What happens after you reach out</div>
+      <div class="contact-info-desc">We'll review your details and reach out within 48 hours to schedule a short discovery call. You'll get access to Griha's design tool and a dedicated session to walk through your first room analysis.</div>
       <div class="contact-items">
         <div class="contact-item">
           <div class="ci-icon">📍</div>
-          <div class="ci-text">
-            <div class="ci-label">Location</div>
-            <div class="ci-val">Bengaluru, India</div>
-            <div class="ci-note">Currently serving users across India</div>
-          </div>
+          <div><div class="ci-label">Location</div><div class="ci-val">Bengaluru, India</div><div class="ci-note">Currently serving users across India</div></div>
         </div>
         <div class="contact-item">
           <div class="ci-icon">✉️</div>
-          <div class="ci-text">
-            <div class="ci-label">Email</div>
-            <div class="ci-val">hello@griha.design</div>
-            <div class="ci-note">We respond within 24 hours</div>
-          </div>
+          <div><div class="ci-label">Email</div><div class="ci-val">hello@griha.design</div><div class="ci-note">We respond within 24 hours</div></div>
         </div>
         <div class="contact-item">
           <div class="ci-icon">⏱</div>
-          <div class="ci-text">
-            <div class="ci-label">Response time</div>
-            <div class="ci-val">Within 48 hours</div>
-            <div class="ci-note">Mon – Sat, 9am – 7pm IST</div>
-          </div>
+          <div><div class="ci-label">Response time</div><div class="ci-val">Within 48 hours</div><div class="ci-note">Mon – Sat, 9am – 7pm IST</div></div>
         </div>
       </div>
       <div class="who-section">
         <div class="who-title">Griha is built for</div>
-        <div class="who-items">
-          <div class="who-item"><div class="who-arrow">→</div>New flat buyers looking to design from scratch</div>
-          <div class="who-item"><div class="who-arrow">→</div>Homeowners planning a full or partial renovation</div>
-          <div class="who-item"><div class="who-arrow">→</div>Families who want Vastu-compliant, modern interiors</div>
-          <div class="who-item"><div class="who-arrow">→</div>Builders wanting to offer Vastu compliance as a feature</div>
-          <div class="who-item"><div class="who-arrow">→</div>Interior designers looking for a Vastu intelligence layer</div>
-        </div>
+        <div class="who-item"><span class="who-arrow">→</span>New flat buyers looking to design from scratch</div>
+        <div class="who-item"><span class="who-arrow">→</span>Homeowners planning a full or partial renovation</div>
+        <div class="who-item"><span class="who-arrow">→</span>Families who want Vastu-compliant, modern interiors</div>
+        <div class="who-item"><span class="who-arrow">→</span>Builders wanting to offer Vastu compliance as a feature</div>
+        <div class="who-item"><span class="who-arrow">→</span>Interior designers looking for a Vastu intelligence layer</div>
       </div>
     </div>
-    <div class="contact-form" id="contactFormWrap">
+
+    <div class="contact-form-wrap" id="contactFormWrap">
       <div class="form-grid" id="contactForm">
         <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="fname">First name <span>*</span></label>
-            <input type="text" class="form-input" id="fname" placeholder="Arjun">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="lname">Last name <span>*</span></label>
-            <input type="text" class="form-input" id="lname" placeholder="Sharma">
-          </div>
+          <div class="form-group"><label class="form-label" for="fname">First name <span>*</span></label><input type="text" class="form-input" id="fname" placeholder="Arjun"></div>
+          <div class="form-group"><label class="form-label" for="lname">Last name <span>*</span></label><input type="text" class="form-input" id="lname" placeholder="Sharma"></div>
         </div>
+        <div class="form-group full"><label class="form-label" for="email">Email <span>*</span></label><input type="email" class="form-input" id="email" placeholder="arjun@example.com"></div>
+        <div class="form-group full"><label class="form-label" for="phone">Phone</label><input type="tel" class="form-input" id="phone" placeholder="+91 98765 43210"></div>
         <div class="form-group full">
-          <label class="form-label" for="email">Email address <span>*</span></label>
-          <input type="email" class="form-input" id="email" placeholder="arjun@example.com">
-        </div>
-        <div class="form-group full">
-          <label class="form-label" for="phone">Phone number</label>
-          <input type="tel" class="form-input" id="phone" placeholder="+91 98765 43210">
-        </div>
-        <div class="form-group full">
-          <label class="form-label" for="homeType">What type of home? <span>*</span></label>
+          <label class="form-label" for="homeType">Your situation <span>*</span></label>
           <select class="form-select" id="homeType">
-            <option value="" disabled selected>Select your situation</option>
-            <option>New flat from a builder — ready to furnish</option>
+            <option value="" disabled selected>Select</option>
+            <option>New flat from builder — ready to furnish</option>
             <option>Existing home — full renovation</option>
             <option>Existing home — one or two rooms</option>
             <option>Under construction — planning ahead</option>
-            <option>Builder or developer inquiry</option>
+            <option>Builder / developer inquiry</option>
             <option>Interior designer partnership</option>
           </select>
         </div>
-        <div class="form-group full">
-          <label class="form-label">What are you most interested in?</label>
-          <div class="form-checks">
-            <label class="form-check">
-              <input type="checkbox" id="ch1">
-              <span class="form-check-label">AI room analysis and furniture suggestions</span>
-            </label>
-            <label class="form-check">
-              <input type="checkbox" id="ch2">
-              <span class="form-check-label">Vastu compliance for my floor plan</span>
-            </label>
-            <label class="form-check">
-              <input type="checkbox" id="ch3">
-              <span class="form-check-label">Wall colour and paint recommendations</span>
-            </label>
-            <label class="form-check">
-              <input type="checkbox" id="ch4">
-              <span class="form-check-label">Connecting with a certified Vastu consultant</span>
-            </label>
-          </div>
-        </div>
-        <div class="form-group full">
-          <label class="form-label" for="message">Tell us about your home</label>
-          <textarea class="form-textarea" id="message" placeholder="E.g. 2BHK in HSR Layout, Bengaluru. Builder handover next month. Looking for a complete interior plan with Vastu compliance..."></textarea>
-        </div>
+        <div class="form-group full"><label class="form-label" for="message">Tell us about your home</label><textarea class="form-textarea" id="message" placeholder="E.g. 2BHK in HSR Layout, Bengaluru. Builder handover next month. Looking for a complete Vastu-compliant interior plan…"></textarea></div>
         <button class="form-submit" onclick="submitForm()">Send my enquiry →</button>
         <div class="form-note">We'll respond within 48 hours. Your details are never shared.</div>
       </div>
       <div class="form-success" id="formSuccess">
         <div class="form-success-icon">🏡</div>
         <div class="form-success-title">We've received your enquiry</div>
-        <div class="form-success-desc">Thank you for reaching out. We'll be in touch within 48 hours to discuss your home and schedule your first design session. In the meantime, subscribe to the Griha Letter above for weekly Vastu insights.</div>
+        <div class="form-success-desc">Thank you. We'll be in touch within 48 hours to discuss your home. In the meantime, <a href="app.html" style="color:var(--terra);">try the design tool →</a></div>
       </div>
     </div>
   </div>
@@ -1179,7 +833,7 @@ section{padding:96px 80px;}
 <!-- FOOTER -->
 <footer class="footer">
   <div class="footer-top">
-    <div class="footer-brand">
+    <div>
       <div class="footer-logo">Gri<em>ha</em></div>
       <div class="footer-tagline">AI interior design for modern Indian homes. Vastu-smart. Beautifully curated.</div>
     </div>
@@ -1189,9 +843,8 @@ section{padding:96px 80px;}
         <ul class="footer-links">
           <li><a href="#how">How it works</a></li>
           <li><a href="#vastu">Vastu engine</a></li>
-          <li><a href="#trust">Our approach</a></li>
           <li><a href="#palettes">Colour tool</a></li>
-          <li><a href="#newsletter">The Griha Letter</a></li>
+          <li><a href="app.html">Design tool</a></li>
         </ul>
       </div>
       <div>
@@ -1206,8 +859,8 @@ section{padding:96px 80px;}
       <div>
         <div class="footer-col-title">Company</div>
         <ul class="footer-links">
-          <li><a href="#trust">About Griha</a></li>
-          <li><a href="#newsletter">Blog</a></li>
+          <li><a href="#contact">About Griha</a></li>
+          <li><a href="#newsletter">Newsletter</a></li>
           <li><a href="#contact">Contact us</a></li>
           <li><a href="#">Privacy policy</a></li>
         </ul>
@@ -1216,41 +869,50 @@ section{padding:96px 80px;}
   </div>
   <div class="footer-bottom">
     <div class="footer-copy">© 2025 Griha. Made with care in Bengaluru, India.</div>
-    <div class="footer-made">Vastu · Design · Technology</div>
+    <div class="footer-copy">Vastu · Design · Technology</div>
   </div>
 </footer>
 
 <script>
-/* ── Scroll-based nav shadow ── */
-window.addEventListener('scroll',()=>{
-  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20);
-});
+/* Nav scroll */
+window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20));
 
-/* ── Intersection observer for fade-up ── */
-const io=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
-},{threshold:0.08});
+/* Mobile menu */
+function toggleMenu(){const m=document.getElementById('mobileMenu');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':'';}
+
+/* Intersection observer */
+const io=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('visible');}),{threshold:0.08});
 document.querySelectorAll('.fade-up').forEach(el=>io.observe(el));
 
-/* ── Mobile menu ── */
-function toggleMenu(){
-  const m=document.getElementById('mobileMenu');
-  m.classList.toggle('open');
-  document.body.style.overflow=m.classList.contains('open')?'hidden':'';
+/* Smooth scroll */
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t){e.preventDefault();window.scrollTo({top:t.getBoundingClientRect().top+window.scrollY-80,behavior:'smooth'});}
+  });
+});
+
+/* Demo tabs */
+function showDemo(id){
+  ['upload','analysis','designs'].forEach(t=>{
+    document.getElementById('demo-'+t).classList.toggle('active',t===id);
+  });
+  document.querySelectorAll('.demo-tab').forEach((tab,i)=>{
+    tab.classList.toggle('active',['upload','analysis','designs'][i]===id);
+  });
+  const urls={upload:'griha.design/app.html — upload your rooms',analysis:'griha.design/app.html — AI analysis running…',designs:'griha.design/app.html — choose your design'};
+  document.getElementById('demoUrl').textContent=urls[id];
 }
 
-/* ── Newsletter subscribe ── */
+/* Newsletter */
 function subscribeNewsletter(){
-  const email=document.getElementById('nlEmail').value.trim();
-  if(!email||!email.includes('@')){
-    document.getElementById('nlEmail').style.borderColor='rgba(192,80,42,0.6)';
-    return;
-  }
-  document.getElementById('nlForm').innerHTML=`<div style="width:100%;text-align:center;padding:12px;color:rgba(253,250,246,0.6);font-size:13px;">✓ You're on the list. First issue coming soon.</div>`;
+  const e=document.getElementById('nlEmail').value.trim();
+  if(!e||!e.includes('@')){document.getElementById('nlEmail').style.borderColor='rgba(192,80,42,0.6)';return;}
+  document.getElementById('nlForm').innerHTML='<div style="text-align:center;padding:12px;color:rgba(253,250,246,0.6);font-size:13px;">✓ You\'re on the list. First issue coming soon.</div>';
   document.getElementById('nlNote').style.display='none';
 }
 
-/* ── Contact form submit ── */
+/* Contact form */
 function submitForm(){
   const fname=document.getElementById('fname').value.trim();
   const email=document.getElementById('email').value.trim();
@@ -1258,26 +920,13 @@ function submitForm(){
   let valid=true;
   [document.getElementById('fname'),document.getElementById('email'),document.getElementById('homeType')].forEach(el=>{
     if(!el.value.trim()){el.style.borderColor='rgba(192,80,42,0.5)';valid=false;}
-    else{el.style.borderColor='';}
+    else el.style.borderColor='';
   });
   if(!email.includes('@')){document.getElementById('email').style.borderColor='rgba(192,80,42,0.5)';valid=false;}
-  if(!valid){return;}
+  if(!valid)return;
   document.getElementById('contactForm').style.display='none';
   document.getElementById('formSuccess').classList.add('show');
-  window.scrollTo({top:document.getElementById('contact').offsetTop,behavior:'smooth'});
 }
-
-/* ── Smooth anchor scroll with offset ── */
-document.querySelectorAll('a[href^="#"]').forEach(a=>{
-  a.addEventListener('click',e=>{
-    const target=document.querySelector(a.getAttribute('href'));
-    if(target){
-      e.preventDefault();
-      const offset=target.getBoundingClientRect().top+window.scrollY-80;
-      window.scrollTo({top:offset,behavior:'smooth'});
-    }
-  });
-});
 </script>
 </body>
 </html>
