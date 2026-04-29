@@ -1,300 +1,427 @@
 /**
- * GRIHA CLOUDFLARE WORKER — v2
+ * GRIHA CLOUDFLARE WORKER — v3
  * ============================
- * SECRETS NEEDED (Cloudflare dashboard → Worker → Settings → Variables → Add):
- *   ANTHROPIC_API_KEY  — console.anthropic.com
- *   OPENAI_API_KEY     — platform.openai.com/api-keys
- *
  * ENDPOINTS:
- *   POST /analyze-room            Claude vision: analyse room photo
- *   POST /analyze-masterplan      Claude vision: read floor plan
- *   POST /generate-designs        5 design concepts + DALL-E renders (parallel)
- *   POST /generate-carpenter-spec Carpenter BOM + material cost
- *   POST /suggest-changes         Conversational design refinement
- *   GET  /health                  Status check
+ *   POST /validate-photo      — quick room photo validation (is it a room?)
+ *   POST /analyze-room        — detailed room analysis (light, beams, electrical, style)
+ *   POST /analyze-masterplan  — compass zone reading from floor plan
+ *   POST /generate-render     — surfaces-only AI render (walls/ceiling/floor, no furniture)
+ *   POST /suggest-changes     — conversational chat (Claude)
+ *   GET  /health              — status check
+ *   GET  /test-render         — test AI binding
+ *
+ * SECRETS: ANTHROPIC_API_KEY
+ * BINDINGS: AI (Workers AI)
  */
 
-const ALLOWED_ORIGIN = '*';
-const CLAUDE_MODEL   = 'claude-opus-4-6';
-const DALLE_MODEL    = 'dall-e-3';
-const DALLE_QUALITY  = 'standard';
+const ALLOWED_ORIGIN      = '*';
+const AI_MODEL            = 'claude-opus-4-6';
+const IMAGE_MODEL_IMG2IMG = '@cf/runwayml/stable-diffusion-v1-5-img2img';
+const IMAGE_MODEL_TXT2IMG = '@cf/stabilityai/stable-diffusion-xl-base-1.0';
 
-export default {
-  async fetch(request, env) {
-    const cors = {
-      'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
-      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Content-Type': 'application/json',
-    };
-    if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
-    const url = new URL(request.url);
-    try {
-      if (url.pathname === '/health')                  return json({ status: 'ok', version: 2 }, 200, cors);
-      if (url.pathname === '/analyze-room')            return handleRoomAnalysis(request, env, cors);
-      if (url.pathname === '/analyze-masterplan')      return handleMasterplan(request, env, cors);
-      if (url.pathname === '/generate-designs')        return handleGenerateDesigns(request, env, cors);
-      if (url.pathname === '/generate-carpenter-spec') return handleCarpenterSpec(request, env, cors);
-      if (url.pathname === '/suggest-changes')         return handleSuggestChanges(request, env, cors);
-      return json({ error: 'Not found' }, 404, cors);
-    } catch (e) {
-      return json({ error: e.message }, 500, cors);
-    }
-  }
+// ── Surface-only render prompts (NO furniture, NO lighting fixtures) ────────
+// Each prompt tells SD to change ONLY walls, ceiling, and floor.
+// Furniture and objects in the uploaded photo are preserved by low strength.
+const RENDER_STYLE_PROMPTS = {
+  contemporary_indian:
+    'repaint walls in warm terracotta and kaolin cream, Indian hand-block print wallpaper border near ceiling, exposed brick accent panel, warm sand-coloured smooth plaster ceiling, polished stone floor tiles in warm beige, subtle brass wall sconce glow on walls, NO furniture changes, surfaces only',
+  minimalist_modern:
+    'repaint walls pure linen white with soft grey accent wall, smooth white ceiling with recessed cove, large-format light grey porcelain floor tiles, clean shadow gaps where walls meet ceiling, NO furniture changes, surfaces only, minimalist architectural finish',
+  traditional_heritage:
+    'repaint walls in deep ochre and rich burgundy, traditional Indian jali carved stucco wall panel, ornate plaster ceiling medallion, dark teak herringbone wood floor, aged copper wall patina, decorative dado rail with traditional motifs, NO furniture changes, surfaces only',
+  boho_chic:
+    'repaint walls sage green with warm wheat accent wall, raw exposed plaster texture on feature wall, bamboo reed ceiling panels, terracotta encaustic cement floor tiles, hand-painted botanical wall mural detail, NO furniture changes, surfaces only',
+  industrial_modern:
+    'exposed raw concrete walls, sealed polished concrete floor, dark steel-grey painted ceiling with visible ductwork, large industrial warehouse windows painted black, brick feature wall, NO furniture changes, surfaces only',
+  art_deco_indian:
+    'walls in deep teal with gold geometric Art Deco stencil border, glossy cream ceiling with ornate cornice, black and gold geometric marble floor tiles, dramatic wall sconce shadow lines, NO furniture changes, surfaces only',
+  japandi:
+    'walls in soft warm grey with natural washi texture, exposed wood beam ceiling in pale oak, wide plank light ash wood floor, Shoji screen shadow lines on walls, wabi-sabi plaster imperfect finish, NO furniture changes, surfaces only',
+  coastal_indian:
+    'walls in soft aquamarine and bleached white limewash finish, whitewashed ceiling with exposed cane matting, pale weathered teak floor, nautical rope texture dado, NO furniture changes, surfaces only'
 };
 
-// ─── ROOM ANALYSIS ────────────────────────────────────────────────────────────
-async function handleRoomAnalysis(request, env, cors) {
-  const { imageBase64, mimeType, roomLabel } = await request.json();
-  if (!imageBase64) return json({ error: 'imageBase64 required' }, 400, cors);
+// ── Palette colour descriptors for render prompts ───────────────────────────
+const PALETTE_RENDER_DESCS = {
+  warm_earthen:    'warm terracotta #C47040, kaolin clay #EAE1D5, teak brown #8E6D4E',
+  sage_serenity:   'sage green #779971, pale moss #B5CDAC, morning mist #E8EEE6',
+  terracotta_dawn: 'fired clay #C47040, brick spice #9A4820, pale peach #F5ECE1',
+  cloud_white:     'linen white #F5F0E8, warm ivory #EDE8DC, greige #C8BC9F',
+  monsoon_blue:    'cerulean blue #5B8FAE, deep navy #2E5F82, arctic mist #EBF0F5',
+  golden_hour:     'warm gold #B07D20, amber #D4960A, champagne #F4EAD5',
+  forest_deep:     'forest green #2B4D25, deep fern #4E7848, pale sage #E8EEE6',
+  blush_rose:      'dusty rose #D4927B, muted blush #ECC4B8, warm cream #FAF0EA',
+  midnight_charcoal:'charcoal #2C2C2A, dark slate #3D3D3B, warm grey #8C8C8A',
+  coastal_sand:    'coastal sand #DED3B8, driftwood #B09070, sea foam #E8EDE6'
+};
 
-  const prompt = `${roomLabel ? `Room label: "${roomLabel}"\n\n` : ''}You are an expert Indian interior design analyst. Analyse this room photo and return ONLY valid JSON with no other text.
+// ── Photo validation prompt (fast, cheap — only 100 tokens needed) ──────────
+const VALIDATE_PROMPT = `Look at this photo. Is it an interior room photo suitable for home interior design analysis?
+Return ONLY this JSON, no other text:
+{
+  "is_valid_room": true,
+  "room_type_detected": "bedroom",
+  "confidence": "high",
+  "reason": null
+}
+Rules:
+- is_valid_room: true ONLY if this is clearly an interior room of a building (bedroom, living room, kitchen, bathroom, balcony, etc.)
+- false if: outdoor photo, person/pet photo, food, product, document, selfie, or non-room image
+- room_type_detected: what type of room if valid, null if not valid
+- confidence: "high", "medium", or "low"
+- reason: null if valid, short reason string if invalid (e.g. "This appears to be a photo of a dog, not a room")
+Respond with ONLY the JSON.`;
+
+// ── Detailed room analysis prompt ────────────────────────────────────────────
+const ROOM_ANALYSIS_PROMPT = `You are an expert interior design analyst and building inspector specialising in Indian homes.
+Carefully examine every part of this room photo and return ONLY valid JSON — no text, no markdown, no code fences.
+
 {
   "room_identified": true,
   "confidence": "high",
   "error": null,
   "observations": {
-    "estimated_sqft": 180,
+    "estimated_sqft": 160,
     "ceiling_height": "standard",
-    "window_count": 1,
+    "ceiling_type": "flat",
+    "window_count": 2,
+    "window_positions": ["north_wall", "east_wall"],
     "light_direction": "east",
     "light_quality": "bright",
+    "natural_light_assessment": "good morning light from east-facing windows",
     "overhead_beams_detected": false,
+    "beam_count": 0,
     "beam_positions": "not_applicable",
     "electrical_points_visible": 3,
-    "electrical_point_positions": ["bedhead_wall","opposite_wall"],
-    "existing_furniture": ["bed","wardrobe"],
-    "wall_colours_existing": ["cream"],
-    "flooring_type": "tile",
-    "style_detected": ["contemporary_indian"]
+    "electrical_point_positions": ["bedhead_wall_right", "opposite_wall_centre", "near_door"],
+    "switch_boards_visible": 2,
+    "ac_unit_visible": false,
+    "existing_furniture": ["double_bed", "wardrobe", "side_table"],
+    "wall_colours_existing": ["off_white", "cream"],
+    "flooring_type": "vitrified_tile",
+    "flooring_colour": "beige",
+    "ceiling_colour": "white",
+    "wall_condition": "good",
+    "style_detected": ["contemporary_indian"],
+    "vastu_observations": {
+      "main_door_direction_visible": "unknown",
+      "sleeping_head_direction_visible": "south",
+      "mirror_facing_bed": false,
+      "heavy_furniture_zone": "south_west"
+    }
   }
 }
-ceiling_height: "low"(<8ft),"standard"(8-10ft),"high"(>10ft). light_direction: compass direction of windows.
-style_detected array: "minimalist","traditional","contemporary_indian","modern","eclectic","boho","rajasthani","south_indian".
-If unclear/not a room: room_identified=false, error="image_unclear"/"not_a_room"/"too_dark". Return ONLY JSON.`;
 
-  const res = await claude(env, [{ role: 'user', content: [
-    { type: 'image', source: { type: 'base64', media_type: mimeType || 'image/jpeg', data: imageBase64 } },
-    { type: 'text', text: prompt }
-  ]}]);
-  if (!res.ok) return json({ error: res.error }, 502, cors);
-  return json(parseJSON(res.text), 200, cors);
-}
+Be very precise and observant:
+- Count electrical points carefully — look for plug sockets, switches, AC points near floor/ceiling
+- Check ceiling for beams, cracks, pendants, fans, AC vents
+- Estimate sqft based on visible room proportions and furniture scale
+- ceiling_height: "low" (<8ft), "standard" (8-10ft), "high" (>10ft)
+- ceiling_type: "flat", "pop_ceiling", "coffered", "beam_exposed", "false_ceiling"
+- light_direction: which compass direction do the windows face (north/south/east/west/unknown)
+- flooring_type: "marble", "vitrified_tile", "ceramic_tile", "wood", "laminate", "granite", "mosaic", "cement"
+- wall_condition: "excellent", "good", "needs_work", "poor"
+- If unclear or dark: set confidence to "low" or "medium" and error to "image_unclear" or "too_dark"
+Respond with ONLY the JSON.`;
 
-// ─── MASTERPLAN ───────────────────────────────────────────────────────────────
-async function handleMasterplan(request, env, cors) {
-  const { imageBase64, mimeType } = await request.json();
-  const prompt = `You are an expert Vastu architect. Analyse this floor plan. Return ONLY valid JSON.
+const MASTERPLAN_PROMPT = `You are an expert architect reading an Indian builder floor plan image.
+Return ONLY valid JSON — no text, no markdown, no code fences.
+
 {
   "plan_identified": true,
   "confidence": "high",
   "error": null,
-  "building": { "total_sqft": 1200, "bhk_type": "2BHK", "floors": 1 },
-  "orientation": { "north_direction": "top", "main_entrance_direction": "east" },
+  "direction_confidence": "high",
+  "direction_clarity_note": null,
+  "building": {
+    "total_sqft": 1200,
+    "bhk_type": "2BHK",
+    "floors": 1
+  },
+  "orientation": {
+    "north_direction": "top",
+    "north_source": "compass_rose",
+    "main_entrance_direction": "east"
+  },
   "rooms": [
-    { "name": "master bedroom", "compass_zone": "SW", "approximate_sqft": 180, "has_window": true, "window_direction": "east" }
+    { "name": "master bedroom", "compass_zone": "SW", "approximate_sqft": 180, "has_window": true, "window_direction": "east" },
+    { "name": "kitchen",        "compass_zone": "SE", "approximate_sqft": 90,  "has_window": true, "window_direction": "south" }
   ]
 }
-compass_zone: NE,N,NW,E,W,SE,S,SW. If not a floor plan: plan_identified=false, error="not_a_floorplan". Return ONLY JSON.`;
 
-  const res = await claude(env, [{ role: 'user', content: [
-    { type: 'image', source: { type: 'base64', media_type: mimeType || 'image/jpeg', data: imageBase64 } },
-    { type: 'text', text: prompt }
-  ]}]);
-  if (!res.ok) return json({ error: res.error }, 502, cors);
-  return json(parseJSON(res.text), 200, cors);
-}
+CRITICAL — direction_confidence assessment:
+- "high":   A compass rose or north arrow is clearly visible in the image. You are certain of orientation.
+- "medium": No compass rose, but orientation can be inferred from road labels, sun direction markers, or standard Indian convention (main entrance often faces east/north).
+- "low":    No compass indicators at all. Orientation is a guess. Vastu zone mapping will be unreliable.
 
-// ─── GENERATE DESIGNS (5 concepts + parallel DALL-E renders) ──────────────────
-async function handleGenerateDesigns(request, env, cors) {
-  const { roomType, zone, sqft, styleDetected, vastuViolations } = await request.json();
+direction_clarity_note: 
+- If "high": null
+- If "medium": Short explanation of how you inferred direction, e.g. "No compass rose visible. North inferred from entrance facing convention."
+- If "low": Clear explanation of what is missing, e.g. "No north arrow, compass rose, or orientation markers found in this floor plan. Vastu zone assignment is approximate only."
 
-  if (!env.OPENAI_API_KEY) return json({
-    error: 'OPENAI_API_KEY not set. Add it in Cloudflare → Worker → Settings → Variables.'
-  }, 500, cors);
+north_source: one of "compass_rose", "north_arrow", "road_label_inference", "entrance_convention", "unknown"
 
-  const issues = (vastuViolations || []).map(r => r.title).join(', ') || 'none';
-  const rt = roomType || 'living room';
-  const z  = zone || 'unknown';
-  const sq = sqft || 160;
-  const st = styleDetected || 'mixed';
+If the image is not a floor plan: plan_identified false, error "not_a_floorplan"
+If the image is too blurry to read: plan_identified false, error "image_unclear"
 
-  const conceptsPrompt = `You are a senior Indian interior designer. Generate exactly 5 distinct Vastu-compliant design concepts.
-Room: ${rt} | Vastu zone: ${z} | Size: ~${sq} sqft | Current style: ${st}
-Vastu issues to address: ${issues}
+Respond with ONLY the JSON.`;
 
-Return ONLY valid JSON — no markdown, no explanation:
-{
-  "concepts": [
-    {
-      "id": "opt-1",
-      "name": "Contemporary Indian",
-      "style_tag": "contemporary_indian",
-      "tagline": "Modern lines rooted in Indian craft",
-      "description": "2 sentences describing this concept for this specific room.",
-      "vastu_address": "1 sentence on how this design resolves the listed Vastu issues.",
-      "primary_hex": "#C47040",
-      "secondary_hex": "#F5ECE1",
-      "accent_hex": "#B07D20",
-      "wall_treatment": "Warm terracotta on south accent wall, warm ivory on remaining three walls",
-      "key_materials": ["sheesham wood","handloom cotton","brass hardware"],
-      "lighting_plan": "Warm white ambient ceiling light + SE corner floor lamp (Vastu Agni zone) + task lighting near workspace",
-      "wallpaper_note": "Optional: linen-texture wallpaper on south feature wall only",
-      "dalle_prompt": "Professional interior design photograph, ${rt}, Indian apartment, contemporary Indian style, warm terracotta feature wall, sheesham wood furniture with brass accents, handloom cotton cushions, natural morning light, no people, photorealistic, architectural digest quality",
-      "style_tags": ["contemporary_indian","warm","wooden","brass"],
-      "custom_pieces": ["wardrobe","tv_unit"],
-      "estimated_total_inr": 145000
+const CHAT_SYSTEM = `You are Griha's AI interior design assistant specialising in Vastu-compliant Indian interiors.
+Help users understand their room's Vastu compliance and surface design (walls, ceiling, flooring).
+Keep responses concise (3-5 sentences max), specific, and actionable.
+Always mention the Vastu rationale. Reference Asian Paints or Berger paint codes where possible.
+When asked about surface changes: describe wall colours, paint finishes, wallpaper, ceiling treatment, flooring.
+Do NOT recommend furniture or lighting (that is handled separately).
+Be warm and conversational.`;
+
+// ── Main handler ────────────────────────────────────────────────────────────
+export default {
+  async fetch(request, env) {
+    const corsHeaders = {
+      'Access-Control-Allow-Origin':  ALLOWED_ORIGIN,
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+    const cors = { ...corsHeaders, 'Content-Type': 'application/json' };
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
-  ]
+
+    const url = new URL(request.url);
+
+    try {
+      if (url.pathname === '/health') {
+        return json({ status:'ok', model:AI_MODEL, ai_binding:!!(env.AI), version:'v3', cors_fix:'preflight-204' }, 200, cors);
+      }
+
+      if (url.pathname === '/test-render' && request.method === 'GET') {
+        if (!env.AI) return json({ ok:false, error:'AI binding missing' }, 503, cors);
+        try {
+          const r = await env.AI.run(IMAGE_MODEL_TXT2IMG, { prompt:'a plain white room interior, walls only, no furniture', num_steps:4, width:256, height:256 });
+          const buf = await new Response(r).arrayBuffer();
+          return new Response(new Uint8Array(buf), { headers:{ ...corsHeaders, 'Content-Type':'image/png' } });
+        } catch(e) { return json({ ok:false, error:e.message }, 500, cors); }
+      }
+
+      if (request.method !== 'POST') return json({ error:'Use POST' }, 405, cors);
+
+      if (url.pathname === '/validate-photo')     return validatePhoto(request, env, cors);
+      if (url.pathname === '/analyze-room')       return analyzeRoom(request, env, cors);
+      if (url.pathname === '/analyze-masterplan') return analyzeMasterplan(request, env, cors);
+      if (url.pathname === '/generate-render')    return generateRender(request, env, cors);
+      if (url.pathname === '/suggest-changes')    return suggestChanges(request, env, cors);
+
+      return json({ error:'Not found' }, 404, cors);
+    } catch(err) {
+      console.error('Worker error:', err);
+      return json({ error:'Internal error', detail:err.message }, 500, cors);
+    }
+  }
+};
+
+// ── /validate-photo ─────────────────────────────────────────────────────────
+async function validatePhoto(request, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return missingKey(cors);
+  const { imageBase64, mimeType } = await request.json();
+  if (!imageBase64) return json({ error:'imageBase64 required' }, 400, cors);
+
+  const ai = await callClaude({
+    env,
+    messages: [{
+      role:'user',
+      content:[
+        { type:'image', source:{ type:'base64', media_type:mimeType||'image/jpeg', data:imageBase64 } },
+        { type:'text', text:VALIDATE_PROMPT }
+      ]
+    }],
+    max_tokens: 200  // fast and cheap
+  });
+
+  if (!ai.ok) return json({ error:ai.error }, 502, cors);
+  return json(safeJSON(ai.text), 200, cors);
 }
 
-The 5 concepts must be genuinely different:
-1. Contemporary Indian — modern with Indian craft (sheesham, brass, handloom)
-2. Minimalist Modern — white/grey palette, clean geometry, IKEA-friendly
-3. Traditional Indian — rich jewel tones, carved wood, ornate textiles
-4. Boho Eclectic — rattan, macramé, plants, mixed textiles
-5. Scandinavian Comfort — white + pine, cosy textiles, warm lighting
+// ── /analyze-room ────────────────────────────────────────────────────────────
+async function analyzeRoom(request, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return missingKey(cors);
+  const { imageBase64, mimeType, roomLabel } = await request.json();
+  if (!imageBase64) return json({ error:'imageBase64 required' }, 400, cors);
 
-Adapt each to the ${rt} room type and ${z} Vastu zone.
-dalle_prompt: 40-60 words, photorealistic, specific materials, no people, no text.
-Return ONLY the JSON object with "concepts" array containing exactly 5 items.`;
+  const prompt = roomLabel
+    ? `Room type confirmed by user: "${roomLabel}"\n\n${ROOM_ANALYSIS_PROMPT}`
+    : ROOM_ANALYSIS_PROMPT;
 
-  const conceptsRes = await claude(env, [{ role: 'user', content: conceptsPrompt }], 3500);
-  if (!conceptsRes.ok) return json({ error: conceptsRes.error }, 502, cors);
+  const ai = await callClaude({
+    env,
+    messages:[{
+      role:'user',
+      content:[
+        { type:'image', source:{ type:'base64', media_type:mimeType||'image/jpeg', data:imageBase64 } },
+        { type:'text', text:prompt }
+      ]
+    }]
+  });
 
-  const parsed = parseJSON(conceptsRes.text);
-  if (!parsed.concepts || !Array.isArray(parsed.concepts)) {
-    return json({ error: 'Could not parse design concepts', detail: conceptsRes.text.slice(0, 300) }, 500, cors);
+  if (!ai.ok) return json({ error:ai.error }, 502, cors);
+  return json(safeJSON(ai.text), 200, cors);
+}
+
+// ── /analyze-masterplan ──────────────────────────────────────────────────────
+async function analyzeMasterplan(request, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return missingKey(cors);
+  const { imageBase64, mimeType } = await request.json();
+  if (!imageBase64) return json({ error:'imageBase64 required' }, 400, cors);
+
+  const ai = await callClaude({
+    env,
+    messages:[{
+      role:'user',
+      content:[
+        { type:'image', source:{ type:'base64', media_type:mimeType||'image/jpeg', data:imageBase64 } },
+        { type:'text', text:MASTERPLAN_PROMPT }
+      ]
+    }]
+  });
+
+  if (!ai.ok) return json({ error:ai.error }, 502, cors);
+  return json(safeJSON(ai.text), 200, cors);
+}
+
+// ── /generate-render (surfaces only — no furniture) ──────────────────────────
+async function generateRender(request, env, cors) {
+  if (!env.AI) {
+    return json({ ok:false, error:'Workers AI binding missing. Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name "AI" → Save and Deploy.' }, 503, cors);
   }
 
-  // Generate all DALL-E images in parallel
-  const imageResults = await Promise.all(
-    parsed.concepts.map(c => generateImage(c.dalle_prompt, env).catch(() => ({ url: null })))
-  );
+  let body;
+  try { body = await request.json(); }
+  catch(e) { return json({ ok:false, error:'Invalid request body' }, 400, cors); }
 
-  const concepts = parsed.concepts.map((c, i) => ({
-    ...c,
-    image_url: imageResults[i]?.url || null
-  }));
+  const { room_type, design_style_id, compass_zone, room_sqft, palette_id, palette_desc, roomImageBase64, roomMimeType } = body;
 
-  return json({ concepts }, 200, cors);
-}
+  const stylePrompt  = RENDER_STYLE_PROMPTS[design_style_id] || RENDER_STYLE_PROMPTS.contemporary_indian;
+  const palDesc      = PALETTE_RENDER_DESCS[palette_id] || palette_desc || '';
+  const roomLabel    = (room_type||'room').replace(/_/g,' ');
+  const zoneCtx      = compass_zone && compass_zone!=='unknown' ? `, ${compass_zone}-facing ${roomLabel}` : ` ${roomLabel}`;
+  const palCtx       = palDesc ? `, exact colours: ${palDesc}` : '';
 
-// ─── CARPENTER SPEC ───────────────────────────────────────────────────────────
-async function handleCarpenterSpec(request, env, cors) {
-  const { roomType, piece, sqft, styleName } = await request.json();
-  if (!piece) return json({ error: 'piece name required' }, 400, cors);
+  // Surface-only prompt — explicitly exclude furniture changes
+  const fullPrompt   = `Interior design surface transformation${zoneCtx}. ${stylePrompt}${palCtx}. Transform ONLY walls ceiling and floor. Preserve all existing furniture objects and layout exactly. Ultra realistic professional interior photography. Highly detailed surfaces. No people.`;
+  const negPrompt    = 'people, person, furniture change, new furniture, added objects, cartoon, anime, sketch, watermark, text, blurry, low quality, deformed';
 
-  const prompt = `You are an expert Indian carpenter and joinery consultant in Bengaluru.
-Generate a complete specification sheet for a custom ${piece} for a ${roomType || 'bedroom'}.
-Room size: ~${sqft || 150} sqft. Style: ${styleName || 'contemporary Indian'}.
+  try {
+    let result;
 
-Return ONLY valid JSON — no markdown:
-{
-  "piece_name": "${piece}",
-  "room_type": "${roomType}",
-  "style": "${styleName}",
-  "overall_dimensions": { "length_mm": 2400, "depth_mm": 600, "height_mm": 2100 },
-  "components": [
-    { "name": "Main carcass", "length_mm": 2400, "depth_mm": 580, "height_mm": 2100, "qty": 1, "material": "18mm BWR Grade Plywood (IS:710)", "finish": "White laminate (Merino 2050 or equivalent)" },
-    { "name": "Shelves", "length_mm": 590, "depth_mm": 560, "height_mm": 18, "qty": 6, "material": "18mm BWR Plywood", "finish": "Same as carcass" },
-    { "name": "Shutter doors", "length_mm": 600, "depth_mm": 18, "height_mm": 700, "qty": 4, "material": "18mm MDF", "finish": "2mm acrylic / PU paint" }
-  ],
-  "hardware": [
-    { "item": "Soft-close hinges (Hettich or Hafele)", "qty": 12, "unit_cost_inr": 90, "total_inr": 1080 },
-    { "item": "Telescopic channels (Hettich)", "qty": 4, "unit_cost_inr": 350, "total_inr": 1400 },
-    { "item": "Cabinet handles (aluminium bar)", "qty": 8, "unit_cost_inr": 120, "total_inr": 960 },
-    { "item": "Soft-close channels (drawer)", "qty": 2, "unit_cost_inr": 550, "total_inr": 1100 }
-  ],
-  "materials_cost": {
-    "plywood_sheets": 8,
-    "plywood_per_sheet_inr": 1800,
-    "plywood_total_inr": 14400,
-    "laminate_sqft": 120,
-    "laminate_per_sqft_inr": 65,
-    "laminate_total_inr": 7800,
-    "hardware_total_inr": 4540,
-    "miscellaneous_inr": 1200,
-    "total_materials_inr": 27940
-  },
-  "labour": {
-    "estimated_days": 4,
-    "daily_rate_inr": 1800,
-    "total_labour_inr": 7200
-  },
-  "grand_total_inr": 35140,
-  "vastu_placement": "Place wardrobe on south or west wall. Keep NE corner of room free.",
-  "carpenter_tips": [
-    "Use BWR (Boiling Water Resistant) plywood — not MR (Moisture Resistant) — for longevity in Indian climate",
-    "Pre-drill all hinge holes before assembly to avoid splitting",
-    "Apply edge banding on all exposed plywood edges",
-    "Leave 10mm clearance at top for ceiling variation"
-  ],
-  "brand_suggestions": {
-    "plywood": "Century Ply Gold / GreenPly Gold / Kitply Gold",
-    "laminates": "Merino / Sundek / Greenlam",
-    "hardware": "Hettich / Hafele / Ebco"
+    if (roomImageBase64) {
+      // IMG2IMG: apply surface transformation to actual uploaded room photo
+      const binaryStr  = atob(roomImageBase64);
+      const imageBytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) imageBytes[i] = binaryStr.charCodeAt(i);
+
+      result = await env.AI.run(IMAGE_MODEL_IMG2IMG, {
+        prompt:          fullPrompt,
+        negative_prompt: negPrompt,
+        image:           [...imageBytes],
+        strength:        0.55,   // preserves room structure, changes surfaces
+        num_steps:       20,
+        guidance:        9.0,    // high guidance = strictly follows surface-only prompt
+      });
+    } else {
+      // TXT2IMG fallback
+      result = await env.AI.run(IMAGE_MODEL_TXT2IMG, {
+        prompt:          `Empty ${roomLabel} interior, ${stylePrompt}${palCtx}, no people, no furniture, walls ceiling floor only, ultra realistic`,
+        negative_prompt: negPrompt,
+        num_steps:       20,
+        guidance:        7.5,
+        width:           768,
+        height:          512,
+      });
+    }
+
+    // Stream → base64
+    const arrayBuffer = await new Response(result).arrayBuffer();
+    const uint8Array  = new Uint8Array(arrayBuffer);
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      binary += String.fromCharCode(...uint8Array.subarray(i, i + chunkSize));
+    }
+
+    return json({
+      ok:           true,
+      image_base64: btoa(binary),
+      mime_type:    'image/png',
+      mode:         roomImageBase64 ? 'img2img' : 'txt2img',
+      prompt_used:  fullPrompt
+    }, 200, cors);
+
+  } catch(err) {
+    const msg    = err.message||String(err);
+    const detail = msg.includes('timeout') ? 'Timed out — try again. If persistent, the photo may be too large (try under 1MB).'
+                 : msg.includes('model')   ? 'AI model error — check AI binding is named "AI".'
+                 : msg;
+    return json({ ok:false, error:`Render failed: ${detail}` }, 500, cors);
   }
 }
-Return ONLY the JSON.`;
 
-  const res = await claude(env, [{ role: 'user', content: prompt }], 2000);
-  if (!res.ok) return json({ error: res.error }, 502, cors);
-  return json(parseJSON(res.text), 200, cors);
+// ── /suggest-changes ────────────────────────────────────────────────────────
+async function suggestChanges(request, env, cors) {
+  if (!env.ANTHROPIC_API_KEY) return missingKey(cors);
+  const { userMessage, currentAnalysis, conversationHistory=[] } = await request.json();
+  if (!userMessage) return json({ error:'userMessage required' }, 400, cors);
+
+  let ctx = userMessage;
+  if (currentAnalysis) {
+    const parts = [];
+    if (currentAnalysis.room_type)       parts.push(`Room: ${currentAnalysis.room_type}`);
+    if (currentAnalysis.zone)            parts.push(`Vastu zone: ${currentAnalysis.zone}`);
+    if (currentAnalysis.vastu?.score !== undefined) parts.push(`Vastu score: ${currentAnalysis.vastu.score}/100`);
+    if (currentAnalysis.selected_style)  parts.push(`Design style: ${currentAnalysis.selected_style}`);
+    if (currentAnalysis.selected_palette)parts.push(`Palette: ${currentAnalysis.selected_palette}`);
+    if (parts.length) ctx = `[Context: ${parts.join(' | ')}]\n\nUser: ${userMessage}`;
+  }
+
+  const ai = await callClaude({
+    env,
+    system:   CHAT_SYSTEM,
+    messages: [...conversationHistory.slice(-10), { role:'user', content:ctx }],
+    max_tokens: 600
+  });
+
+  if (!ai.ok) return json({ error:ai.error }, 502, cors);
+  return json({ ok:true, reply:ai.text }, 200, cors);
 }
 
-// ─── SUGGEST CHANGES ──────────────────────────────────────────────────────────
-async function handleSuggestChanges(request, env, cors) {
-  const { userMessage, currentAnalysis, conversationHistory = [] } = await request.json();
-  if (!userMessage) return json({ error: 'userMessage required' }, 400, cors);
-
-  const context = currentAnalysis
-    ? `Design context:\n${JSON.stringify(currentAnalysis, null, 2)}\n\nUser: ${userMessage}`
-    : userMessage;
-
-  const res = await claude(env,
-    [...conversationHistory, { role: 'user', content: context }],
-    800,
-    'You are Griha\'s AI interior design assistant for Indian homes. Help users refine design choices. Be specific about materials, colours, dimensions, and Vastu rationale. Give prices in INR.'
-  );
-  if (!res.ok) return json({ error: res.error }, 502, cors);
-  return json({ reply: res.text }, 200, cors);
-}
-
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-async function claude(env, messages, max_tokens = 1500, system = null) {
-  if (!env.ANTHROPIC_API_KEY) return { ok: false, error: 'ANTHROPIC_API_KEY not configured' };
-  const body = { model: CLAUDE_MODEL, max_tokens, messages };
+// ── Claude helper ────────────────────────────────────────────────────────────
+async function callClaude({ env, messages, system=null, max_tokens=1024 }) {
+  const body = { model:AI_MODEL, max_tokens, messages };
   if (system) body.system = system;
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify(body)
+    method:  'POST',
+    headers: { 'Content-Type':'application/json', 'x-api-key':env.ANTHROPIC_API_KEY, 'anthropic-version':'2023-06-01' },
+    body:    JSON.stringify(body)
   });
-  if (!res.ok) { const e = await res.json().catch(()=>({})); return { ok: false, error: e.error?.message || `Claude ${res.status}` }; }
-  const d = await res.json();
-  return { ok: true, text: d.content?.[0]?.text || '' };
+
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    return { ok:false, error:err.error?.message||`Anthropic API error ${res.status}` };
+  }
+  const data = await res.json();
+  return { ok:true, text:data.content?.[0]?.text||'' };
 }
 
-async function generateImage(prompt, env) {
-  const res = await fetch('https://api.openai.com/v1/images/generations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.OPENAI_API_KEY}` },
-    body: JSON.stringify({ model: DALLE_MODEL, prompt: prompt + ' No people. No text overlays.', n: 1, size: '1024x1024', quality: DALLE_QUALITY })
-  });
-  if (!res.ok) return { url: null };
-  const d = await res.json();
-  return { url: d.data?.[0]?.url || null };
-}
-
-function parseJSON(text) {
+function safeJSON(text) {
   try { return JSON.parse(text); } catch {
-    const m = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (m) try { return JSON.parse(m[0]); } catch { /**/ }
-    return { error: 'parse_failed', raw: text.slice(0, 200) };
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch {} }
+    return { error:'parse_failed', raw:text.slice(0,200) };
   }
 }
-
 function json(data, status, headers) {
   return new Response(JSON.stringify(data), { status, headers });
+}
+function missingKey(cors) {
+  return json({ error:'ANTHROPIC_API_KEY not set. Worker Settings → Variables and Secrets → Add ANTHROPIC_API_KEY' }, 503, cors);
 }
