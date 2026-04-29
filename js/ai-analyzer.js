@@ -21,7 +21,7 @@
 // ─── CONFIGURE THIS ───────────────────────────────────────────────────────────
 // Replace with your Cloudflare Worker URL after deploying worker/index.js
 // Format: https://griha-worker.<your-cloudflare-username>.workers.dev
-const WORKER_URL = 'https://griha-worker.sayan-biz000.workers.dev';
+const WORKER_URL = 'https://griha-worker.YOUR_USERNAME.workers.dev';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_IMAGE_BYTES  = 5 * 1024 * 1024; // 5MB
@@ -33,24 +33,40 @@ export class AIAnalyzer {
   }
 
   /**
-   * Analyse a room photo.
+   * Step 1: Validate a photo before full analysis.
+   * Fast and cheap — just checks if it's a room photo.
    *
-   * @param {File}   imageFile  - Browser File object from drag+drop or input
-   * @param {string} roomLabel  - User-provided label e.g. "master bedroom"
-   * @returns {Promise<RoomAnalysis>}
-   *
-   * RoomAnalysis: {
-   *   ok: boolean,
-   *   error?: string,
-   *   room_identified: boolean,
-   *   confidence: 'high' | 'medium' | 'low',
-   *   observations: {
-   *     estimated_sqft, ceiling_height, window_count, light_direction,
-   *     light_quality, overhead_beams_detected, electrical_points_visible,
-   *     electrical_point_positions, existing_furniture, wall_colours_existing,
-   *     flooring_type, style_detected
-   *   }
-   * }
+   * @param {File} imageFile
+   * @returns {Promise<{ok, is_valid_room, room_type_detected, reason}>}
+   */
+  async validatePhoto(imageFile) {
+    if (imageFile.size > MAX_IMAGE_BYTES) {
+      return this._error('Image is too large. Please use a photo under 5MB.');
+    }
+    const allowedTypes = ['image/jpeg','image/png','image/webp'];
+    if (!allowedTypes.includes(imageFile.type)) {
+      return this._error('Unsupported format. Please use JPG, PNG, or WebP.');
+    }
+    try {
+      const { base64, mimeType } = await this._fileToBase64(imageFile);
+      const response = await fetch(`${this.workerUrl}/validate-photo`, {
+        method:  'POST',
+        headers: { 'Content-Type':'application/json' },
+        body:    JSON.stringify({ imageBase64:base64, mimeType })
+      });
+      if (!response.ok) return this._error(`Validation service returned ${response.status}`);
+      const data = await response.json();
+      if (data.error) return this._error(data.error);
+      return { ok:true, ...data };
+    } catch(err) {
+      // If worker not deployed, skip validation gracefully
+      console.warn('Photo validation unavailable (worker not deployed):', err.message);
+      return { ok:true, is_valid_room:true, room_type_detected:null, _skipped:true };
+    }
+  }
+
+  /**
+   * Step 2: Full room analysis — light, beams, electrical, style, Vastu observations.
    */
   async analyzeRoom(imageFile, roomLabel) {
     // GUARDRAIL 1: File size check
@@ -158,12 +174,32 @@ export class AIAnalyzer {
    * @param {number} params.room_sqft        - e.g. 160
    * @returns {Promise<{ok, image_base64, mime_type} | {ok:false, error}>}
    */
-  async generateRender({ room_type, design_style_id, compass_zone, room_sqft, palette_desc = '' }) {
+  /**
+   * Generate an AI room render using the uploaded photo as the base (img2img).
+   * The selected style and palette are applied ON TOP of the actual room photo.
+   *
+   * @param {object} params
+   * @param {string} params.room_type
+   * @param {string} params.design_style_id
+   * @param {string} params.compass_zone
+   * @param {number} params.room_sqft
+   * @param {string} params.palette_desc
+   * @param {File}   [params.roomPhotoFile]  — the actual uploaded room photo File object
+   */
+  async generateRender({ room_type, design_style_id, compass_zone, room_sqft, palette_id='', palette_desc='', roomPhotoFile=null }) {
     try {
+      let roomImageBase64 = null;
+      let roomMimeType    = 'image/jpeg';
+      if (roomPhotoFile) {
+        // Resize image client-side before sending to reduce payload
+        const resized = await this._resizeImage(roomPhotoFile, 768, 768);
+        roomImageBase64 = resized.base64;
+        roomMimeType    = resized.mimeType;
+      }
       const response = await fetch(`${this.workerUrl}/generate-render`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ room_type, design_style_id, compass_zone, room_sqft, palette_desc })
+        headers: { 'Content-Type':'application/json' },
+        body:    JSON.stringify({ room_type, design_style_id, compass_zone, room_sqft, palette_id, palette_desc, roomImageBase64, roomMimeType })
       });
       const data = await response.json();
       if (!data.ok) return { ok: false, error: data.error || 'Render generation failed' };
@@ -194,6 +230,33 @@ export class AIAnalyzer {
     } catch (err) {
       return { ok: false, error: `Chat unavailable: ${err.message}` };
     }
+  }
+
+  /**
+   * Resizes an image client-side before sending to reduce payload size.
+   * SD img2img works well at 512-768px — no need to send full 4K photos.
+   */
+  async _resizeImage(file, maxW=768, maxH=768) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        const ratio = Math.min(maxW/width, maxH/height, 1);
+        width  = Math.round(width  * ratio);
+        height = Math.round(height * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width  = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const mimeType = 'image/jpeg';
+        const base64   = canvas.toDataURL(mimeType, 0.85).split(',')[1];
+        resolve({ base64, mimeType, width, height });
+      };
+      img.onerror = () => reject(new Error('Could not load image for resizing'));
+      img.src = url;
+    });
   }
 
   /**
