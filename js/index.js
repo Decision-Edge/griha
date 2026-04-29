@@ -202,44 +202,44 @@ async function generateRender(request, env, cors) {
     }, 503, cors);
   }
 
-  const { room_type, design_style_id, compass_zone, room_sqft } = await request.json();
+  const { room_type, design_style_id, compass_zone, room_sqft, palette_desc } = await request.json();
 
-  // Build a detailed prompt from the design style + room context
+  // Build a detailed prompt from the design style + room context + palette
   const stylePrompt  = RENDER_STYLE_PROMPTS[design_style_id] || RENDER_STYLE_PROMPTS.contemporary_indian;
   const roomContext  = `${room_sqft || 150} square foot ${(room_type || 'bedroom').replace(/_/g, ' ')}`;
   const zoneContext  = compass_zone && compass_zone !== 'unknown' ? `, ${compass_zone}-facing room` : '';
-  const fullPrompt   = `Photorealistic render of a ${roomContext}${zoneContext}, ${stylePrompt}, 8K quality, natural lighting, no people, wide angle view showing full room`;
+  const palContext   = palette_desc ? `, ${palette_desc}` : '';
+  const fullPrompt   = `Photorealistic interior design render of a ${roomContext}${zoneContext}${palContext}, ${stylePrompt}, ultra realistic, 8K quality, professional interior photography, soft natural lighting, wide angle view showing full room, no people`;
   const negativePrompt = 'people, person, human, cartoon, anime, sketch, watermark, text, logo, blurry, low quality, distorted';
 
   try {
     const result = await env.AI.run(IMAGE_MODEL, {
       prompt:          fullPrompt,
       negative_prompt: negativePrompt,
-      num_steps:       20,       // higher = better quality, slower. Max 20 on free plan
+      num_steps:       20,    // max on free plan
       guidance:        7.5,
-      width:           1024,
-      height:          768,
+      width:           768,   // smaller = faster, avoids timeout on free tier
+      height:          512,
     });
 
-    // Result is a ReadableStream of image bytes — convert to base64
-    const reader  = result.getReader();
-    const chunks  = [];
-    let done = false;
-    while (!done) {
-      const { value, done: d } = await reader.read();
-      if (value) chunks.push(value);
-      done = d;
+    // CF Workers AI returns a ReadableStream — pipe through Response for reliable buffer
+    const arrayBuffer = await new Response(result).arrayBuffer();
+    const uint8Array  = new Uint8Array(arrayBuffer);
+
+    // Convert to base64 in chunks to avoid stack overflow on large images
+    let binary = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      binary += String.fromCharCode(...uint8Array.subarray(i, i + chunkSize));
     }
-    const bytes   = new Uint8Array(chunks.reduce((a, c) => a + c.length, 0));
-    let offset = 0;
-    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
-    const base64  = btoa(String.fromCharCode(...bytes));
+    const base64 = btoa(binary);
 
     return json({
-      ok:          true,
+      ok:           true,
       image_base64: base64,
-      mime_type:   'image/png',
-      prompt_used: fullPrompt
+      mime_type:    'image/png',
+      prompt_used:  fullPrompt,
+      dimensions:   '768x512'
     }, 200, cors);
 
   } catch (err) {

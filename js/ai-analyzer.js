@@ -21,7 +21,7 @@
 // ─── CONFIGURE THIS ───────────────────────────────────────────────────────────
 // Replace with your Cloudflare Worker URL after deploying worker/index.js
 // Format: https://griha-worker.<your-cloudflare-username>.workers.dev
-const WORKER_URL = 'https://griha-worker.sayan-biz.000.workers.dev';
+const WORKER_URL = 'https://griha-worker.YOUR_USERNAME.workers.dev';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_IMAGE_BYTES  = 5 * 1024 * 1024; // 5MB
@@ -147,6 +147,54 @@ export class AIAnalyzer {
   }
 
   // ─── Private helpers ────────────────────────────────────────────────────────
+
+  /**
+   * Generate an AI room render using Stable Diffusion XL via the Worker.
+   *
+   * @param {object} params
+   * @param {string} params.room_type        - e.g. "master_bedroom"
+   * @param {string} params.design_style_id  - e.g. "contemporary_indian"
+   * @param {string} params.compass_zone     - e.g. "SW"
+   * @param {number} params.room_sqft        - e.g. 160
+   * @returns {Promise<{ok, image_base64, mime_type} | {ok:false, error}>}
+   */
+  async generateRender({ room_type, design_style_id, compass_zone, room_sqft, palette_desc = '' }) {
+    try {
+      const response = await fetch(`${this.workerUrl}/generate-render`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ room_type, design_style_id, compass_zone, room_sqft, palette_desc })
+      });
+      const data = await response.json();
+      if (!data.ok) return { ok: false, error: data.error || 'Render generation failed' };
+      return data;
+    } catch (err) {
+      return { ok: false, error: `Could not generate render: ${err.message}` };
+    }
+  }
+
+  /**
+   * Send a chat message to the conversational assistant.
+   *
+   * @param {string}   userMessage
+   * @param {object}   currentAnalysis  - context from current room
+   * @param {array}    conversationHistory
+   * @returns {Promise<{ok, reply} | {ok:false, error}>}
+   */
+  async chat(userMessage, currentAnalysis = null, conversationHistory = []) {
+    try {
+      const response = await fetch(`${this.workerUrl}/suggest-changes`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userMessage, currentAnalysis, conversationHistory })
+      });
+      const data = await response.json();
+      if (data.error) return { ok: false, error: data.error };
+      return { ok: true, reply: data.reply || 'No response generated.' };
+    } catch (err) {
+      return { ok: false, error: `Chat unavailable: ${err.message}` };
+    }
+  }
 
   /**
    * Converts a browser File to base64 string.
