@@ -1329,16 +1329,20 @@ window.triggerRender = async function(idx) {
     preview.innerHTML = `
       <div class="rs-placeholder">
         <div class="rs-placeholder-icon">⚠️</div>
-        <div class="rs-placeholder-title" style="color:rgba(255,255,255,0.6);">Render unavailable</div>
-        <div class="rs-placeholder-sub">${
-          result.error?.includes('binding') || result.error?.includes('AI binding')
-            ? 'Add the Workers AI binding: Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.'
-            : result.error?.includes('not configured')
-              ? 'Workers AI binding not set up yet. See the error above.'
-              : (result.error || 'Could not generate render. Check your Worker is deployed and the AI binding is configured.')
-        }</div>
+        <div class="rs-placeholder-title" style="color:rgba(255,255,255,0.7);">Render failed</div>
+        <div class="rs-placeholder-sub" style="max-width:360px;">
+          ${result.error?.includes('Failed to fetch') || result.error?.includes('fetch')
+            ? `<strong style="color:rgba(255,255,255,0.6);">Connection error — check two things:</strong><br><br>
+               1. Open <a href="https://griha-worker.sayan-biz000.workers.dev/health" target="_blank" style="color:var(--terra);">your worker /health</a> — if it shows version:2 without ai_binding, paste the new worker code and Deploy.<br><br>
+               2. Check <strong>js/ai-analyzer.js</strong> line 24 on GitHub — the URL must be <span style="color:rgba(255,255,255,0.5);font-size:10px;">https://griha-worker.sayan-biz000.workers.dev</span>`
+            : result.error?.includes('binding') || result.error?.includes('AI binding')
+              ? `<strong style="color:rgba(255,255,255,0.6);">Workers AI binding missing.</strong><br><br>Go to: Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it <strong style="color:var(--terra);">AI</strong> (capital letters) → Save and Deploy.`
+              : result.error || 'Unknown error. Check browser console (F12) for details.'
+          }
+        </div>
       </div>`;
-    if (footerNote) footerNote.textContent = 'Render failed — check the Workers AI binding in your Cloudflare dashboard.';
+    if (footerNote) footerNote.textContent = `Error: ${result.error?.slice(0,80) || 'unknown'}`;
+    if (genBtn)   { genBtn.disabled = false; genBtn.textContent = '✦ Generate preview'; }
     return;
   }
 
