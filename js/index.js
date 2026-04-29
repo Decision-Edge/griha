@@ -198,11 +198,21 @@ async function generateRender(request, env, cors) {
   if (!env.AI) {
     return json({
       ok: false,
-      error: 'AI binding not configured. Go to Worker Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.'
+      error: 'Workers AI binding missing. Go to: Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it exactly "AI" (capital letters) → Save and Deploy.'
     }, 503, cors);
   }
 
-  const { room_type, design_style_id, compass_zone, room_sqft, palette_desc } = await request.json();
+  let room_type, design_style_id, compass_zone, room_sqft, palette_desc;
+  try {
+    const body = await request.json();
+    room_type       = body.room_type;
+    design_style_id = body.design_style_id;
+    compass_zone    = body.compass_zone;
+    room_sqft       = body.room_sqft;
+    palette_desc    = body.palette_desc || '';
+  } catch(e) {
+    return json({ ok: false, error: 'Invalid request body' }, 400, cors);
+  }
 
   // Build a detailed prompt from the design style + room context + palette
   const stylePrompt  = RENDER_STYLE_PROMPTS[design_style_id] || RENDER_STYLE_PROMPTS.contemporary_indian;
@@ -244,7 +254,14 @@ async function generateRender(request, env, cors) {
 
   } catch (err) {
     console.error('Image generation error:', err);
-    return json({ ok: false, error: `Image generation failed: ${err.message}` }, 500, cors);
+    // Common errors and their causes
+    const msg = err.message || String(err);
+    const detail =
+      msg.includes('timeout')    ? 'Request timed out — try again. If this persists, the image dimensions may be too large for the free plan.' :
+      msg.includes('model')       ? 'AI model error — check that the AI binding is correctly set up and named "AI".' :
+      msg.includes('fetch')       ? 'Internal fetch error — the AI binding may not be properly connected.' :
+                                    msg;
+    return json({ ok: false, error: `Image generation failed: ${detail}` }, 500, cors);
   }
 }
 
