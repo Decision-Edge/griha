@@ -264,7 +264,7 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .spec-item-chip.selected{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
 
 /* chat */
-.r-chat{width:272px;flex-shrink:0;border-left:1px solid var(--border);background:var(--warm-white);display:flex;flex-direction:column;}
+.r-chat{display:none;}/* chat moved inline below render studio */
 .chat-hd{padding:12px 14px;border-bottom:1px solid var(--border);}
 .chat-hd-title{font-size:13px;font-weight:500;}
 .chat-hd-sub{font-size:11px;color:var(--ch40);margin-top:1px;}
@@ -328,6 +328,9 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .rs-palette-dot{width:12px;height:12px;border-radius:50%;}
 .rs-palette-name{font-size:10px;color:rgba(255,255,255,0.45);font-weight:500;}
 .rs-palette-btn.active .rs-palette-name{color:#EFA882;}
+.rs-dropdown{width:100%;padding:8px 10px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);font-family:var(--font-b);font-size:12px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='white' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.rs-dropdown:focus{border-color:rgba(192,80,42,0.5);}
+.rs-dropdown option{background:#1A1714;color:#fff;}
 .rs-generate-btn{width:100%;padding:11px;border-radius:var(--r-sm);background:var(--terra);color:#fff;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
 .rs-generate-btn:hover{background:var(--terra-h);}
 .rs-generate-btn:disabled{opacity:.5;cursor:not-allowed;}
@@ -340,6 +343,89 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .rs-regen-btn.show{display:inline-flex;align-items:center;gap:5px;}
 .rs-regen-btn:hover{background:var(--terra-h);}
 
+/* ── MULTI-ROOM CAROUSEL ── */
+.carousel-studio{border:1.5px solid var(--terra);border-radius:var(--r-lg);overflow:hidden;background:var(--charcoal);margin-bottom:4px;}
+.carousel-header{padding:14px 20px;background:linear-gradient(135deg,var(--charcoal) 0%,#2A1F1A 100%);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.carousel-title{font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--warm-white);}
+.carousel-subtitle{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;}
+.carousel-controls-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.carousel-dropdown{padding:7px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);font-family:var(--font-b);font-size:11px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='white' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:24px;}
+.carousel-dropdown option{background:#1A1714;color:#fff;}
+.carousel-gen-btn{padding:8px 18px;border-radius:100px;background:var(--terra);color:#fff;border:none;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:6px;}
+.carousel-gen-btn:hover{background:var(--terra-h);}
+.carousel-gen-btn:disabled{opacity:.5;cursor:not-allowed;}
+.carousel-track-wrap{position:relative;overflow:hidden;background:#111009;}
+.carousel-track{display:flex;transition:transform .4s cubic-bezier(0.4,0,0.2,1);}
+.carousel-slide{min-width:100%;position:relative;min-height:380px;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+.carousel-slide img{width:100%;max-height:480px;object-fit:contain;display:block;}
+.carousel-slide-label{position:absolute;bottom:12px;left:12px;background:rgba(26,23,20,0.8);color:#fff;font-size:12px;font-weight:500;padding:5px 12px;border-radius:100px;backdrop-filter:blur(6px);}
+.carousel-slide-status{position:absolute;top:12px;right:12px;font-size:11px;padding:4px 10px;border-radius:100px;backdrop-filter:blur(6px);}
+.css-loading{background:rgba(176,125,32,0.8);color:#fff;}
+.css-done{background:rgba(79,98,80,0.85);color:#fff;}
+.css-error{background:rgba(192,80,42,0.8);color:#fff;}
+.carousel-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;height:380px;color:rgba(255,255,255,0.3);}
+.carousel-placeholder-icon{font-size:40px;opacity:.25;}
+.carousel-placeholder-text{font-size:13px;text-align:center;max-width:240px;line-height:1.6;}
+.carousel-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(26,23,20,0.7);border:1px solid rgba(255,255,255,0.15);color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;backdrop-filter:blur(6px);}
+.carousel-nav:hover{background:rgba(192,80,42,0.8);}
+.carousel-nav.prev{left:12px;}
+.carousel-nav.next{right:12px;}
+.carousel-nav:disabled{opacity:.3;cursor:not-allowed;}
+.carousel-footer{padding:12px 16px;background:#1A1714;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.carousel-dots{display:flex;gap:6px;align-items:center;}
+.carousel-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.2);cursor:pointer;transition:all .2s;}
+.carousel-dot.active{background:var(--terra);width:20px;border-radius:4px;}
+.carousel-footer-note{font-size:11px;color:rgba(255,255,255,0.3);}
+.carousel-download-btn{padding:6px 14px;border-radius:100px;background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:11px;cursor:pointer;text-decoration:none;transition:all .15s;display:none;}
+.carousel-download-btn.show{display:inline-flex;align-items:center;gap:5px;}
+.carousel-download-btn:hover{border-color:rgba(255,255,255,0.4);color:#fff;}
+
+/* ── VASTU CHECKLIST MODAL ── */
+.vastu-modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(26,23,20,0.7);display:flex;align-items:flex-end;justify-content:flex-end;padding:20px;pointer-events:auto;}
+.vastu-modal{background:var(--warm-white);border-radius:var(--r-lg);width:420px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 32px 64px rgba(0,0,0,0.3);overflow:hidden;}
+.vastu-modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.vastu-modal-title{font-family:var(--font-d);font-size:20px;font-weight:500;}
+.vastu-modal-close{padding:5px 12px;border-radius:100px;border:1px solid var(--border-md);background:transparent;font-size:12px;cursor:pointer;}
+.vastu-modal-body{overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;}
+.vcl-section{background:var(--cream);border-radius:var(--r-sm);padding:14px;}
+.vcl-section-title{font-size:12px;font-weight:500;color:var(--terra);letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;}
+.vcl-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:12px;color:var(--ch70);line-height:1.5;}
+.vcl-check{width:16px;height:16px;border:1.5px solid var(--border-md);border-radius:3px;flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .15s;}
+.vcl-check:hover{border-color:var(--terra);}
+.vcl-check.checked{background:var(--sage);border-color:var(--sage);color:#fff;}
+.vcl-source{font-size:10px;color:var(--ch40);font-style:italic;margin-top:2px;}
+.vastu-modal-footer{padding:12px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--ch40);flex-shrink:0;line-height:1.5;}
+.chat-studio{border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;background:var(--warm-white);}
+.cs-header{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.cs-header-icon{width:28px;height:28px;border-radius:50%;background:var(--terra);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;flex-shrink:0;}
+.cs-header-title{font-size:13px;font-weight:500;color:var(--charcoal);}
+.cs-header-sub{font-size:11px;color:var(--ch40);margin-top:1px;}
+.cs-messages{display:flex;flex-direction:column;gap:10px;padding:16px;max-height:320px;overflow-y:auto;}
+.cs-msg{display:flex;gap:10px;align-items:flex-start;}
+.cs-msg.user{flex-direction:row-reverse;}
+.cs-msg-avatar{width:26px;height:26px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;}
+.cs-msg.user .cs-msg-avatar{background:var(--charcoal);color:#fff;}
+.cs-msg.griha .cs-msg-avatar{background:var(--terra);color:#fff;}
+.cs-msg-bubble{max-width:75%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.6;}
+.cs-msg.user .cs-msg-bubble{background:var(--charcoal);color:#fff;border-radius:12px 12px 2px 12px;}
+.cs-msg.griha .cs-msg-bubble{background:var(--cream);color:var(--charcoal);border:1px solid var(--border);border-radius:2px 12px 12px 12px;}
+.cs-msg.griha .cs-msg-bubble.loading{color:var(--ch40);font-style:italic;}
+.cs-render-chip{display:inline-flex;align-items:center;gap:5px;background:var(--terra-l);color:var(--terra);font-size:11px;font-weight:500;padding:3px 10px;border-radius:100px;margin-top:6px;cursor:pointer;border:1px solid rgba(192,80,42,0.2);transition:all .15s;}
+.cs-render-chip:hover{background:var(--terra);color:#fff;}
+.cs-empty{padding:20px;text-align:center;color:var(--ch40);}
+.cs-empty-icon{font-size:28px;margin-bottom:8px;opacity:.35;}
+.cs-empty-title{font-size:13px;font-weight:500;color:var(--charcoal);margin-bottom:6px;opacity:.5;}
+.cs-empty-prompts{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.cs-prompt-chip{padding:7px 14px;border-radius:100px;border:1px solid var(--border);font-size:12px;color:var(--ch70);cursor:pointer;transition:all .15s;text-align:left;}
+.cs-prompt-chip:hover{border-color:var(--terra);color:var(--terra);background:var(--terra-l);}
+.cs-input-row{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;}
+.cs-input{flex:1;padding:10px 14px;border-radius:var(--r-md);border:1px solid var(--border-md);font-family:var(--font-b);font-size:13px;color:var(--charcoal);background:var(--cream);outline:none;resize:none;min-height:40px;max-height:120px;line-height:1.5;transition:border-color .2s;}
+.cs-input:focus{border-color:var(--terra);box-shadow:0 0 0 3px rgba(192,80,42,0.07);}
+.cs-input::placeholder{color:var(--ch40);}
+.cs-send-btn{padding:10px 18px;border-radius:var(--r-sm);background:var(--terra);color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.cs-send-btn:hover{background:var(--terra-h);}
+.cs-send-btn:disabled{opacity:.5;cursor:not-allowed;}
+.cs-hint{padding:6px 16px 10px;font-size:11px;color:var(--ch40);line-height:1.5;}
 @media(max-width:768px){
   .rs-body{grid-template-columns:1fr;}
   .rs-controls{border-left:none;border-top:1px solid rgba(255,255,255,0.07);flex-direction:row;flex-wrap:wrap;gap:10px;}
@@ -416,6 +502,9 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 
     <!-- Main results area -->
     <main class="r-main">
+      <!-- All-rooms carousel — shown when multiple rooms are analysed -->
+      <div id="carouselSection" style="display:none;margin-bottom:20px;"></div>
+
       <div class="r-results" id="resultsArea">
         <div style="text-align:center;padding:48px;color:var(--ch40);">
           <div style="font-size:36px;margin-bottom:12px;opacity:.4;">⏳</div>
@@ -452,6 +541,56 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
   <div class="ao-title">Analysing your home</div>
   <div class="ao-sub">This takes about 15–20 seconds per room</div>
   <div class="ao-progress" id="aoProgress"></div>
+</div>
+
+<!-- Vastu checklist modal -->
+<div id="vastuChecklistModal" style="display:none;" class="vastu-modal-overlay" onclick="if(event.target===this)window.closeVastuChecklist()">
+  <div class="vastu-modal">
+    <div class="vastu-modal-header">
+      <div class="vastu-modal-title">Vastu Checklist</div>
+      <button class="vastu-modal-close" onclick="window.closeVastuChecklist()">Close ✕</button>
+    </div>
+    <div class="vastu-modal-body">
+      <p style="font-size:12px;color:var(--ch70);line-height:1.6;">Use this checklist to manually verify Vastu compliance when compass directions are unclear. Check each item that applies to your home.</p>
+
+      <div class="vcl-section">
+        <div class="vcl-section-title">Room placement</div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Master bedroom is in the SW or S zone</div><div class="vcl-source">Manasara Ch.9 — SW (Nairutya) is ideal for head of household</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Kitchen is in the SE zone (Agni corner)</div><div class="vcl-source">Manasara Ch.11 — SE governs fire element, ideal for cooking</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Pooja room / mandir is in the NE zone</div><div class="vcl-source">Manasara Ch.9 — NE (Ishanya) is the sacred direction</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Living / drawing room faces N, NE, or E</div><div class="vcl-source">Samarangana Sutradhara Ch.17</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Toilet / washroom is in NW, W, or S (never NE)</div><div class="vcl-source">Manasara Ch.11</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Main entrance faces N, NE, or E</div><div class="vcl-source">Manasara Ch.7</div></div></div>
+      </div>
+
+      <div class="vcl-section">
+        <div class="vcl-section-title">Furniture placement</div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Bed head points south or east (never north)</div><div class="vcl-source">Manasara Ch.42 — aligns with Earth's magnetic field</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>No mirror directly facing the bed</div><div class="vcl-source">Mayamata Ch.12</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Heavy furniture (sofa, wardrobe) along S or W walls</div><div class="vcl-source">Samarangana Sutradhara Ch.17</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>NE corner of every room is kept light and open</div><div class="vcl-source">Samarangana Sutradhara Ch.12</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Cook faces east while cooking</div><div class="vcl-source">Mayamata Ch.15</div></div></div>
+      </div>
+
+      <div class="vcl-section">
+        <div class="vcl-section-title">Structural checks</div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>No overhead structural beam above bed / seating position</div><div class="vcl-source">Samarangana Sutradhara Ch.14</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Staircase not in NE or SW centre of home</div><div class="vcl-source">Mayamata Ch.8</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Centre of home (Brahmasthan) is open, not enclosed</div><div class="vcl-source">Manasara Ch.7</div></div></div>
+      </div>
+
+      <div class="vcl-section">
+        <div class="vcl-section-title">Colour guidance (without compass)</div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Bedroom walls in warm earth tones (cream, terracotta, light yellow)</div><div class="vcl-source">Samarangana Sutradhara Ch.18</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Kitchen walls in warm orange or yellow tones</div><div class="vcl-source">Agni zone colour principle</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Living room walls in white, green, or light blue</div><div class="vcl-source">Samarangana Sutradhara Ch.18</div></div></div>
+        <div class="vcl-item"><div class="vcl-check" onclick="toggleCheck(this)"></div><div><div>Pooja room walls in white, gold, or pale yellow</div><div class="vcl-source">Ishanya zone — divine and pure colours</div></div></div>
+      </div>
+    </div>
+    <div class="vastu-modal-footer">
+      Use this checklist alongside Griha's AI analysis. For professional Vastu consultation, contact an IAVA-certified consultant. Sources: Manasara, Mayamata, Samarangana Sutradhara.
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -541,16 +680,84 @@ function updateRoomLabel(id, label) {
 function addPhoto(roomId, slotIdx, file) {
   const room = UPLOAD.rooms.find(r=>r.id===roomId);
   if(!room) return;
-  // Validate file
-  if(!file.type.startsWith('image/')) { alert('Please upload a JPG, PNG, or WebP image.'); return; }
-  if(file.size > 5 * 1024 * 1024)    { alert('Image is too large. Please use a photo under 5MB.'); return; }
-  // Revoke old URL if replacing
+  if(!file.type.startsWith('image/')) { showSlotError(roomId, slotIdx, 'Please upload a JPG, PNG, or WebP image.'); return; }
+  if(file.size > 5 * 1024 * 1024)    { showSlotError(roomId, slotIdx, 'Image is too large. Please use a photo under 5MB.'); return; }
+
+  // Show preview immediately (good UX) then validate in background
   if(room.previews[slotIdx]) URL.revokeObjectURL(room.previews[slotIdx]);
-  // Store file in memory and create preview URL
-  room.photos[slotIdx]   = file;
-  room.previews[slotIdx] = URL.createObjectURL(file);
+  room.photos[slotIdx]         = file;
+  room.previews[slotIdx]       = URL.createObjectURL(file);
+  room.validating              = room.validating || {};
+  room.validating[slotIdx]     = true;
   renderAllRoomCards();
   updateFooter();
+
+  // Async validation — remove photo if not a valid room
+  validateRoomPhoto(roomId, slotIdx, file);
+}
+
+async function validateRoomPhoto(roomId, slotIdx, file) {
+  const slot = document.getElementById(`slot-${roomId}-${slotIdx}`);
+  if(slot) {
+    const overlay = slot.querySelector('.slot-overlay') || slot;
+    // Show validating indicator
+    const badge = document.createElement('div');
+    badge.id = `val-badge-${roomId}-${slotIdx}`;
+    badge.style.cssText = 'position:absolute;top:6px;left:6px;background:rgba(26,23,20,0.75);color:#fff;font-size:10px;padding:3px 8px;border-radius:100px;backdrop-filter:blur(4px);';
+    badge.textContent = '⏳ Validating…';
+    slot.appendChild(badge);
+  }
+
+  try {
+    const result = await S.M.ai.validatePhoto(file);
+    const badge  = document.getElementById(`val-badge-${roomId}-${slotIdx}`);
+    if(badge) badge.remove();
+
+    if(result._skipped) {
+      // Worker not deployed yet — skip validation, accept photo
+      return;
+    }
+
+    if(!result.is_valid_room) {
+      // Not a room — remove the photo and show error
+      const room = UPLOAD.rooms.find(r=>r.id===roomId);
+      if(room) {
+        if(room.previews[slotIdx]) URL.revokeObjectURL(room.previews[slotIdx]);
+        room.photos[slotIdx]   = null;
+        room.previews[slotIdx] = null;
+      }
+      renderAllRoomCards();
+      updateFooter();
+      showSlotError(roomId, slotIdx, result.reason || 'This doesn\'t appear to be a room photo. Please upload an interior room photo.');
+      return;
+    }
+
+    // Valid room — show a brief success indicator
+    const slotEl = document.getElementById(`slot-${roomId}-${slotIdx}`);
+    if(slotEl) {
+      const ok = document.createElement('div');
+      ok.style.cssText = 'position:absolute;top:6px;left:6px;background:rgba(79,98,80,0.85);color:#fff;font-size:10px;padding:3px 8px;border-radius:100px;';
+      ok.textContent   = `✓ ${result.room_type_detected || 'Room'} detected`;
+      slotEl.appendChild(ok);
+      setTimeout(() => ok.remove(), 2500);
+    }
+  } catch(e) {
+    const badge = document.getElementById(`val-badge-${roomId}-${slotIdx}`);
+    if(badge) badge.remove();
+    // Validation failed silently — accept the photo anyway
+  }
+}
+
+function showSlotError(roomId, slotIdx, message) {
+  // Show error banner above the slot
+  const slotEl = document.getElementById(`slot-${roomId}-${slotIdx}`);
+  const cardEl = document.getElementById(`roomcard-${roomId}`);
+  if(cardEl) {
+    let err = cardEl.querySelector('.slot-error-msg');
+    if(!err) { err = document.createElement('div'); err.className='slot-error-msg'; err.style.cssText='margin:0 16px 10px;padding:8px 12px;background:#FDECEA;border:1px solid rgba(192,80,42,0.3);border-radius:8px;font-size:12px;color:#B83232;display:flex;align-items:center;gap:8px;'; cardEl.insertBefore(err, cardEl.querySelector('.photo-slots')); }
+    err.innerHTML = `<span>⚠</span><span>${message}</span>`;
+    setTimeout(() => err.remove(), 5000);
+  }
 }
 
 function removePhoto(roomId, slotIdx, e) {
@@ -661,7 +868,7 @@ function updateFooter() {
 function setupListeners() {
   document.getElementById('addRoomBtn').addEventListener('click', ()=>addRoom());
 
-  document.getElementById('mpFileInput').addEventListener('change', e => {
+  document.getElementById('mpFileInput').addEventListener('change', async e => {
     const file = e.target.files[0];
     if(!file) return;
     if(UPLOAD.masterplanPreview) URL.revokeObjectURL(UPLOAD.masterplanPreview);
@@ -670,11 +877,48 @@ function setupListeners() {
     const card = document.getElementById('masterplanCard');
     card.classList.add('uploaded');
     card.innerHTML = `
-      <div class="mp-icon-wrap">✓</div>
-      <div><div class="mp-text-title" style="color:var(--sage)">Masterplan uploaded</div>
-      <div class="mp-text-sub">Compass zone analysis enabled</div></div>
-      <img class="mp-uploaded-preview" src="${UPLOAD.masterplanPreview}" alt="Masterplan">
-      <button class="mp-remove" onclick="removeMasterplan(event)">Remove</button>`;
+      <div class="mp-icon-wrap" style="animation:pulse 1.2s ease-in-out infinite;">⏳</div>
+      <div><div class="mp-text-title" style="color:var(--gold)">Analysing masterplan…</div>
+      <div class="mp-text-sub">Reading compass zones</div></div>
+      <img class="mp-uploaded-preview" src="${UPLOAD.masterplanPreview}" alt="Masterplan">`;
+    updateFooter();
+
+    // Analyse masterplan immediately for direction confidence
+    try {
+      const result = await S.M.ai.analyzeMasterplan(file);
+      if(result.ok) {
+        S.masterplan = result;
+        const dirConf = result.direction_confidence || 'low';
+        const rooms   = result.rooms || [];
+
+        card.innerHTML = `
+          <div class="mp-icon-wrap">✓</div>
+          <div>
+            <div class="mp-text-title" style="color:var(--sage)">${result.building?.bhk_type||'Home'} · ${result.building?.total_sqft||'?'} sqft</div>
+            <div class="mp-text-sub">${rooms.length} rooms · Direction confidence: <strong style="color:${dirConf==='high'?'var(--sage)':dirConf==='medium'?'var(--gold)':'var(--terra)'}">${dirConf}</strong></div>
+          </div>
+          <img class="mp-uploaded-preview" src="${UPLOAD.masterplanPreview}" alt="Masterplan">
+          <button class="mp-remove" onclick="removeMasterplan(event)">Remove</button>`;
+
+        // Show direction confidence warning if not high
+        showMasterplanDirectionWarning(result);
+
+      } else {
+        card.innerHTML = `
+          <div class="mp-icon-wrap">⚠️</div>
+          <div><div class="mp-text-title" style="color:var(--terra)">Could not read floor plan</div>
+          <div class="mp-text-sub">${result.error||'Please upload a clearer image'}</div></div>
+          <button class="mp-remove" onclick="removeMasterplan(event)">Remove</button>`;
+      }
+    } catch(err) {
+      // Worker not deployed — accept masterplan silently, no zone analysis
+      card.innerHTML = `
+        <div class="mp-icon-wrap">🏗</div>
+        <div><div class="mp-text-title">Masterplan uploaded</div>
+        <div class="mp-text-sub">Deploy Worker for compass zone analysis</div></div>
+        <img class="mp-uploaded-preview" src="${UPLOAD.masterplanPreview}" alt="Masterplan">
+        <button class="mp-remove" onclick="removeMasterplan(event)">Remove</button>`;
+    }
     updateFooter();
   });
 
@@ -683,6 +927,28 @@ function setupListeners() {
   document.getElementById('chatInput').addEventListener('keydown', e => {
     if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();handleChat(document.getElementById('chatInput').value);}
   });
+}
+
+function showMasterplanDirectionWarning(masterplanResult) {
+  const conf = masterplanResult.direction_confidence;
+  const note = masterplanResult.direction_clarity_note;
+  if (conf === 'high') return; // no warning needed
+
+  // Remove any existing warning
+  document.getElementById('mpDirectionWarning')?.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'mpDirectionWarning';
+  const isLow = conf === 'low';
+  banner.style.cssText = `margin-top:8px;padding:10px 14px;border-radius:var(--r-sm);border:1px solid ${isLow?'rgba(192,80,42,0.3)':'rgba(176,125,32,0.3)'};background:${isLow?'var(--terra-l)':'var(--gold-l)'};font-size:12px;color:${isLow?'var(--terra)':'var(--gold)'};line-height:1.6;`;
+  banner.innerHTML = `
+    <strong style="display:block;margin-bottom:4px;">${isLow?'⚠ Compass direction unclear':'💡 Direction partially inferred'}</strong>
+    ${note||'The floor plan does not have a clear compass rose or north arrow.'}
+    ${isLow?' Vastu zone assignments may be inaccurate.':' Vastu zones are based on inference — verify with your builder.'}
+    <br><a href="javascript:void(0)" onclick="window.showVastuChecklist()" style="font-weight:500;text-decoration:underline;color:inherit;">Open Vastu checklist →</a> to verify compliance manually.`;
+
+  const mpSection = document.getElementById('masterplanCard')?.parentNode;
+  if (mpSection) mpSection.insertBefore(banner, document.getElementById('masterplanCard').nextSibling);
 }
 
 window.removeMasterplan = function(e) {
@@ -802,6 +1068,9 @@ async function startAnalysis() {
 
   saveSession();
 
+  // Build carousel if multiple rooms
+  buildCarousel();
+
   // Transition to results view
   overlay.style.display = 'none';
   document.getElementById('uploadPhase').style.display  = 'none';
@@ -884,108 +1153,168 @@ function renderRoomResults(idx) {
   const vastuNotes = (lighting?.vastu_notes||[]).map(n=>`<div class="lp-vastu-note">${n}</div>`).join('');
   const photosStrip = room.previews.map(url=>`<img class="rps-thumb" src="${url}" alt="Room photo">`).join('');
 
+  // ── Palette data for render studio dropdowns ──
+  const PALETTES_DATA = {
+    warm_earthen:    { name:'Warm Earthen',      swatches:['#EAE1D5','#C47040','#5C3D2C'], desc:'Terracotta, tawny brown, kaolin clay' },
+    sage_serenity:   { name:'Sage Serenity',     swatches:['#E8EEE6','#779971','#2B4D25'], desc:'Sage green, pale moss, deep forest' },
+    terracotta_dawn: { name:'Terracotta Dawn',   swatches:['#F5ECE1','#C47040','#9A4820'], desc:'Fired clay, brick spice, pale peach' },
+    cloud_white:     { name:'Cloud White',       swatches:['#FDFCFA','#EDE8DC','#C8BC9F'], desc:'Linen white, warm ivory, greige' },
+    monsoon_blue:    { name:'Monsoon Blue',      swatches:['#EBF0F5','#5B8FAE','#2E5F82'], desc:'Arctic mist, cerulean, deep navy' },
+    golden_hour:     { name:'Golden Hour',       swatches:['#F4EAD5','#D4960A','#8A6010'], desc:'Champagne, warm gold, deep amber' },
+    forest_deep:     { name:'Forest Deep',       swatches:['#E8EEE6','#4E7848','#2B4D25'], desc:'Pale sage, deep fern, forest floor' },
+    blush_rose:      { name:'Blush Rose',        swatches:['#FAF0EA','#D4927B','#A0504A'], desc:'Warm cream, dusty rose, muted terracotta' },
+    midnight_charcoal:{ name:'Midnight Charcoal',swatches:['#8C8C8A','#3D3D3B','#1A1714'], desc:'Warm grey, dark slate, charcoal' },
+    coastal_sand:    { name:'Coastal Sand',      swatches:['#E8EDE6','#DED3B8','#B09070'], desc:'Sea foam, coastal sand, driftwood' }
+  };
+  const STYLES_DATA = [
+    { id:'contemporary_indian',  name:'Contemporary Indian',   desc:'Sheesham wood · terracotta · brass accents' },
+    { id:'minimalist_modern',    name:'Minimalist Modern',     desc:'White walls · clean lines · hidden storage' },
+    { id:'traditional_heritage', name:'Traditional Heritage',  desc:'Carved teak · jewel tones · antique brass' },
+    { id:'boho_chic',            name:'Boho Chic',             desc:'Rattan · sage green · macramé' },
+    { id:'industrial_modern',    name:'Industrial Modern',     desc:'Exposed concrete · steel · raw materials' },
+    { id:'art_deco_indian',      name:'Art Deco Indian',       desc:'Deep teal · gold geometric · marble' },
+    { id:'japandi',              name:'Japandi',               desc:'Warm grey · pale oak · wabi-sabi plaster' },
+    { id:'coastal_indian',       name:'Coastal Indian',        desc:'Aquamarine · whitewash · teak' }
+  ];
+
+  const styleOpts  = STYLES_DATA.map(s=>`<option value="${s.id}">${s.name} — ${s.desc}</option>`).join('');
+  const paletteOpts= Object.entries(PALETTES_DATA).map(([id,p])=>`<option value="${id}">${p.name} · ${p.desc}</option>`).join('');
+
+  const palSwatches = (palId) => {
+    const p = PALETTES_DATA[palId] || PALETTES_DATA.warm_earthen;
+    return p.swatches.map(c=>`<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,0.1);"></span>`).join('');
+  };
+
   area.innerHTML = `
     ${fallbackBanner}
+
+    <!-- 1. HEADER + PHOTOS -->
     <div class="r-header">
       <div>
         <div class="r-room-title">${room.label}</div>
         <div class="r-meta">${obs.estimated_sqft?obs.estimated_sqft+' sqft · ':''}${obs.light_direction?cap(obs.light_direction)+'-facing · ':''}Zone: ${zone!=='unknown'?zone:'Upload masterplan for zone'}</div>
         <div class="room-photos-strip" style="margin-top:10px;">${photosStrip}</div>
       </div>
-      <div class="vastu-score" style="--score-colour:${vastu?.grade?.colour||'#888'}">
-        <div class="vs-num">${vastu?.score??'--'}</div>
-        <div class="vs-label">${vastu?.grade?.label||'Vastu score'}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div class="vastu-score" style="--score-colour:${vastu?.grade?.colour||'#888'}">
+          <div class="vs-num">${vastu?.score??'--'}</div>
+          <div class="vs-label">${vastu?.grade?.label||'Vastu score'}</div>
+        </div>
+        <button onclick="window.showVastuChecklist()" style="font-size:11px;padding:5px 12px;border-radius:100px;border:1px solid var(--border-md);background:transparent;cursor:pointer;color:var(--ch70);white-space:nowrap;">🗒 Vastu checklist</button>
       </div>
     </div>
 
-    <div class="insights">
-      ${ins('Light',    cap(obs.light_direction||'unknown'),  cap(obs.light_quality||''))}
-      ${ins('Electrical',obs.electrical_points_visible!=null?obs.electrical_points_visible+' points':'Unknown',(obs.electrical_point_positions||[]).slice(0,2).join(', '))}
-      ${ins('Ceiling',  cap(obs.ceiling_height||'unknown'),   obs.overhead_beams_detected?'⚠ Beam detected':'No beams')}
-      ${ins('Style',    cap((obs.style_detected||['unknown'])[0]), cap(obs.flooring_type||'unknown')+' floor')}
+    ${S.masterplan && (S.masterplan.direction_confidence === 'low' || S.masterplan.direction_confidence === 'medium') ? `
+    <div style="padding:10px 14px;border-radius:var(--r-sm);border:1px solid ${S.masterplan.direction_confidence==='low'?'rgba(192,80,42,0.3)':'rgba(176,125,32,0.3)'};background:${S.masterplan.direction_confidence==='low'?'var(--terra-l)':'var(--gold-l)'};font-size:12px;color:${S.masterplan.direction_confidence==='low'?'var(--terra)':'var(--gold)'};line-height:1.6;">
+      <strong>${S.masterplan.direction_confidence==='low'?'⚠ Compass direction unclear in masterplan':'💡 Direction partially inferred from masterplan'}</strong><br>
+      ${S.masterplan.direction_clarity_note||'Compass direction could not be confirmed.'} Vastu zone assignments may be approximate.
+      <a href="javascript:void(0)" onclick="window.showVastuChecklist()" style="font-weight:500;text-decoration:underline;color:inherit;margin-left:4px;">Open Vastu checklist →</a>
+    </div>` : ''}
+
+    <!-- 2. AI ANALYSIS INSIGHTS (6 cards) -->
+    <div class="insights" style="grid-template-columns:repeat(3,1fr);">
+      ${ins('Light direction',     cap(obs.light_direction||'unknown'),        cap(obs.light_quality||'unknown')+' light')}
+      ${ins('Electrical points',   obs.electrical_points_visible!=null?obs.electrical_points_visible+' visible':'Unknown', (obs.electrical_point_positions||[]).slice(0,2).join(', ')||'')}
+      ${ins('Ceiling',             cap(obs.ceiling_height||'unknown')+' · '+cap(obs.ceiling_type||'flat'), obs.overhead_beams_detected?'⚠ Beam detected — fix needed':'✓ No beams')}
+      ${ins('Windows',             obs.window_count!=null?obs.window_count+' window'+(obs.window_count!==1?'s':''):'Unknown', obs.natural_light_assessment||'')}
+      ${ins('Flooring',            cap(obs.flooring_type||'unknown'),           cap(obs.flooring_colour||'')+' '+cap(obs.wall_condition||'') )}
+      ${ins('Style detected',      cap((obs.style_detected||['unknown'])[0]),   obs.vastu_observations?.heavy_furniture_zone?'Heavy furniture: '+obs.vastu_observations.heavy_furniture_zone:'')}
     </div>
 
-    <!-- ══ AI RENDER STUDIO — prominent feature ══ -->
+    <!-- 3. VASTU COMPLIANCE + DOWNLOAD REPORT -->
+    <div class="section-block">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);">
+        <div class="section-title" style="border:none;padding:0;">Vastu compliance</div>
+        <button onclick="window.downloadVastuReport(${idx})" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;border:1px solid var(--border-md);background:transparent;font-size:12px;font-weight:500;color:var(--charcoal);cursor:pointer;transition:all .15s;" onmouseover="this.style.background='var(--charcoal)';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='var(--charcoal)'">
+          📄 Download Vastu report
+        </button>
+      </div>
+      ${rulesHTML || '<div style="font-size:13px;color:var(--ch40);padding-top:8px;">Upload masterplan for full zone analysis.</div>'}
+    </div>
+
+    <!-- 4. AI RENDER STUDIO with dropdowns -->
     <div class="render-studio" id="renderStudio-${idx}">
       <div class="rs-header">
         <div>
-          <div class="rs-title">✦ AI Room Preview</div>
-          <div class="rs-subtitle">Select a design style and colour palette — AI will reimagine your room in seconds</div>
+          <div class="rs-title">✦ AI Surface Preview</div>
+          <div class="rs-subtitle">Select style and palette — AI will repaint walls, ceiling and floor of your actual room (no furniture changes)</div>
         </div>
       </div>
       <div class="rs-body">
         <div class="rs-preview" id="rsPreview-${idx}">
-          <div class="rs-placeholder" id="rsPlaceholder-${idx}">
+          <div class="rs-placeholder">
             <div class="rs-placeholder-icon">🎨</div>
-            <div class="rs-placeholder-title">Choose a style to preview</div>
-            <div class="rs-placeholder-sub">Select a design style on the right, then click "Generate preview" to see your room reimagined by AI</div>
+            <div class="rs-placeholder-title">Select style &amp; palette, then generate</div>
+            <div class="rs-placeholder-sub">The AI will transform the walls, ceiling and floor of your uploaded room photo. Furniture stays unchanged.</div>
           </div>
         </div>
         <div class="rs-controls">
           <div>
             <div class="rs-ctrl-label">Design style</div>
-            <div class="rs-style-btns">
-              <button class="rs-style-btn active" id="rsStyle-${idx}-contemporary_indian" onclick="window.setRenderStyle(${idx},'contemporary_indian',this)">Contemporary Indian</button>
-              <button class="rs-style-btn" id="rsStyle-${idx}-minimalist_modern" onclick="window.setRenderStyle(${idx},'minimalist_modern',this)">Minimalist Modern</button>
-              <button class="rs-style-btn" id="rsStyle-${idx}-traditional_heritage" onclick="window.setRenderStyle(${idx},'traditional_heritage',this)">Traditional Heritage</button>
-              <button class="rs-style-btn" id="rsStyle-${idx}-boho_chic" onclick="window.setRenderStyle(${idx},'boho_chic',this)">Boho Chic</button>
-            </div>
+            <select class="rs-dropdown" id="rsStyleSel-${idx}" onchange="window.setRenderStyleDropdown(${idx},this.value)">
+              ${styleOpts}
+            </select>
           </div>
           <div>
             <div class="rs-ctrl-label">Colour palette</div>
-            <div class="rs-palette-opts">
-              <div class="rs-palette-btn active" id="rsPal-${idx}-warm_earthy" onclick="window.setRenderPalette(${idx},'warm_earthy',this)">
-                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#EAE1D5"></div><div class="rs-palette-dot" style="background:#C47040"></div><div class="rs-palette-dot" style="background:#5C3D2C"></div></div>
-                <div class="rs-palette-name">Warm Earthen</div>
-              </div>
-              <div class="rs-palette-btn" id="rsPal-${idx}-sage_serenity" onclick="window.setRenderPalette(${idx},'sage_serenity',this)">
-                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#E8EEE6"></div><div class="rs-palette-dot" style="background:#779971"></div><div class="rs-palette-dot" style="background:#2B4D25"></div></div>
-                <div class="rs-palette-name">Sage Serenity</div>
-              </div>
-              <div class="rs-palette-btn" id="rsPal-${idx}-terracotta_dawn" onclick="window.setRenderPalette(${idx},'terracotta_dawn',this)">
-                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#F5ECE1"></div><div class="rs-palette-dot" style="background:#C47040"></div><div class="rs-palette-dot" style="background:#9A4820"></div></div>
-                <div class="rs-palette-name">Terracotta Dawn</div>
-              </div>
-              <div class="rs-palette-btn" id="rsPal-${idx}-cloud_white" onclick="window.setRenderPalette(${idx},'cloud_white',this)">
-                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#FDFCFA"></div><div class="rs-palette-dot" style="background:#EDE8DC"></div><div class="rs-palette-dot" style="background:#C8BC9F"></div></div>
-                <div class="rs-palette-name">Cloud White</div>
-              </div>
+            <select class="rs-dropdown" id="rsPalSel-${idx}" onchange="window.setRenderPaletteDropdown(${idx},this.value)">
+              ${paletteOpts}
+            </select>
+            <div class="rs-palette-preview" id="rsPalPreview-${idx}" style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:6px 8px;background:rgba(255,255,255,0.05);border-radius:6px;">
+              ${palSwatches('warm_earthen')}
+              <span style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:4px;">Warm Earthen palette selected</span>
             </div>
           </div>
           <button class="rs-generate-btn" id="rsGenBtn-${idx}" onclick="window.triggerRender(${idx})">
-            ✦ Generate preview
+            ✦ Generate surface preview
           </button>
         </div>
       </div>
       <div class="rs-footer">
-        <div class="rs-footer-note" id="rsFooterNote-${idx}">AI-generated illustration — select a style above and click Generate preview. Takes about 15 seconds.</div>
+        <div class="rs-footer-note" id="rsFooterNote-${idx}">Applies colour palette and style to walls, ceiling &amp; floor of your room. Furniture preserved. Takes ~20 seconds.</div>
         <button class="rs-regen-btn" id="rsRegenBtn-${idx}" onclick="window.triggerRender(${idx})">↻ Regenerate</button>
         <a class="rs-download-btn" id="rsDownloadBtn-${idx}" download="Griha-room-render.png">↓ Download</a>
       </div>
     </div>
 
-    <div class="section-block">
-      <div class="section-title">Vastu compliance</div>
-      ${rulesHTML || '<div style="font-size:13px;color:var(--ch40);">Upload masterplan for full zone analysis.</div>'}
+    <!-- 5. CHAT STUDIO -->
+    <div class="chat-studio" id="chatStudio-${idx}">
+      <div class="cs-header">
+        <div class="cs-header-icon">✦</div>
+        <div>
+          <div class="cs-header-title">Ask Griha about this room</div>
+          <div class="cs-header-sub">Describe surface changes and AI will regenerate the render — or ask any Vastu or design question</div>
+        </div>
+      </div>
+      <div class="cs-messages" id="csMsgs-${idx}">
+        <div class="cs-empty" id="csEmpty-${idx}">
+          <div class="cs-empty-icon">💬</div>
+          <div class="cs-empty-title">Ask about your room's design</div>
+          <div class="cs-empty-prompts">
+            <div class="cs-prompt-chip" onclick="window.sendChatPrompt(${idx},'Change the walls to sage green with a botanical wallpaper')">Sage green walls with botanical wallpaper</div>
+            <div class="cs-prompt-chip" onclick="window.sendChatPrompt(${idx},'Make it look like a traditional Indian heritage room with deep ochre walls')">Traditional heritage — deep ochre walls</div>
+            <div class="cs-prompt-chip" onclick="window.sendChatPrompt(${idx},'Switch to minimalist modern with pure white walls')">Minimalist — pure white walls</div>
+            <div class="cs-prompt-chip" onclick="window.sendChatPrompt(${idx},'What paint colour is Vastu-recommended for a ${zone !== \\'unknown\\' ? zone+\\' zone\\' : \\'bedroom\\'}?')">What colour for this Vastu zone?</div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-hint">Tip: Mention wall colours, paint finishes or styles — Griha will update the render automatically.</div>
+      <div class="cs-input-row">
+        <textarea class="cs-input" id="csInput-${idx}" placeholder="e.g. 'Paint the walls terracotta with a linen white ceiling'" rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();window.sendChatPrompt(${idx},document.getElementById('csInput-${idx}').value)}"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+        <button class="cs-send-btn" id="csSend-${idx}" onclick="window.sendChatPrompt(${idx},document.getElementById('csInput-${idx}').value)">Send →</button>
+      </div>
     </div>
 
-    ${lighting ? `
-    <div class="section-block">
-      <div class="section-title">Lighting plan</div>
-      <div class="lighting-plan">${lightingHTML}</div>
-      ${lCost ? `<div class="lp-cost">
-        <div class="lp-cost-item"><div class="lp-cost-label">Products</div><div class="lp-cost-val">₹${lCost.products.toLocaleString('en-IN')}</div></div>
-        <div class="lp-cost-item"><div class="lp-cost-label">Installation</div><div class="lp-cost-val">₹${lCost.installation.toLocaleString('en-IN')}</div></div>
-        <div class="lp-cost-item"><div class="lp-cost-label">Total</div><div class="lp-cost-val" style="color:var(--terra)">₹${lCost.total.toLocaleString('en-IN')}</div></div>
-      </div>` : ''}
-      ${vastuNotes ? `<div class="lp-vastu-notes">${vastuNotes}</div>` : ''}
-    </div>` : ''}
-
+    <!-- 6. DESIGN OPTIONS (furniture/products — scrolled further down) -->
     <div class="section-block" id="designSection-${idx}">
-      <div class="section-title">Design options</div>
-      <button class="gen-btn" onclick="window.generateDesigns(${idx})">✦ Generate 4 design options</button>
-      <div class="gen-btn-note">Creates 4 complete room design concepts — each with matching furniture, lighting, wallpaper, accessories, and a carpenter spec.</div>
+      <div class="section-title">Full design options with products</div>
+      <button class="gen-btn" onclick="window.generateDesigns(${idx})">✦ Generate 4 complete design options</button>
+      <div class="gen-btn-note">Each option includes matched furniture, lighting, wallpaper, accessories, and a downloadable carpenter spec — in addition to the surface design above.</div>
     </div>`;
+}
+
 }
 
 // ── Generate design options ────────────────────────────────────────────────
@@ -1101,53 +1430,157 @@ function prodCard(p) {
   </div>`;
 }
 
-// ── Chat ───────────────────────────────────────────────────────────────────
-async function handleChat(msg) {
-  if (!msg.trim()) return;
-  appendChat('user', msg);
-  document.getElementById('chatInput').value = '';
-  appendChat('assistant', '…', true);
+// ── Inline chat studio ─────────────────────────────────────────────────────
 
-  // Build rich context from the active room
-  const room = S.rooms[S.activeRoom];
-  const currentAnalysis = room ? {
-    room_type:      room.label,
-    zone:           getZone(room.label),
-    vastu:          room.vastu,
-    selected_style: room.designOptions?.find(o => o.isSelected)?.style?.name || null,
-    sqft:           room.ai?.observations?.estimated_sqft,
-    light_direction:room.ai?.observations?.light_direction,
-    overhead_beams: room.ai?.observations?.overhead_beams_detected,
-  } : null;
+// Keywords that signal the user wants a new render generated
+const RENDER_INTENT_KEYWORDS = [
+  'regenerate','render','show me','generate','preview',
+  'make it','make the','change to','change the','switch to',
+  'darker','lighter','brighter','more traditional','more modern',
+  'more minimalist','more boho','add ','remove ','with more',
+  'walls to','walls in','paint it','repaint','wallpaper',
+  'furniture to','lighting to','colour to','color to'
+];
 
-  const result = await S.M.ai.chat(msg, currentAnalysis, S.chatHistory);
+function detectRenderIntent(msg) {
+  const lower = msg.toLowerCase();
+  return RENDER_INTENT_KEYWORDS.some(kw => lower.includes(kw));
+}
 
-  if (result.ok) {
-    updateLastChat(result.reply);
-    S.chatHistory.push(
-      { role: 'user',      content: msg },
-      { role: 'assistant', content: result.reply }
-    );
-    if (S.chatHistory.length > 20) S.chatHistory = S.chatHistory.slice(-20);
+// Extract style override from message if the user names a specific style
+function extractStyleFromMsg(msg) {
+  const lower = msg.toLowerCase();
+  if (lower.includes('contemporary indian') || lower.includes('contemporary_indian')) return 'contemporary_indian';
+  if (lower.includes('minimalist') || lower.includes('modern') || lower.includes('white walls')) return 'minimalist_modern';
+  if (lower.includes('traditional') || lower.includes('heritage') || lower.includes('rajasthani') || lower.includes('carved')) return 'traditional_heritage';
+  if (lower.includes('boho') || lower.includes('rattan') || lower.includes('macram')) return 'boho_chic';
+  return null; // keep current style
+}
+
+// Extract palette override from message
+function extractPaletteFromMsg(msg) {
+  const lower = msg.toLowerCase();
+  if (lower.includes('sage') || lower.includes('green'))       return 'sage_serenity';
+  if (lower.includes('terracotta') || lower.includes('orange') || lower.includes('clay')) return 'terracotta_dawn';
+  if (lower.includes('white') || lower.includes('ivory') || lower.includes('cream'))      return 'cloud_white';
+  if (lower.includes('warm') || lower.includes('brown') || lower.includes('earthy'))      return 'warm_earthy';
+  return null; // keep current palette
+}
+
+window.sendChatPrompt = async function(idx, msg) {
+  msg = (msg || '').trim();
+  if (!msg) return;
+
+  const input  = document.getElementById(`csInput-${idx}`);
+  const send   = document.getElementById(`csSend-${idx}`);
+  const empty  = document.getElementById(`csEmpty-${idx}`);
+  if (input) { input.value = ''; input.style.height = 'auto'; }
+  if (send)  send.disabled = true;
+  if (empty) empty.style.display = 'none';
+
+  // Append user message
+  appendCsMsg(idx, 'user', msg);
+
+  // Check if user wants a render change
+  const wantsRender    = detectRenderIntent(msg);
+  const styleOverride  = extractStyleFromMsg(msg);
+  const paletteOverride= extractPaletteFromMsg(msg);
+
+  if (wantsRender) {
+    // Apply any detected overrides to render state
+    const state = getRenderState(idx);
+    if (styleOverride)  {
+      state.style = styleOverride;
+      // Update the style button UI
+      document.querySelectorAll(`[id^="rsStyle-${idx}-"]`).forEach(b => b.classList.remove('active'));
+      const styleBtn = document.getElementById(`rsStyle-${idx}-${styleOverride}`);
+      if (styleBtn) styleBtn.classList.add('active');
+    }
+    if (paletteOverride) {
+      state.palette = paletteOverride;
+      document.querySelectorAll(`[id^="rsPal-${idx}-"]`).forEach(b => b.classList.remove('active'));
+      const palBtn = document.getElementById(`rsPal-${idx}-${paletteOverride}`);
+      if (palBtn) palBtn.classList.add('active');
+    }
+
+    // Tell user we're regenerating
+    const styleName   = state.style.replace(/_/g,' ');
+    const palName     = state.palette.replace(/_/g,' ');
+    appendCsMsg(idx, 'griha', `Got it — regenerating with ${styleOverride ? styleName+' style' : 'current style'} and ${paletteOverride ? palName+' palette' : 'current palette'} based on your request…`);
+
+    // Trigger render (which updates the render studio above)
+    await window.triggerRender(idx);
+    appendCsMsg(idx, 'griha', `Render updated above ↑ — does this look right? You can ask me to refine further, or select a design option below to see matching products.`);
+
   } else {
-    updateLastChat(
-      result.error?.includes('not set') || result.error?.includes('binding')
-        ? 'Chat needs the Cloudflare Worker deployed. See the setup guide in README.md.'
-        : `Could not get a response: ${result.error}`
-    );
+    // Conversational reply from Claude
+    appendCsMsg(idx, 'griha', '…', true);
+    const room = S.rooms[idx];
+    const result = await S.M.ai.chat(msg, {
+      room_type:      room.label,
+      zone:           getZone(room.label),
+      vastu:          room.vastu,
+      selected_style: getRenderState(idx).style,
+      sqft:           room.ai?.observations?.estimated_sqft
+    }, S.chatHistory);
+
+    updateLastCsMsg(idx, result.ok
+      ? result.reply
+      : 'Could not get a response — make sure your Cloudflare Worker is deployed.');
+
+    if (result.ok) {
+      S.chatHistory.push({ role:'user', content:msg }, { role:'assistant', content:result.reply });
+      if (S.chatHistory.length > 20) S.chatHistory = S.chatHistory.slice(-20);
+
+      // If Claude mentions a design change, offer a render chip
+      const replyLower = result.reply.toLowerCase();
+      const mentionsDesign = RENDER_INTENT_KEYWORDS.some(k => replyLower.includes(k));
+      if (mentionsDesign) {
+        appendCsRenderChip(idx);
+      }
+    }
   }
+
+  if (send) send.disabled = false;
+};
+
+function appendCsMsg(idx, role, text, isLoading = false) {
+  const container = document.getElementById(`csMsgs-${idx}`);
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = `cs-msg ${role}`;
+  el.innerHTML = `
+    <div class="cs-msg-avatar">${role === 'user' ? 'You' : '✦'}</div>
+    <div class="cs-msg-bubble${isLoading ? ' loading' : ''}">${text}</div>`;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
 }
-function appendChat(role,text,loading=false) {
-  const c=document.getElementById('chatMsgs');
-  const empty=c.querySelector('.chat-empty-msg'); if(empty) empty.remove();
-  const el=document.createElement('div');
-  el.className=`chat-msg chat-${role}${loading?' loading':''}`;
-  el.textContent=text; c.appendChild(el); c.scrollTop=c.scrollHeight;
+
+function updateLastCsMsg(idx, text) {
+  const container = document.getElementById(`csMsgs-${idx}`);
+  if (!container) return;
+  const last = container.querySelector('.cs-msg.griha .loading');
+  if (last) { last.textContent = text; last.classList.remove('loading'); }
 }
-function updateLastChat(text) {
-  const last=document.querySelector('#chatMsgs .loading');
-  if(last){last.textContent=text;last.classList.remove('loading');}
+
+function appendCsRenderChip(idx) {
+  const container = document.getElementById(`csMsgs-${idx}`);
+  if (!container) return;
+  const lastMsg = container.querySelector('.cs-msg.griha:last-child .cs-msg-bubble');
+  if (!lastMsg) return;
+  const chip = document.createElement('div');
+  chip.className = 'cs-render-chip';
+  chip.innerHTML = '🎨 Apply this to my render';
+  chip.onclick = () => { window.sendChatPrompt(idx, 'Regenerate the render with these changes'); };
+  lastMsg.appendChild(chip);
 }
+
+// ── Sidebar chat (delegates to inline chat studio) ───────────────────────────
+async function handleChat(msg) {
+  if (S.activeRoom !== null) window.sendChatPrompt(S.activeRoom, msg);
+}
+function appendChat(){}     // kept for compatibility — not used directly
+function updateLastChat(){}  // kept for compatibility — not used directly
 
 // ── Session save/restore ───────────────────────────────────────────────────
 const SESSION_KEY = 'griha_upload_v1';
@@ -1241,17 +1674,142 @@ const RENDER_STATE = {};
 
 function getRenderState(idx) {
   if (!RENDER_STATE[idx]) {
-    RENDER_STATE[idx] = { style: 'contemporary_indian', palette: 'warm_earthy', rendered: false };
+    RENDER_STATE[idx] = { style: 'contemporary_indian', palette: 'warm_earthen', rendered: false };
   }
   return RENDER_STATE[idx];
 }
 
-// Palette → colour description for the prompt
-const PALETTE_PROMPTS = {
-  warm_earthy:      'warm terracotta, tawny brown, and soft kaolin cream colour palette',
-  sage_serenity:    'sage green, pale moss, and deep forest green colour palette',
-  terracotta_dawn:  'burnt terracotta orange, warm ochre, and deep clay colour palette',
-  cloud_white:      'crisp white, warm ivory, and soft greige colour palette'
+// Dropdown handlers (replace old button handlers)
+window.setRenderStyleDropdown = function(idx, styleId) {
+  getRenderState(idx).style = styleId;
+  markNeedsRegen(idx);
+};
+window.setRenderPaletteDropdown = function(idx, palId) {
+  getRenderState(idx).palette = palId;
+  // Update palette swatch preview
+  const preview = document.getElementById(`rsPalPreview-${idx}`);
+  if (preview) {
+    const PALETTES_DATA = {
+      warm_earthen:['#EAE1D5','#C47040','#5C3D2C'], sage_serenity:['#E8EEE6','#779971','#2B4D25'],
+      terracotta_dawn:['#F5ECE1','#C47040','#9A4820'], cloud_white:['#FDFCFA','#EDE8DC','#C8BC9F'],
+      monsoon_blue:['#EBF0F5','#5B8FAE','#2E5F82'], golden_hour:['#F4EAD5','#D4960A','#8A6010'],
+      forest_deep:['#E8EEE6','#4E7848','#2B4D25'], blush_rose:['#FAF0EA','#D4927B','#A0504A'],
+      midnight_charcoal:['#8C8C8A','#3D3D3B','#1A1714'], coastal_sand:['#E8EDE6','#DED3B8','#B09070']
+    };
+    const dots = (PALETTES_DATA[palId]||[]).map(c=>`<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,0.1);"></span>`).join('');
+    preview.innerHTML = dots + `<span style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:6px;">${palId.replace(/_/g,' ')} palette selected</span>`;
+  }
+  markNeedsRegen(idx);
+};
+
+// Keep old button handlers for chat-triggered style changes
+window.setRenderStyle = function(idx, styleId) {
+  getRenderState(idx).style = styleId;
+  const sel = document.getElementById(`rsStyleSel-${idx}`);
+  if (sel) sel.value = styleId;
+  markNeedsRegen(idx);
+};
+window.setRenderPalette = function(idx, palId) {
+  window.setRenderPaletteDropdown(idx, palId);
+  const sel = document.getElementById(`rsPalSel-${idx}`);
+  if (sel) sel.value = palId;
+};
+
+function markNeedsRegen(idx) {
+  const note = document.getElementById(`rsFooterNote-${idx}`);
+  if (note && getRenderState(idx).rendered) {
+    note.textContent = 'Selection changed — click Regenerate to update the preview.';
+  }
+}
+
+// ── Vastu Report Download ─────────────────────────────────────────────────
+window.downloadVastuReport = function(idx) {
+  const room  = S.rooms[idx];
+  const vastu = room.vastu;
+  const obs   = room.ai?.observations || {};
+  const zone  = getZone(room.label);
+  const date  = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+  const allRules = [
+    ...(vastu.violated_rules||[]).map(r=>({...r, status:'Violated', statusCol:'#B83232', bg:'#FDECEA'})),
+    ...(vastu.warning_rules||[]).map(r=>({...r, status:'Advisory', statusCol:'#B07D20', bg:'#FEF9EE'})),
+    ...(vastu.compliant_rules||[]).map(r=>({...r, status:'Compliant', statusCol:'#4F6250', bg:'#E5EDE4'})),
+  ];
+
+  const rulesHTML = allRules.map(r=>`
+    <div style="padding:12px 14px;margin-bottom:8px;background:${r.bg};border-radius:8px;border-left:3px solid ${r.statusCol};">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <div style="font-size:13px;font-weight:500;color:#1A1714;">${r.title}</div>
+        <span style="font-size:10px;font-weight:500;padding:2px 8px;border-radius:100px;background:${r.statusCol};color:#fff;">${r.status}</span>
+      </div>
+      <div style="font-size:12px;color:#4A4540;line-height:1.6;">${r.user_explanation||r.message||''}</div>
+      ${r.science_bridge?`<div style="font-size:11px;color:#6A6560;margin-top:4px;font-style:italic;">Modern context: ${r.science_bridge}</div>`:''}
+      <div style="font-size:10px;color:#999;margin-top:4px;">Source: ${r.source||'Classical Vastu texts'}</div>
+    </div>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Griha Vastu Report — ${room.label}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',Arial,sans-serif;font-size:13px;color:#1A1714;padding:40px;max-width:860px;margin:0 auto;background:#FDFAF6;}
+  .header{border-bottom:3px solid #C0502A;padding-bottom:20px;margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;}
+  .logo{font-size:32px;font-weight:300;letter-spacing:-0.02em;}
+  .logo em{color:#C0502A;font-style:normal;}
+  .meta{text-align:right;font-size:11px;color:#888;}
+  .meta strong{display:block;font-size:14px;color:#1A1714;margin-bottom:3px;}
+  .score-section{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;background:#F6F1EB;border-radius:12px;padding:20px 24px;margin-bottom:24px;}
+  .score-num{font-size:64px;font-weight:300;line-height:1;color:${vastu?.grade?.colour||'#888'};}
+  .score-label{font-size:14px;font-weight:500;color:${vastu?.grade?.colour||'#888'};margin-bottom:6px;}
+  .score-desc{font-size:13px;color:#6A6560;line-height:1.6;}
+  .analysis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+  .analysis-item{background:#fff;border:1px solid #E8E0D8;border-radius:8px;padding:10px 12px;}
+  .analysis-label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#999;margin-bottom:3px;}
+  .analysis-val{font-size:13px;font-weight:500;color:#1A1714;}
+  .analysis-sub{font-size:11px;color:#888;margin-top:2px;}
+  h2{font-size:14px;font-weight:500;color:#1A1714;margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid #E8E0D8;}
+  .recs{background:#EAF3DE;border:1px solid rgba(79,98,80,0.3);border-radius:10px;padding:16px 18px;margin-bottom:20px;}
+  .rec-item{display:flex;gap:10px;margin-bottom:8px;font-size:12px;color:#2A4D24;line-height:1.5;}
+  .rec-item::before{content:'→';color:#4F6250;flex-shrink:0;}
+  .footer{margin-top:32px;padding-top:16px;border-top:1px solid #E8E0D8;font-size:11px;color:#aaa;text-align:center;}
+  @media print{body{padding:20px;background:white;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">Gri<em>ha</em> <span style="font-size:15px;color:#888;font-weight:400;">Vastu Compliance Report</span></div>
+  <div class="meta"><strong>${room.label}</strong>Zone: ${zone} · ${obs.estimated_sqft||'?'} sqft · Generated ${date}</div>
+</div>
+<div class="score-section">
+  <div class="score-num">${vastu?.score??'--'}</div>
+  <div>
+    <div class="score-label">${vastu?.grade?.label||'Score'} — Vastu compliance score (0–100)</div>
+    <div class="score-desc">Based on ${allRules.length} applicable Vastu rules from classical texts including Manasara (c.5th CE), Mayamata (c.8th CE), and Samarangana Sutradhara (11th CE). Cross-referenced with Bureau of Indian Standards NBC 2016.</div>
+  </div>
+</div>
+<div class="analysis-grid">
+  <div class="analysis-item"><div class="analysis-label">Light direction</div><div class="analysis-val">${cap(obs.light_direction||'Unknown')}</div><div class="analysis-sub">${cap(obs.light_quality||'')} light quality</div></div>
+  <div class="analysis-item"><div class="analysis-label">Electrical points</div><div class="analysis-val">${obs.electrical_points_visible!=null?obs.electrical_points_visible+' visible':'Unknown'}</div><div class="analysis-sub">${(obs.electrical_point_positions||[]).slice(0,2).join(', ')||''}</div></div>
+  <div class="analysis-item"><div class="analysis-label">Ceiling</div><div class="analysis-val">${cap(obs.ceiling_height||'Unknown')}</div><div class="analysis-sub">${obs.overhead_beams_detected?'⚠ Beam detected':'No beams'}</div></div>
+  <div class="analysis-item"><div class="analysis-label">Flooring</div><div class="analysis-val">${cap(obs.flooring_type||'Unknown')}</div><div class="analysis-sub">${obs.wall_condition||''}</div></div>
+  <div class="analysis-item"><div class="analysis-label">Windows</div><div class="analysis-val">${obs.window_count!=null?obs.window_count:'-'} window${obs.window_count!==1?'s':''}</div><div class="analysis-sub">${obs.natural_light_assessment||''}</div></div>
+  <div class="analysis-item"><div class="analysis-label">Style detected</div><div class="analysis-val">${cap((obs.style_detected||['Unknown'])[0])}</div><div class="analysis-sub">${obs.vastu_observations?.heavy_furniture_zone||''}</div></div>
+</div>
+${vastu?.recommendations?.length?`
+<h2>Priority recommendations</h2>
+<div class="recs">${vastu.recommendations.map(r=>`<div class="rec-item">${r.text} <span style="font-size:10px;color:#4F6250;">(${r.source||''})</span></div>`).join('')}</div>`:''}
+<h2>Vastu rule analysis (${allRules.length} rules checked)</h2>
+${rulesHTML}
+<div class="footer">Generated by Griha · griha.design · Vastu-compliant interior design platform · Print this page or Save as PDF to share with your architect or interior designer</div>
+</body></html>`;
+
+  const blob = new Blob([html], { type:'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `Griha-Vastu-Report-${room.label.replace(/\s/g,'-')}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
 };
 
 window.setRenderStyle = function(idx, styleId, btn) {
@@ -1277,7 +1835,13 @@ window.setRenderPalette = function(idx, palId, btn) {
 
 window.triggerRender = async function(idx) {
   const room  = S.rooms[idx];
-  const state = getRenderState(idx);
+  // Read current values from dropdowns
+  const styleSel = document.getElementById(`rsStyleSel-${idx}`);
+  const palSel   = document.getElementById(`rsPalSel-${idx}`);
+  const state    = getRenderState(idx);
+  if (styleSel) state.style   = styleSel.value;
+  if (palSel)   state.palette = palSel.value;
+
   const zone  = getZone(room.label);
   const sqft  = room.ai?.observations?.estimated_sqft || 150;
 
@@ -1297,12 +1861,12 @@ window.triggerRender = async function(idx) {
   preview.innerHTML = `
     <div class="rs-loading">
       <div class="rs-spinner"></div>
-      <div class="rs-loading-title">AI is reimagining your ${room.label}</div>
-      <div class="rs-loading-sub">Applying ${state.style.replace(/_/g,' ')} style with ${state.palette.replace(/_/g,' ')} palette</div>
+      <div class="rs-loading-title">Transforming your ${room.label}</div>
+      <div class="rs-loading-sub">${room.photos[0] ? 'Applying ' + state.style.replace(/_/g,' ') + ' style to your uploaded photo' : 'Generating ' + state.style.replace(/_/g,' ') + ' design from scratch'}</div>
       <div class="rs-loading-steps">
-        <div class="rs-loading-step done"><div class="rs-loading-dot"></div>Style &amp; palette selected</div>
-        <div class="rs-loading-step active"><div class="rs-loading-dot"></div>Generating room render…</div>
-        <div class="rs-loading-step"><div class="rs-loading-dot"></div>Applying Vastu compliance</div>
+        <div class="rs-loading-step done"><div class="rs-loading-dot"></div>${room.photos[0] ? 'Room photo loaded as base' : 'Style & palette selected'}</div>
+        <div class="rs-loading-step active"><div class="rs-loading-dot"></div>${room.photos[0] ? 'AI applying style & palette on your photo…' : 'Generating room render…'}</div>
+        <div class="rs-loading-step"><div class="rs-loading-dot"></div>Finalising design</div>
       </div>
     </div>`;
 
@@ -1314,13 +1878,15 @@ window.triggerRender = async function(idx) {
   }, 5000);
 
   // Build enriched prompt with palette
-  const paletteDesc = PALETTE_PROMPTS[state.palette] || '';
+  // palette_id passed directly from state
   const result = await S.M.ai.generateRender({
     room_type:       normalise(room.label),
     design_style_id: state.style,
     compass_zone:    zone,
     room_sqft:       sqft,
-    palette_desc:    paletteDesc  // passed through to worker prompt
+    palette_id:      state.palette,
+    palette_desc:    '',
+    roomPhotoFile:   room.photos[0] || null
   });
 
   // Re-enable buttons
@@ -1354,7 +1920,7 @@ window.triggerRender = async function(idx) {
   preview.innerHTML = `
     <img class="rs-img" src="${dataUrl}" alt="AI room render — ${state.style.replace(/_/g,' ')} style">`;
 
-  if (footerNote) footerNote.textContent = `${cap(state.style.replace(/_/g,' '))} style · ${cap(state.palette.replace(/_/g,' '))} palette · AI-generated illustration`;
+  if (footerNote) footerNote.textContent = `${cap(state.style.replace(/_/g,' '))} · ${cap(state.palette.replace(/_/g,' '))} · ${result.mode === 'img2img' ? 'Applied to your uploaded photo' : 'Generated from style description'}`;
   if (regenBtn)  { regenBtn.classList.add('show'); regenBtn.textContent = '↻ Try another style'; }
   if (downloadBtn) {
     downloadBtn.classList.add('show');
@@ -1364,8 +1930,149 @@ window.triggerRender = async function(idx) {
   }
 };
 
-// Update generateRender in ai-analyzer to pass palette_desc
-// (handled by enriching the prompt server-side via worker)
+// ── Vastu checklist modal ─────────────────────────────────────────────────
+window.showVastuChecklist = function() {
+  document.getElementById('vastuChecklistModal').style.display = 'flex';
+};
+window.closeVastuChecklist = function() {
+  document.getElementById('vastuChecklistModal').style.display = 'none';
+};
+window.toggleCheck = function(el) {
+  el.classList.toggle('checked');
+  el.textContent = el.classList.contains('checked') ? '✓' : '';
+};
+
+// ── Multi-room carousel ───────────────────────────────────────────────────
+const RENDER_CACHE = {};
+let _carouselGenerating = false;
+window._carouselIdx   = 0;
+window._carouselTotal = 0;
+
+function buildCarousel() {
+  const section = document.getElementById('carouselSection');
+  if (!section) return;
+  const rooms = S.rooms.filter(r => r.status === 'done');
+  if (rooms.length < 2) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+
+  const styleOpts = ['contemporary_indian:Contemporary Indian','minimalist_modern:Minimalist Modern','traditional_heritage:Traditional Heritage','boho_chic:Boho Chic','industrial_modern:Industrial Modern','art_deco_indian:Art Deco Indian','japandi:Japandi','coastal_indian:Coastal Indian']
+    .map(s=>`<option value="${s.split(':')[0]}">${s.split(':')[1]}</option>`).join('');
+  const palOpts = ['warm_earthen:Warm Earthen','sage_serenity:Sage Serenity','terracotta_dawn:Terracotta Dawn','cloud_white:Cloud White','monsoon_blue:Monsoon Blue','golden_hour:Golden Hour','forest_deep:Forest Deep','blush_rose:Blush Rose','midnight_charcoal:Midnight Charcoal','coastal_sand:Coastal Sand']
+    .map(p=>`<option value="${p.split(':')[0]}">${p.split(':')[1]}</option>`).join('');
+
+  const dots   = rooms.map((r,i)=>`<div class="carousel-dot${i===0?' active':''}" onclick="window.goToSlide(${i})"></div>`).join('');
+  const slides = rooms.map((r,i)=>`
+    <div class="carousel-slide" id="cslide-${i}">
+      <div class="carousel-placeholder" id="cplaceholder-${i}">
+        <div class="carousel-placeholder-icon">🎨</div>
+        <div class="carousel-placeholder-text">${r.label}<br><span style="font-size:11px;opacity:.6;">Click Generate all rooms to preview</span></div>
+      </div>
+      <div class="carousel-slide-label">${r.label}</div>
+    </div>`).join('');
+
+  section.innerHTML = `
+    <div class="carousel-studio">
+      <div class="carousel-header">
+        <div>
+          <div class="carousel-title">✦ All Rooms Preview</div>
+          <div class="carousel-subtitle">${rooms.length} rooms · Same style and palette applied to all</div>
+        </div>
+        <div class="carousel-controls-top">
+          <select class="carousel-dropdown" id="carouselStyle">${styleOpts}</select>
+          <select class="carousel-dropdown" id="carouselPalette">${palOpts}</select>
+          <button class="carousel-gen-btn" id="carouselGenBtn" onclick="window.generateAllRooms()">✦ Generate all rooms</button>
+        </div>
+      </div>
+      <div class="carousel-track-wrap" style="min-height:380px;position:relative;">
+        <div class="carousel-track" id="carouselTrack">${slides}</div>
+        <button class="carousel-nav prev" id="carouselPrev" onclick="window.prevSlide()" disabled>‹</button>
+        <button class="carousel-nav next" id="carouselNext" onclick="window.nextSlide()" ${rooms.length<2?'disabled':''}>›</button>
+      </div>
+      <div class="carousel-footer">
+        <div class="carousel-dots" id="carouselDots">${dots}</div>
+        <div class="carousel-footer-note" id="carouselNote">Select style and palette above, then generate all room previews at once</div>
+        <a class="carousel-download-btn" id="carouselDownload">↓ Save this render</a>
+      </div>
+    </div>`;
+  window._carouselTotal = rooms.length;
+}
+
+window.generateAllRooms = async function() {
+  if (_carouselGenerating) return;
+  _carouselGenerating = true;
+  const styleId = document.getElementById('carouselStyle')?.value   || 'contemporary_indian';
+  const palId   = document.getElementById('carouselPalette')?.value || 'warm_earthen';
+  const genBtn  = document.getElementById('carouselGenBtn');
+  const note    = document.getElementById('carouselNote');
+  if (genBtn) { genBtn.disabled = true; genBtn.textContent = '⏳ Generating…'; }
+
+  const rooms = S.rooms.filter(r => r.status === 'done');
+  for (let i = 0; i < rooms.length; i++) {
+    const room = rooms[i];
+    const cKey = `${styleId}_${palId}`;
+    if (!RENDER_CACHE[i]) RENDER_CACHE[i] = {};
+    window.goToSlide(i);
+    if (note) note.textContent = `Generating ${room.label} (${i+1} of ${rooms.length})…`;
+
+    if (RENDER_CACHE[i][cKey]) {
+      _renderCarouselSlide(i, RENDER_CACHE[i][cKey], room.label); continue;
+    }
+    const ph = document.getElementById(`cplaceholder-${i}`);
+    if (ph) ph.innerHTML = `<div class="rs-spinner"></div><div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:10px;">Generating ${room.label}…</div>`;
+
+    const result = await S.M.ai.generateRender({
+      room_type: normalise(room.label), design_style_id: styleId,
+      compass_zone: getZone(room.label), room_sqft: room.ai?.observations?.estimated_sqft||150,
+      palette_id: palId, palette_desc: '', roomPhotoFile: room.photos[0]||null
+    });
+
+    if (result.ok) { RENDER_CACHE[i][cKey] = result.image_base64; _renderCarouselSlide(i, result.image_base64, room.label); }
+    else {
+      const ph2 = document.getElementById(`cplaceholder-${i}`);
+      if (ph2) ph2.innerHTML = `<div class="carousel-placeholder-icon">⚠️</div><div class="carousel-placeholder-text">${room.label} failed</div>`;
+    }
+  }
+  if (genBtn) { genBtn.disabled = false; genBtn.textContent = '↻ Regenerate all'; }
+  if (note)   note.textContent = `${rooms.length} rooms · ${styleId.replace(/_/g,' ')} · ${palId.replace(/_/g,' ')}`;
+  _carouselGenerating = false;
+};
+
+function _renderCarouselSlide(idx, base64, label) {
+  const slide = document.getElementById(`cslide-${idx}`);
+  const ph    = document.getElementById(`cplaceholder-${idx}`);
+  if (!slide) return;
+  const dataUrl = `data:image/png;base64,${base64}`;
+  if (ph) ph.style.display = 'none';
+  let img = slide.querySelector('img.carousel-img');
+  if (!img) { img = document.createElement('img'); img.className = 'carousel-img'; img.style.cssText = 'width:100%;max-height:480px;object-fit:contain;display:block;'; slide.insertBefore(img, slide.firstChild); }
+  img.src = dataUrl;
+  let badge = slide.querySelector('.carousel-slide-status');
+  if (!badge) { badge = document.createElement('div'); badge.className = 'carousel-slide-status'; slide.appendChild(badge); }
+  badge.textContent = '✓ Ready'; badge.className = 'carousel-slide-status css-done';
+  if (window._carouselIdx === idx) _updateCarouselDownload(idx, dataUrl, label);
+}
+function _updateCarouselDownload(idx, dataUrl, label) {
+  const dl = document.getElementById('carouselDownload');
+  if (!dl) return;
+  dl.classList.add('show'); dl.href = dataUrl; dl.download = `Griha-${(label||'room').replace(/\s/g,'-')}-render.png`;
+}
+window.goToSlide = function(idx) {
+  const track = document.getElementById('carouselTrack');
+  if (!track) return;
+  window._carouselIdx = idx;
+  track.style.transform = `translateX(-${idx*100}%)`;
+  document.querySelectorAll('.carousel-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  const prev = document.getElementById('carouselPrev'); if (prev) prev.disabled = idx===0;
+  const next = document.getElementById('carouselNext'); if (next) next.disabled = idx===window._carouselTotal-1;
+  const styleId = document.getElementById('carouselStyle')?.value||'contemporary_indian';
+  const palId   = document.getElementById('carouselPalette')?.value||'warm_earthen';
+  const cached  = RENDER_CACHE[idx]?.[`${styleId}_${palId}`];
+  const rooms   = S.rooms.filter(r=>r.status==='done');
+  if (cached) _updateCarouselDownload(idx, `data:image/png;base64,${cached}`, rooms[idx]?.label||'room');
+  else { const dl=document.getElementById('carouselDownload'); if(dl) dl.classList.remove('show'); }
+};
+window.prevSlide = ()=>{ if(window._carouselIdx>0) window.goToSlide(window._carouselIdx-1); };
+window.nextSlide = ()=>{ if(window._carouselIdx<window._carouselTotal-1) window.goToSlide(window._carouselIdx+1); };
 
 window.showRestoredResults = showRestoredResults;
 window.startAnalysis       = startAnalysis;
