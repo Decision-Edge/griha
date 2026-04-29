@@ -21,7 +21,7 @@
 // ─── CONFIGURE THIS ───────────────────────────────────────────────────────────
 // Replace with your Cloudflare Worker URL after deploying worker/index.js
 // Format: https://griha-worker.<your-cloudflare-username>.workers.dev
-const WORKER_URL = 'https://griha-worker.YOUR_USERNAME.workers.dev';
+const WORKER_URL = 'https://griha-worker.sayan-biz.000.workers.dev';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const MAX_IMAGE_BYTES  = 5 * 1024 * 1024; // 5MB
