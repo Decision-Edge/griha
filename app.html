@@ -291,15 +291,59 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .ao-room-status.analysing{color:var(--gold);}
 .ao-room-status.pending{color:var(--ch40);}
 
+/* ── RENDER STUDIO ── */
+.render-studio{border:1.5px solid var(--terra);border-radius:var(--r-lg);overflow:hidden;background:var(--charcoal);}
+.rs-header{padding:14px 20px;background:linear-gradient(135deg,var(--charcoal) 0%,#2A1F1A 100%);border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;}
+.rs-title{font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--warm-white);}
+.rs-subtitle{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;}
+.rs-body{display:grid;grid-template-columns:1fr 200px;gap:0;min-height:420px;}
+.rs-preview{position:relative;background:#1A1210;display:flex;align-items:center;justify-content:center;min-height:380px;overflow:hidden;}
+.rs-img{width:100%;height:100%;object-fit:cover;display:block;}
+.rs-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;height:100%;}
+.rs-placeholder-icon{font-size:48px;opacity:.25;}
+.rs-placeholder-title{font-size:14px;font-weight:500;color:rgba(255,255,255,0.5);}
+.rs-placeholder-sub{font-size:12px;color:rgba(255,255,255,0.25);line-height:1.6;max-width:220px;}
+.rs-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:40px;height:100%;}
+.rs-spinner{width:44px;height:44px;border:3px solid rgba(255,255,255,0.1);border-top-color:var(--terra);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rs-loading-title{font-size:14px;font-weight:500;color:rgba(255,255,255,0.7);}
+.rs-loading-sub{font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;}
+.rs-loading-steps{display:flex;flex-direction:column;gap:5px;margin-top:4px;}
+.rs-loading-step{font-size:11px;color:rgba(255,255,255,0.3);display:flex;align-items:center;gap:6px;}
+.rs-loading-step.active{color:rgba(255,255,255,0.6);}
+.rs-loading-step.done{color:var(--sage);}
+.rs-loading-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.rs-controls{border-left:1px solid rgba(255,255,255,0.07);padding:16px;display:flex;flex-direction:column;gap:14px;background:#1A1714;}
+.rs-ctrl-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.28);margin-bottom:6px;}
+.rs-style-btns{display:flex;flex-direction:column;gap:5px;}
+.rs-style-btn{padding:8px 10px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:rgba(255,255,255,0.5);font-size:11px;font-weight:500;cursor:pointer;text-align:left;transition:all .15s;line-height:1.3;}
+.rs-style-btn:hover{border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);}
+.rs-style-btn.active{background:rgba(192,80,42,0.2);border-color:rgba(192,80,42,0.4);color:#EFA882;}
+.rs-palette-opts{display:flex;flex-direction:column;gap:5px;}
+.rs-palette-btn{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:7px;border:1px solid rgba(255,255,255,0.08);cursor:pointer;transition:all .15s;background:transparent;}
+.rs-palette-btn:hover{border-color:rgba(255,255,255,0.2);}
+.rs-palette-btn.active{border-color:rgba(192,80,42,0.4);background:rgba(192,80,42,0.1);}
+.rs-palette-swatches{display:flex;gap:2px;}
+.rs-palette-dot{width:12px;height:12px;border-radius:50%;}
+.rs-palette-name{font-size:10px;color:rgba(255,255,255,0.45);font-weight:500;}
+.rs-palette-btn.active .rs-palette-name{color:#EFA882;}
+.rs-generate-btn{width:100%;padding:11px;border-radius:var(--r-sm);background:var(--terra);color:#fff;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.rs-generate-btn:hover{background:var(--terra-h);}
+.rs-generate-btn:disabled{opacity:.5;cursor:not-allowed;}
+.rs-footer{border-top:1px solid rgba(255,255,255,0.07);padding:12px 16px;background:#1A1714;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.rs-footer-note{font-size:11px;color:rgba(255,255,255,0.3);line-height:1.5;flex:1;}
+.rs-download-btn{padding:7px 16px;border-radius:100px;background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap;display:none;}
+.rs-download-btn.show{display:inline-flex;align-items:center;gap:5px;}
+.rs-download-btn:hover{border-color:rgba(255,255,255,0.4);color:#fff;}
+.rs-regen-btn{padding:7px 16px;border-radius:100px;background:var(--terra);border:none;color:#fff;font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;display:none;white-space:nowrap;}
+.rs-regen-btn.show{display:inline-flex;align-items:center;gap:5px;}
+.rs-regen-btn:hover{background:var(--terra-h);}
+
 @media(max-width:768px){
-  .topbar{padding:0 20px;}
-  #uploadPhase{padding:32px 16px 100px;}
-  .upload-hero-title{font-size:36px;}
-  .photo-slots{grid-template-columns:repeat(3,1fr);gap:8px;padding:14px;}
-  .insights{grid-template-columns:1fr 1fr;}
-  .prod-grid{grid-template-columns:1fr 1fr;}
-  .design-options-grid{grid-template-columns:1fr;}
-  .r-chat{display:none;}
+  .rs-body{grid-template-columns:1fr;}
+  .rs-controls{border-left:none;border-top:1px solid rgba(255,255,255,0.07);flex-direction:row;flex-wrap:wrap;gap:10px;}
+  .rs-style-btns{flex-direction:row;flex-wrap:wrap;}
+  .rs-style-btn{flex:1;min-width:80px;text-align:center;}
 }
 </style>
 </head>
@@ -860,6 +904,65 @@ function renderRoomResults(idx) {
       ${ins('Style',    cap((obs.style_detected||['unknown'])[0]), cap(obs.flooring_type||'unknown')+' floor')}
     </div>
 
+    <!-- ══ AI RENDER STUDIO — prominent feature ══ -->
+    <div class="render-studio" id="renderStudio-${idx}">
+      <div class="rs-header">
+        <div>
+          <div class="rs-title">✦ AI Room Preview</div>
+          <div class="rs-subtitle">Select a design style and colour palette — AI will reimagine your room in seconds</div>
+        </div>
+      </div>
+      <div class="rs-body">
+        <div class="rs-preview" id="rsPreview-${idx}">
+          <div class="rs-placeholder" id="rsPlaceholder-${idx}">
+            <div class="rs-placeholder-icon">🎨</div>
+            <div class="rs-placeholder-title">Choose a style to preview</div>
+            <div class="rs-placeholder-sub">Select a design style on the right, then click "Generate preview" to see your room reimagined by AI</div>
+          </div>
+        </div>
+        <div class="rs-controls">
+          <div>
+            <div class="rs-ctrl-label">Design style</div>
+            <div class="rs-style-btns">
+              <button class="rs-style-btn active" id="rsStyle-${idx}-contemporary_indian" onclick="window.setRenderStyle(${idx},'contemporary_indian',this)">Contemporary Indian</button>
+              <button class="rs-style-btn" id="rsStyle-${idx}-minimalist_modern" onclick="window.setRenderStyle(${idx},'minimalist_modern',this)">Minimalist Modern</button>
+              <button class="rs-style-btn" id="rsStyle-${idx}-traditional_heritage" onclick="window.setRenderStyle(${idx},'traditional_heritage',this)">Traditional Heritage</button>
+              <button class="rs-style-btn" id="rsStyle-${idx}-boho_chic" onclick="window.setRenderStyle(${idx},'boho_chic',this)">Boho Chic</button>
+            </div>
+          </div>
+          <div>
+            <div class="rs-ctrl-label">Colour palette</div>
+            <div class="rs-palette-opts">
+              <div class="rs-palette-btn active" id="rsPal-${idx}-warm_earthy" onclick="window.setRenderPalette(${idx},'warm_earthy',this)">
+                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#EAE1D5"></div><div class="rs-palette-dot" style="background:#C47040"></div><div class="rs-palette-dot" style="background:#5C3D2C"></div></div>
+                <div class="rs-palette-name">Warm Earthen</div>
+              </div>
+              <div class="rs-palette-btn" id="rsPal-${idx}-sage_serenity" onclick="window.setRenderPalette(${idx},'sage_serenity',this)">
+                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#E8EEE6"></div><div class="rs-palette-dot" style="background:#779971"></div><div class="rs-palette-dot" style="background:#2B4D25"></div></div>
+                <div class="rs-palette-name">Sage Serenity</div>
+              </div>
+              <div class="rs-palette-btn" id="rsPal-${idx}-terracotta_dawn" onclick="window.setRenderPalette(${idx},'terracotta_dawn',this)">
+                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#F5ECE1"></div><div class="rs-palette-dot" style="background:#C47040"></div><div class="rs-palette-dot" style="background:#9A4820"></div></div>
+                <div class="rs-palette-name">Terracotta Dawn</div>
+              </div>
+              <div class="rs-palette-btn" id="rsPal-${idx}-cloud_white" onclick="window.setRenderPalette(${idx},'cloud_white',this)">
+                <div class="rs-palette-swatches"><div class="rs-palette-dot" style="background:#FDFCFA"></div><div class="rs-palette-dot" style="background:#EDE8DC"></div><div class="rs-palette-dot" style="background:#C8BC9F"></div></div>
+                <div class="rs-palette-name">Cloud White</div>
+              </div>
+            </div>
+          </div>
+          <button class="rs-generate-btn" id="rsGenBtn-${idx}" onclick="window.triggerRender(${idx})">
+            ✦ Generate preview
+          </button>
+        </div>
+      </div>
+      <div class="rs-footer">
+        <div class="rs-footer-note" id="rsFooterNote-${idx}">AI-generated illustration — select a style above and click Generate preview. Takes about 15 seconds.</div>
+        <button class="rs-regen-btn" id="rsRegenBtn-${idx}" onclick="window.triggerRender(${idx})">↻ Regenerate</button>
+        <a class="rs-download-btn" id="rsDownloadBtn-${idx}" download="Griha-room-render.png">↓ Download</a>
+      </div>
+    </div>
+
     <div class="section-block">
       <div class="section-title">Vastu compliance</div>
       ${rulesHTML || '<div style="font-size:13px;color:var(--ch40);">Upload masterplan for full zone analysis.</div>'}
@@ -999,21 +1102,39 @@ function prodCard(p) {
 
 // ── Chat ───────────────────────────────────────────────────────────────────
 async function handleChat(msg) {
-  if(!msg.trim()) return;
+  if (!msg.trim()) return;
   appendChat('user', msg);
-  document.getElementById('chatInput').value='';
-  appendChat('assistant','…',true);
-  try {
-    const room = S.rooms[S.activeRoom];
-    const res  = await fetch(`${S.M.ai.workerUrl}/suggest-changes`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ userMessage:msg, currentAnalysis:room?{vastu:room.vastu,analysis:room.ai}:null, conversationHistory:S.chatHistory })
-    });
-    const data = await res.json();
-    updateLastChat(data.reply||'Could not generate a response.');
-    S.chatHistory.push({role:'user',content:msg},{role:'assistant',content:data.reply||''});
-    if(S.chatHistory.length>20) S.chatHistory=S.chatHistory.slice(-20);
-  } catch { updateLastChat('Connection error. Check your internet and Worker deployment.'); }
+  document.getElementById('chatInput').value = '';
+  appendChat('assistant', '…', true);
+
+  // Build rich context from the active room
+  const room = S.rooms[S.activeRoom];
+  const currentAnalysis = room ? {
+    room_type:      room.label,
+    zone:           getZone(room.label),
+    vastu:          room.vastu,
+    selected_style: room.designOptions?.find(o => o.isSelected)?.style?.name || null,
+    sqft:           room.ai?.observations?.estimated_sqft,
+    light_direction:room.ai?.observations?.light_direction,
+    overhead_beams: room.ai?.observations?.overhead_beams_detected,
+  } : null;
+
+  const result = await S.M.ai.chat(msg, currentAnalysis, S.chatHistory);
+
+  if (result.ok) {
+    updateLastChat(result.reply);
+    S.chatHistory.push(
+      { role: 'user',      content: msg },
+      { role: 'assistant', content: result.reply }
+    );
+    if (S.chatHistory.length > 20) S.chatHistory = S.chatHistory.slice(-20);
+  } else {
+    updateLastChat(
+      result.error?.includes('not set') || result.error?.includes('binding')
+        ? 'Chat needs the Cloudflare Worker deployed. See the setup guide in README.md.'
+        : `Could not get a response: ${result.error}`
+    );
+  }
 }
 function appendChat(role,text,loading=false) {
   const c=document.getElementById('chatMsgs');
@@ -1113,6 +1234,134 @@ window.downloadSpec       = (roomIdx,optIdx) => {
   });
   S.M.carpSpec.downloadHTML(spec);
 };
+// ── Render Studio state ────────────────────────────────────────────────────
+// Tracks selected style and palette per room
+const RENDER_STATE = {};
+
+function getRenderState(idx) {
+  if (!RENDER_STATE[idx]) {
+    RENDER_STATE[idx] = { style: 'contemporary_indian', palette: 'warm_earthy', rendered: false };
+  }
+  return RENDER_STATE[idx];
+}
+
+// Palette → colour description for the prompt
+const PALETTE_PROMPTS = {
+  warm_earthy:      'warm terracotta, tawny brown, and soft kaolin cream colour palette',
+  sage_serenity:    'sage green, pale moss, and deep forest green colour palette',
+  terracotta_dawn:  'burnt terracotta orange, warm ochre, and deep clay colour palette',
+  cloud_white:      'crisp white, warm ivory, and soft greige colour palette'
+};
+
+window.setRenderStyle = function(idx, styleId, btn) {
+  getRenderState(idx).style = styleId;
+  document.querySelectorAll(`[id^="rsStyle-${idx}-"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // Clear the current render so user sees they need to regenerate
+  const note = document.getElementById(`rsFooterNote-${idx}`);
+  if (note && getRenderState(idx).rendered) {
+    note.textContent = 'Style changed — click Regenerate to update the preview.';
+  }
+};
+
+window.setRenderPalette = function(idx, palId, btn) {
+  getRenderState(idx).palette = palId;
+  document.querySelectorAll(`[id^="rsPal-${idx}-"]`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const note = document.getElementById(`rsFooterNote-${idx}`);
+  if (note && getRenderState(idx).rendered) {
+    note.textContent = 'Palette changed — click Regenerate to update the preview.';
+  }
+};
+
+window.triggerRender = async function(idx) {
+  const room  = S.rooms[idx];
+  const state = getRenderState(idx);
+  const zone  = getZone(room.label);
+  const sqft  = room.ai?.observations?.estimated_sqft || 150;
+
+  const preview    = document.getElementById(`rsPreview-${idx}`);
+  const genBtn     = document.getElementById(`rsGenBtn-${idx}`);
+  const regenBtn   = document.getElementById(`rsRegenBtn-${idx}`);
+  const downloadBtn= document.getElementById(`rsDownloadBtn-${idx}`);
+  const footerNote = document.getElementById(`rsFooterNote-${idx}`);
+
+  if (!preview) return;
+
+  // Disable buttons, show loading
+  if (genBtn)   { genBtn.disabled = true; genBtn.textContent = '⏳ Generating…'; }
+  if (regenBtn) regenBtn.classList.remove('show');
+  if (downloadBtn) downloadBtn.classList.remove('show');
+
+  preview.innerHTML = `
+    <div class="rs-loading">
+      <div class="rs-spinner"></div>
+      <div class="rs-loading-title">AI is reimagining your ${room.label}</div>
+      <div class="rs-loading-sub">Applying ${state.style.replace(/_/g,' ')} style with ${state.palette.replace(/_/g,' ')} palette</div>
+      <div class="rs-loading-steps">
+        <div class="rs-loading-step done"><div class="rs-loading-dot"></div>Style &amp; palette selected</div>
+        <div class="rs-loading-step active"><div class="rs-loading-dot"></div>Generating room render…</div>
+        <div class="rs-loading-step"><div class="rs-loading-dot"></div>Applying Vastu compliance</div>
+      </div>
+    </div>`;
+
+  // Animate the loading steps
+  setTimeout(() => {
+    const steps = preview.querySelectorAll('.rs-loading-step');
+    if (steps[1]) { steps[1].classList.add('done'); steps[1].classList.remove('active'); }
+    if (steps[2]) steps[2].classList.add('active');
+  }, 5000);
+
+  // Build enriched prompt with palette
+  const paletteDesc = PALETTE_PROMPTS[state.palette] || '';
+  const result = await S.M.ai.generateRender({
+    room_type:       normalise(room.label),
+    design_style_id: state.style,
+    compass_zone:    zone,
+    room_sqft:       sqft,
+    palette_desc:    paletteDesc  // passed through to worker prompt
+  });
+
+  // Re-enable buttons
+  if (genBtn)   { genBtn.disabled = false; genBtn.textContent = '✦ Generate preview'; }
+
+  if (!result.ok) {
+    preview.innerHTML = `
+      <div class="rs-placeholder">
+        <div class="rs-placeholder-icon">⚠️</div>
+        <div class="rs-placeholder-title" style="color:rgba(255,255,255,0.6);">Render unavailable</div>
+        <div class="rs-placeholder-sub">${
+          result.error?.includes('binding') || result.error?.includes('AI binding')
+            ? 'Add the Workers AI binding: Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.'
+            : result.error?.includes('not configured')
+              ? 'Workers AI binding not set up yet. See the error above.'
+              : (result.error || 'Could not generate render. Check your Worker is deployed and the AI binding is configured.')
+        }</div>
+      </div>`;
+    if (footerNote) footerNote.textContent = 'Render failed — check the Workers AI binding in your Cloudflare dashboard.';
+    return;
+  }
+
+  // SUCCESS — show image inline
+  state.rendered = true;
+  const dataUrl = `data:${result.mime_type || 'image/png'};base64,${result.image_base64}`;
+
+  preview.innerHTML = `
+    <img class="rs-img" src="${dataUrl}" alt="AI room render — ${state.style.replace(/_/g,' ')} style">`;
+
+  if (footerNote) footerNote.textContent = `${cap(state.style.replace(/_/g,' '))} style · ${cap(state.palette.replace(/_/g,' '))} palette · AI-generated illustration`;
+  if (regenBtn)  { regenBtn.classList.add('show'); regenBtn.textContent = '↻ Try another style'; }
+  if (downloadBtn) {
+    downloadBtn.classList.add('show');
+    downloadBtn.href     = dataUrl;
+    downloadBtn.download = `Griha-${room.label.replace(/\s/g,'-')}-${state.style}-render.png`;
+    downloadBtn.textContent = '↓ Download';
+  }
+};
+
+// Update generateRender in ai-analyzer to pass palette_desc
+// (handled by enriching the prompt server-side via worker)
+
 window.showRestoredResults = showRestoredResults;
 window.startAnalysis       = startAnalysis;
 window.goBackToUpload      = goBackToUpload;
