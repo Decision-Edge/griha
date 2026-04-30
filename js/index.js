@@ -56,7 +56,7 @@ const PALETTE_RENDER_DESCS = {
 };
 
 // ── Photo validation prompt (fast, cheap — only 100 tokens needed) ──────────
-const VALIDATE_PROMPT = `Look at this photo. Is it an interior room photo suitable for home interior design analysis?
+const VALIDATE_PROMPT = `Look at this photo. Is it an interior room photo that could be used for home interior design?
 Return ONLY this JSON, no other text:
 {
   "is_valid_room": true,
@@ -65,12 +65,12 @@ Return ONLY this JSON, no other text:
   "reason": null
 }
 Rules:
-- is_valid_room: true ONLY if this is clearly an interior room of a building (bedroom, living room, kitchen, bathroom, balcony, etc.)
-- false if: outdoor photo, person/pet photo, food, product, document, selfie, or non-room image
-- room_type_detected: what type of room if valid, null if not valid
-- confidence: "high", "medium", or "low"
-- reason: null if valid, short reason string if invalid (e.g. "This appears to be a photo of a dog, not a room")
-Respond with ONLY the JSON.`;
+- is_valid_room: true if this shows ANY interior space of a building — including bedrooms, living rooms, kitchens, bathrooms, balconies, corridors, empty rooms under construction, or rooms with partial furniture.
+- is_valid_room: false ONLY if this is clearly NOT a room — e.g. a photo of a person/pet, food, a vehicle interior, outdoor landscape, a document, a product on white background, or a selfie.
+- When in doubt, return true. It is better to accept an unusual room photo than to incorrectly reject a valid one.
+- room_type_detected: the room type if identifiable, otherwise "room"
+- reason: null if valid; brief reason string only if clearly not a room (e.g. "Photo shows a dog, not a room")
+Respond with ONLY the JSON, no markdown, no code fences.`;
 
 // ── Detailed room analysis prompt ────────────────────────────────────────────
 const ROOM_ANALYSIS_PROMPT = `You are an expert interior design analyst and building inspector specialising in Indian homes.

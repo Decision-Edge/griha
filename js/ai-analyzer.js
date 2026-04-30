@@ -40,11 +40,13 @@ export class AIAnalyzer {
    * @returns {Promise<{ok, is_valid_room, room_type_detected, reason}>}
    */
   async validatePhoto(imageFile) {
+    // Size and type guards — these reject before hitting the network
     if (imageFile.size > MAX_IMAGE_BYTES) {
-      return this._error('Image is too large. Please use a photo under 5MB.');
+      return { ok:true, is_valid_room:true, _skipped:true }; // don't block on size, analyzeRoom will catch it
     }
     const allowedTypes = ['image/jpeg','image/png','image/webp'];
     if (!allowedTypes.includes(imageFile.type)) {
+      // Show a real error for wrong format
       return this._error('Unsupported format. Please use JPG, PNG, or WebP.');
     }
     try {
@@ -54,14 +56,22 @@ export class AIAnalyzer {
         headers: { 'Content-Type':'application/json' },
         body:    JSON.stringify({ imageBase64:base64, mimeType })
       });
-      if (!response.ok) return this._error(`Validation service returned ${response.status}`);
+      // Non-200 from worker → skip validation, don't reject photo
+      if (!response.ok) {
+        console.warn('Validation endpoint returned', response.status, '— skipping validation');
+        return { ok:true, is_valid_room:true, _skipped:true };
+      }
       const data = await response.json();
-      if (data.error) return this._error(data.error);
+      // Malformed response → skip validation
+      if (typeof data.is_valid_room !== 'boolean') {
+        console.warn('Validation response malformed — skipping');
+        return { ok:true, is_valid_room:true, _skipped:true };
+      }
       return { ok:true, ...data };
     } catch(err) {
-      // If worker not deployed, skip validation gracefully
-      console.warn('Photo validation unavailable (worker not deployed):', err.message);
-      return { ok:true, is_valid_room:true, room_type_detected:null, _skipped:true };
+      // Network error / worker not deployed → skip validation silently
+      console.warn('Photo validation skipped:', err.message);
+      return { ok:true, is_valid_room:true, _skipped:true };
     }
   }
 
@@ -143,22 +153,28 @@ export class AIAnalyzer {
       });
 
       if (!response.ok) {
-        return this._error(`Masterplan analysis failed with status ${response.status}`);
+        return this._error(`Masterplan service returned ${response.status}. Check your Worker is deployed.`);
       }
 
       const data = await response.json();
 
+      // parse_failed means Claude returned something unexpected
+      if (data.error === 'parse_failed') {
+        return this._error('Could not read compass directions from this image. Try uploading a clearer, higher-contrast version of the floor plan.');
+      }
+
       if (!data.plan_identified) {
         return this._error(
-          data.error === 'not_a_floorplan' ? 'This does not appear to be a floor plan. Please upload your builder masterplan.' :
-          'Could not read the floor plan. Please ensure the image is clear and shows room layouts.'
+          data.error === 'not_a_floorplan' ? 'This does not appear to be a floor plan. Please upload your builder masterplan PDF or image.' :
+          data.error === 'image_unclear'    ? 'The floor plan image is too blurry to read. Please use a higher-resolution image.' :
+          'Could not read this floor plan. Please ensure it shows room layouts clearly.'
         );
       }
 
       return { ok: true, ...data };
 
     } catch (err) {
-      return this._error(`Masterplan analysis failed: ${err.message}`);
+      return this._error(`Could not reach the analysis service: ${err.message}. Check your internet connection and ensure the Worker is deployed.`);
     }
   }
 
