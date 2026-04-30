@@ -179,103 +179,130 @@ Output ONLY the JSON. Nothing else.`;
 }
 
 // ── GENERATE RENDER ──────────────────────────────────────────────────────────
-// Step 1: Claude Vision reads the user's room photo → extracts architectural features
-// Step 2: SDXL generates a 1024×768 image that matches THAT SPECIFIC room's layout
+// Uses img2img (SD v1.5) when the user uploads a photo — their actual room is
+// the pixel-level base of the output. Strength 0.55 preserves room structure
+// (walls, windows, proportions) while applying the style and palette on top.
+// Falls back to SDXL txt2img if no photo is provided.
 async function handleRender(req, env) {
   if (!env.AI) {
-    return jsonRes({ ok:false, error:'Workers AI binding missing. Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.' }, 503);
+    return jsonRes({ ok:false, error:'Workers AI binding missing. Cloudflare → Settings → Bindings → Add → Workers AI → name "AI" → Save and Deploy.' }, 503);
   }
 
   const body = await req.json().catch(() => ({}));
   const { design_style_id, palette_id, room_type, roomImageBase64, roomMimeType } = body;
 
-  const STYLES = {
-    contemporary_indian:  'contemporary Indian interior, warm terracotta accent wall, kaolin clay white walls, sheesham wood furniture, brass pendant light, handloom textiles, indoor plants, warm amber lighting',
-    minimalist_modern:    'minimalist modern interior, pure linen white walls, smooth white ceiling, large-format light grey porcelain floor, clean-lined furniture, recessed LED lighting, Scandinavian simplicity',
-    traditional_heritage: 'traditional Indian heritage interior, deep ochre and burgundy walls, ornate plaster ceiling with gold, dark teak herringbone floor, antique brass chandelier, carved wooden furniture, rich brocade',
-    boho_chic:            'boho chic interior, sage green walls, raw plaster accent wall, terracotta cement tiles, macrame wall hanging, rattan furniture, layered dhurrie rug, Edison bulb lighting, tropical plants',
-    industrial_modern:    'industrial modern interior, exposed raw concrete walls, polished concrete floor, anthracite ceiling, exposed brick feature wall, minimal steel furniture',
-    art_deco_indian:      'Art Deco Indian interior, deep teal walls with gold geometric border, ornate cream ceiling with cornice, black and gold marble floor, antique brass accents',
-    japandi:              'Japandi interior, warm greige washi walls, pale oak ceiling beams, wide-plank ash wood floor, minimal furniture, wabi-sabi plaster, soft diffused light',
-    coastal_indian:       'coastal Indian interior, aquamarine limewash walls, whitewashed wooden ceiling, pale weathered teak floor, natural rope texture, light linen curtains',
+  // ── Surface-change prompts for img2img ───────────────────────────────────────
+  // Focus on SURFACES ONLY (walls, ceiling, floor) — not furniture.
+  // Furniture is already in the photo; we want to restyle the shell.
+  const SURFACE_PROMPTS = {
+    contemporary_indian:
+      'repaint walls warm terracotta and kaolin white, smooth plaster ceiling in warm white, polished natural stone floor in beige, warm ambient lighting, Indian contemporary style, high quality interior photography',
+    minimalist_modern:
+      'repaint walls pure linen white, smooth white ceiling, large-format light grey porcelain floor, soft natural light, minimalist style, high quality interior photography',
+    traditional_heritage:
+      'repaint walls deep ochre and burgundy, ornate plaster ceiling with gold border, dark teak herringbone floor, warm chandelier light, traditional Indian heritage style, high quality interior photography',
+    boho_chic:
+      'repaint walls sage green with raw plaster texture, terracotta encaustic cement floor tiles, warm Edison bulb lighting, bohemian chic style, high quality interior photography',
+    industrial_modern:
+      'exposed concrete walls, polished sealed concrete floor, anthracite ceiling, warm industrial Edison lighting, industrial modern style, high quality interior photography',
+    art_deco_indian:
+      'deep teal walls with gold geometric border stencil, ornate cream ceiling with cornice, black and gold geometric marble floor, antique brass sconce lighting, Art Deco Indian style',
+    japandi:
+      'warm greige washi-texture walls, pale oak ceiling detail, wide-plank light ash wood floor, soft diffused natural light, Japandi minimalist style, high quality interior photography',
+    coastal_indian:
+      'aquamarine limewash walls, whitewashed ceiling, pale weathered teak floor, natural rope texture, soft coastal light, coastal Indian style, high quality interior photography',
   };
-  const PALETTES = {
-    warm_earthen:     'colour scheme: warm terracotta, tawny brown, kaolin cream',
-    sage_serenity:    'colour scheme: sage green, pale moss, crisp white',
-    terracotta_dawn:  'colour scheme: burnt terracotta, brick red, warm peach',
-    cloud_white:      'colour scheme: pure white, warm ivory, soft greige',
-    monsoon_blue:     'colour scheme: cerulean blue, deep navy, arctic white',
-    golden_hour:      'colour scheme: warm gold, amber, champagne cream',
-    forest_deep:      'colour scheme: forest green, dark fern, pale sage',
-    blush_rose:       'colour scheme: dusty rose, muted blush, warm cream',
-    midnight_charcoal:'colour scheme: warm charcoal, dark slate, warm grey',
-    coastal_sand:     'colour scheme: coastal sand, bleached driftwood, sea foam',
+
+  const PALETTE_PROMPTS = {
+    warm_earthen:     'colour palette: warm terracotta #C47040 walls, kaolin cream #EAE1D5 ceiling, beige stone floor',
+    sage_serenity:    'colour palette: sage green #779971 walls, pale moss #B5CDAC accent, white ceiling',
+    terracotta_dawn:  'colour palette: burnt terracotta #9A4820 accent wall, peach #F5ECE1 main walls, warm floor',
+    cloud_white:      'colour palette: pure white walls and ceiling, warm greige #C8BC9F floor tiles',
+    monsoon_blue:     'colour palette: cerulean blue #5B8FAE accent wall, white walls, light grey floor',
+    golden_hour:      'colour palette: warm gold #B07D20 accent, champagne cream walls, warm amber floor',
+    forest_deep:      'colour palette: deep forest green #2B4D25 accent wall, pale sage #E8EEE6 walls, natural floor',
+    blush_rose:       'colour palette: dusty rose #D4927B accent, warm cream #FAF0EA walls, warm floor',
+    midnight_charcoal:'colour palette: warm charcoal #2C2C2A accent wall, warm grey walls, dark floor',
+    coastal_sand:     'colour palette: aquamarine walls, coastal sand #DED3B8 floor, white ceiling',
   };
 
-  const style   = STYLES[design_style_id]  || STYLES.contemporary_indian;
-  const palette = PALETTES[palette_id]     || PALETTES.warm_earthen;
-  const room    = (room_type || 'room').replace(/_/g, ' ');
+  const surfaces = SURFACE_PROMPTS[design_style_id] || SURFACE_PROMPTS.contemporary_indian;
+  const colours  = PALETTE_PROMPTS[palette_id]      || PALETTE_PROMPTS.warm_earthen;
+  const room     = (room_type || 'room').replace(/_/g, ' ');
 
-  // ── Step 1: Claude Vision reads the room photo ──
-  let roomDescription = '';
-  if (roomImageBase64 && env.ANTHROPIC_API_KEY) {
-    try {
-      const desc = await claude(env, [{
-        role: 'user',
-        content: [
-          { type:'image', source:{ type:'base64', media_type: roomMimeType||'image/jpeg', data: roomImageBase64 } },
-          { type:'text',  text: 'Describe the fixed architectural features of this room in one short sentence. Include: window count and positions, door positions, ceiling height, ceiling type, floor type, any built-in features. Do not mention furniture, colours, or decor. Be specific and concise. Example: "One large window on east wall, one door on north, standard 9-foot flat ceiling, vitrified tile floor, built-in wardrobe on west wall."' }
-        ]
-      }], null, 150);
-      if (desc && desc.length > 15) roomDescription = desc.trim();
-    } catch(e) {
-      // Non-fatal — continue without room-specific details
-      console.warn('Vision step failed:', e.message);
-    }
-  }
-
-  // ── Step 2: Build prompt incorporating the actual room's architecture ──
-  const roomContext = roomDescription
-    ? `The room has this specific layout and architecture: ${roomDescription}.`
-    : `A typical Indian ${room}.`;
-
-  const prompt = [
-    `Photorealistic professional interior design photograph of an Indian ${room}.`,
-    roomContext,
-    `Redesigned in ${style}.`,
-    `${palette}.`,
-    'Soft natural lighting. Ultra realistic. High detail. Wide angle view showing full room. No people.',
-  ].join(' ');
-
-  const negPrompt = 'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality, people, person, human, unrealistic proportions';
-
-  // ── Step 3: Generate with SDXL ──
   try {
-    const result = await env.AI.run(IMG_MODEL_XL, {
-      prompt,
-      negative_prompt: negPrompt,
-      num_steps: 20,
-      guidance:  7.5,
-      width:     1024,
-      height:    768,
-    });
+    let imageBase64, mode;
 
-    const buf   = await new Response(result).arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    let binary  = '';
-    for (let i = 0; i < bytes.length; i += 8192) {
-      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+    if (roomImageBase64) {
+      // ── IMG2IMG: transform the user's actual uploaded room photo ──────────────
+      // The user's photo is decoded and sent as the base image.
+      // strength 0.55 = AI keeps 45% of original pixel structure (preserves room layout),
+      //                  changes 55% (applies new surfaces, style, colours)
+      const prompt = [
+        `Interior design restyling of this ${room}.`,
+        surfaces + '.',
+        colours + '.',
+        'Keep the same room layout, same furniture positions, same windows and doors.',
+        'Only change wall colours, ceiling finish, and floor material.',
+        'Ultra realistic interior photography. No people.',
+      ].join(' ');
+
+      const negPrompt = 'new furniture, moved furniture, different room layout, cartoon, blurry, distorted, watermark, text, people, low quality';
+
+      const bin   = atob(roomImageBase64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+      const result = await env.AI.run(IMG_MODEL_IMG2IMG, {
+        prompt,
+        negative_prompt: negPrompt,
+        image:     [...bytes],
+        strength:  0.55,   // low = preserves room structure; raise to 0.7 for more dramatic style change
+        num_steps: 20,
+        guidance:  9.0,    // high = strictly follows the prompt
+      });
+
+      const buf    = await new Response(result).arrayBuffer();
+      const arr    = new Uint8Array(buf);
+      let binary   = '';
+      for (let i = 0; i < arr.length; i += 8192) {
+        binary += String.fromCharCode(...arr.subarray(i, i + 8192));
+      }
+      imageBase64 = btoa(binary);
+      mode = 'img2img';
+
+    } else {
+      // ── TXT2IMG fallback: no photo uploaded ───────────────────────────────────
+      const prompt = [
+        `Photorealistic professional interior design photograph of an Indian ${room}.`,
+        surfaces + '.',
+        colours + '.',
+        'Soft natural lighting. Ultra realistic. Wide angle view. No people.',
+      ].join(' ');
+
+      const result = await env.AI.run(IMG_MODEL_XL, {
+        prompt,
+        negative_prompt: 'cartoon, blurry, distorted, text, watermark, people, low quality',
+        num_steps: 20,
+        guidance:  7.5,
+        width:     1024,
+        height:    768,
+      });
+
+      const buf    = await new Response(result).arrayBuffer();
+      const arr    = new Uint8Array(buf);
+      let binary   = '';
+      for (let i = 0; i < arr.length; i += 8192) {
+        binary += String.fromCharCode(...arr.subarray(i, i + 8192));
+      }
+      imageBase64 = btoa(binary);
+      mode = 'txt2img';
     }
 
-    return jsonRes({
-      ok:               true,
-      image_base64:     btoa(binary),
-      mime_type:        'image/png',
-      mode:             roomImageBase64 ? 'vision_guided' : 'style_only',
-      room_description: roomDescription || null,
-    });
+    return jsonRes({ ok:true, image_base64:imageBase64, mime_type:'image/png', mode });
 
   } catch(e) {
+    console.error('Render error:', e.message);
     return jsonRes({ ok:false, error:`Render failed: ${e.message}` }, 500);
   }
 }

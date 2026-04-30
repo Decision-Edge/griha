@@ -72,15 +72,17 @@ export class AIAnalyzer {
     }
   }
 
-  // AI inspiration render — Claude Vision reads the room, SDXL generates matching design
+  // AI render — img2img transforms the user's actual room photo
   async generateRender({ room_type, design_style_id, palette_id, compass_zone, room_sqft, roomPhotoFile }) {
     try {
-      // Send the user's room photo so Claude Vision can read its architecture
       let roomImageBase64 = null;
       let roomMimeType    = 'image/jpeg';
+
       if (roomPhotoFile) {
-        // Resize to max 1024px — enough for Claude Vision to read architectural details
-        roomImageBase64 = await resizeMax(roomPhotoFile, 1024);
+        // SD v1.5 img2img requires 512×512 input.
+        // We square-crop from the centre so the room proportions are maintained
+        // as much as possible within the square constraint.
+        roomImageBase64 = await resizeSquare(roomPhotoFile, 512);
         roomMimeType    = 'image/jpeg';
       }
 
@@ -89,6 +91,7 @@ export class AIAnalyzer {
         roomImageBase64,
         roomMimeType,
       });
+      if (!r.ok) return { ok:false, error:`Render service returned ${r.status}` };
       const d = await r.json();
       if (!d.ok) return { ok:false, error: d.error || 'Render failed' };
       return d;
