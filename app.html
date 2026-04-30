@@ -966,23 +966,29 @@ async function triggerRender(idx){
     return;
   }
   const dataUrl = 'data:'+(result.mime_type||'image/png')+';base64,'+result.image_base64;
+  const isImg2img = result.mode === 'img2img';
 
-  // Show user's uploaded photo + AI inspiration side by side
-  const userPhotoHtml = room.previews[0]
-    ? `<div style="position:relative;flex:1;">
-        <img src="${room.previews[0]}" alt="Your room" style="width:100%;height:100%;object-fit:cover;display:block;">
-        <div style="position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,0.75);color:#fff;font-size:10px;padding:3px 9px;border-radius:100px;backdrop-filter:blur(4px);">Your room</div>
-       </div>`
-    : '';
+  // img2img: show your room (before) alongside the AI-transformed version (after)
+  // txt2img fallback: show just the generated design inspiration
+  if (isImg2img && room.previews[0]) {
+    preview.innerHTML = `
+      <div style="display:flex;height:100%;width:100%;">
+        <div style="position:relative;flex:1;overflow:hidden;border-right:2px solid rgba(192,80,42,0.4);">
+          <img src="${room.previews[0]}" alt="Your room" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:linear-gradient(transparent,rgba(26,23,20,0.85));color:#fff;font-size:11px;font-weight:500;letter-spacing:.02em;">Before · Your room</div>
+        </div>
+        <div style="position:relative;flex:1;overflow:hidden;">
+          <img src="${dataUrl}" alt="Restyled" style="width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .5s;" onload="this.style.opacity=1">
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:8px 12px;background:linear-gradient(transparent,rgba(192,80,42,0.85));color:#fff;font-size:11px;font-weight:500;letter-spacing:.02em;">After · AI restyled</div>
+        </div>
+      </div>`;
+  } else {
+    preview.innerHTML = `<img class="rs-img" src="${dataUrl}" alt="Design" style="opacity:0;transition:opacity .5s;" onload="this.style.opacity=1">`;
+  }
 
-  const splitLayout = userPhotoHtml
-    ? `<div style="display:flex;height:100%;gap:2px;">${userPhotoHtml}<div style="position:relative;flex:1;"><img class="rs-img" src="${dataUrl}" alt="Design inspiration" style="opacity:0;transition:opacity .4s;" onload="this.style.opacity=1"><div style="position:absolute;bottom:8px;left:8px;background:rgba(192,80,42,0.85);color:#fff;font-size:10px;padding:3px 9px;border-radius:100px;backdrop-filter:blur(4px);">AI design inspiration</div></div></div>`
-    : `<img class="rs-img" src="${dataUrl}" alt="Design inspiration" style="opacity:0;transition:opacity .4s;" onload="this.style.opacity=1">`;
-
-  preview.innerHTML = splitLayout;
-  if(note)  note.textContent = result.mode === 'vision_guided'
-    ? `Left: your room · Right: ${cap(styleId.replace(/_/g,' '))} · ${cap(palId.replace(/_/g,' '))} — AI read your room's layout to generate this`
-    : `${cap(styleId.replace(/_/g,' '))} · ${cap(palId.replace(/_/g,' '))} — style inspiration`;
+  if(note) note.textContent = isImg2img
+    ? `Before & after · ${cap(styleId.replace(/_/g,' '))} · ${cap(palId.replace(/_/g,' '))} · AI transformed surfaces of your actual room`
+    : `${cap(styleId.replace(/_/g,' '))} · ${cap(palId.replace(/_/g,' '))} · Design inspiration`;
   if(regen) regen.classList.add('show');
   if(dl){   dl.classList.add('show'); dl.href=dataUrl; dl.download='Griha-'+room.label.replace(/\s/g,'-')+'-render.png'; }
 
