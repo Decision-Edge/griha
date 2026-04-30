@@ -1,11 +1,11 @@
 /**
  * GRIHA AI ANALYZER — client-side module
- * Sends images to the Cloudflare Worker and returns structured results.
+ * Uses ES Modules (import/export)
  */
 
 const WORKER_URL = 'https://griha-worker.sayan-biz000.workers.dev';
 
-class AIAnalyzer {
+export class AIAnalyzer {
   constructor(url = WORKER_URL) {
     this.workerUrl = url;
   }
@@ -119,16 +119,27 @@ class AIAnalyzer {
   }
 
   // ── Render Generation ────────────────────────────────
-  async generateRender(params) {
+  async generateRender({
+    room_type,
+    design_style_id,
+    palette_id,
+    compass_zone,
+    room_sqft,
+    roomPhotoFile
+  }) {
     try {
       let roomImageBase64 = null;
 
-      if (params.roomPhotoFile) {
-        roomImageBase64 = await resizeSquare(params.roomPhotoFile, 512);
+      if (roomPhotoFile) {
+        roomImageBase64 = await resizeSquare(roomPhotoFile, 512);
       }
 
       const r = await post(`${this.workerUrl}/generate-render`, {
-        ...params,
+        room_type,
+        design_style_id,
+        palette_id,
+        compass_zone,
+        room_sqft,
         roomImageBase64,
         roomMimeType: 'image/jpeg'
       });
@@ -173,11 +184,6 @@ class AIAnalyzer {
   }
 }
 
-// ── EXPORT (SAFE FOR MODULE + NON-MODULE USE) ──────────
-if (typeof window !== 'undefined') {
-  window.AIAnalyzer = AIAnalyzer;
-}
-
 // ── Helpers ────────────────────────────────────────────
 
 function post(url, body) {
@@ -214,9 +220,17 @@ function resizeMax(file, maxPx) {
 
       let { width, height } = img;
 
+      if (width <= maxPx && height <= maxPx) {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => reject(new Error('Read error'));
+        reader.readAsDataURL(file);
+        return;
+      }
+
       const ratio = Math.min(maxPx / width, maxPx / height);
-      width *= ratio;
-      height *= ratio;
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
 
       const canvas = document.createElement('canvas');
       canvas.width = width;
