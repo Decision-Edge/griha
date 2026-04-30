@@ -142,7 +142,7 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .rs-subtitle{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;}
 .rs-body{display:grid;grid-template-columns:1fr 200px;min-height:380px;}
 .rs-preview{position:relative;background:#1A1210;display:flex;align-items:center;justify-content:center;min-height:340px;overflow:hidden;}
-.rs-img{width:100%;height:100%;object-fit:contain;display:block;}
+.rs-img{width:100%;height:auto;display:block;aspect-ratio:1/1;object-fit:cover;}
 .rs-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;height:100%;width:100%;}
 .rs-placeholder-icon{font-size:48px;opacity:.25;}
 .rs-placeholder-title{font-size:14px;font-weight:500;color:rgba(255,255,255,0.5);}
@@ -1095,7 +1095,13 @@ async function sendPrompt(idx,msg){
   } else {
     appendCsMsg(idx,'griha','…',true);
     const room=S.rooms[idx];
-    const r=await S.M.ai.chat(msg,{ room_type:room.label, zone:getZone(room.label), vastu:room.vastu, selected_style:document.getElementById('rsStyle-'+idx)?.value, sqft:room.ai?.observations?.estimated_sqft },S.chatHistory);
+    const r=await S.M.ai.chat(msg,{
+      room_type:      room.label,
+      zone:           getZone(room.label),
+      vastu_score:    room.vastu?.score,
+      selected_style: document.getElementById('rsStyle-'+idx)?.value,
+      sqft:           room.ai?.observations?.estimated_sqft
+    },S.chatHistory);
     updateCsMsg(idx,r.ok?r.reply:'Connection error — check your Worker is deployed.');
     if(r.ok){ S.chatHistory.push({role:'user',content:msg},{role:'assistant',content:r.reply}); if(S.chatHistory.length>20) S.chatHistory=S.chatHistory.slice(-20); }
   }
