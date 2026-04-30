@@ -50,31 +50,34 @@ export class AIAnalyzer {
     }
   }
 
-  // Masterplan compass zone analysis
+  // Masterplan compass zone analysis — resizes before sending to stay within Anthropic limits
   async analyzeMasterplan(file) {
     try {
-      const { base64, mime } = await fileToBase64(file);
-      const r = await post(`${this.workerUrl}/analyze-masterplan`, { imageBase64:base64, mimeType:mime });
+      // Resize to max 1600px — floor plans can be very large, Anthropic rejects >5MB
+      const base64 = await resizeMax(file, 1600);
+      const r = await post(`${this.workerUrl}/analyze-masterplan`, {
+        imageBase64: base64,
+        mimeType:    'image/jpeg'
+      });
+      if (!r.ok) return { ok:false, error:`Masterplan service returned ${r.status}` };
       const d = await r.json();
-      if (!d.plan_identified) return { ok:false, error: d.error === 'not_a_floorplan'
-        ? 'This does not look like a floor plan. Please upload your builder masterplan.'
-        : 'Could not read this floor plan. Try a higher resolution image.' };
+      if (!d.plan_identified) return { ok:false, error:
+        d.error === 'not_a_floorplan'  ? 'This does not look like a floor plan. Please upload your builder masterplan image.' :
+        d.error === 'image_too_large'  ? 'Floor plan image is too large. Please use a smaller image.' :
+        'Could not read this floor plan. Please ensure it clearly shows room layouts.'
+      };
       return { ok:true, ...d };
     } catch(e) {
       return { ok:false, error:e.message };
     }
   }
 
-  // AI surface render using img2img or txt2img
-  async generateRender({ room_type, design_style_id, palette_id, compass_zone, room_sqft, roomPhotoFile }) {
+  // AI inspiration render — uses SDXL for consistent quality
+  async generateRender({ room_type, design_style_id, palette_id, compass_zone, room_sqft }) {
     try {
-      let roomImageBase64 = null;
-      if (roomPhotoFile) {
-        // Resize to 512×512 square — SD v1.5 img2img requirement
-        roomImageBase64 = await resizeSquare(roomPhotoFile, 512);
-      }
+      // No longer sending the user's photo — SDXL txt2img produces better quality
       const r = await post(`${this.workerUrl}/generate-render`, {
-        room_type, design_style_id, palette_id, compass_zone, room_sqft, roomImageBase64
+        room_type, design_style_id, palette_id, compass_zone, room_sqft
       });
       const d = await r.json();
       if (!d.ok) return { ok:false, error: d.error || 'Render failed' };
@@ -102,7 +105,35 @@ export class AIAnalyzer {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function post(url, body) {
+// Resize to max dimension preserving aspect ratio — for masterplans and room photos
+function resizeMax(file, maxPx) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width <= maxPx && height <= maxPx) {
+        // Already small enough — just convert to base64
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => reject(new Error('Could not read file'));
+        reader.readAsDataURL(file);
+        return;
+      }
+      const ratio  = Math.min(maxPx / width, maxPx / height);
+      width        = Math.round(width  * ratio);
+      height       = Math.round(height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.90).split(',')[1]);
+    };
+    img.onerror = () => reject(new Error('Could not load image'));
+    img.src = url;
+  });
+}
   return fetch(url, {
     method:  'POST',
     headers: { 'Content-Type':'application/json' },
