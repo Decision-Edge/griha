@@ -115,100 +115,141 @@ Replace all values with what you actually observe in the photo. Return ONLY the 
 // ── ANALYZE MASTERPLAN ───────────────────────────────────────────────────────
 async function handleMasterplan(req, env) {
   if (!env.ANTHROPIC_API_KEY) return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set' });
+
   const { imageBase64, mimeType } = await req.json();
   if (!imageBase64) return jsonRes({ ok:false, error:'imageBase64 required' }, 400);
 
-  const prompt = `Analyse this floor plan image. Return ONLY this JSON (no markdown, no text before/after):
-{"plan_identified":true,"confidence":"high","direction_confidence":"high","direction_clarity_note":null,"building":{"total_sqft":1200,"bhk_type":"2BHK"},"orientation":{"north_direction":"top","north_source":"compass_rose","main_entrance_direction":"east"},"rooms":[{"name":"master bedroom","compass_zone":"SW","approximate_sqft":180},{"name":"kitchen","compass_zone":"SE","approximate_sqft":90}]}
+  // Validate the base64 isn't empty
+  if (imageBase64.length < 100) return jsonRes({ plan_identified:false, error:'image_too_small' });
 
-If NOT a floor plan: {"plan_identified":false,"error":"not_a_floorplan"}
-direction_confidence: "high" if compass/north arrow visible, "medium" if inferred, "low" if unknown
-direction_clarity_note: null if high, brief explanation if medium/low
-Return ONLY the JSON.`;
+  const system = 'You are an expert architect. You ONLY respond with valid JSON. Never use markdown. Never add explanation. Only output the JSON object.';
 
-  const reply = await claude(env, [{
-    role:'user',
-    content:[
-      { type:'image', source:{ type:'base64', media_type:mimeType||'image/jpeg', data:imageBase64 } },
-      { type:'text', text:prompt }
-    ]
-  }]);
+  const prompt = `Look at this floor plan image carefully.
 
-  const parsed = parseJSON(reply);
-  return jsonRes({ ok:true, ...parsed });
+If it IS a floor plan showing rooms, return this JSON with actual values observed:
+{"plan_identified":true,"direction_confidence":"high","direction_clarity_note":null,"building":{"total_sqft":1200,"bhk_type":"2BHK"},"orientation":{"north_direction":"top","north_source":"compass_rose","main_entrance_direction":"east"},"rooms":[{"name":"master bedroom","compass_zone":"SW","approximate_sqft":180},{"name":"kitchen","compass_zone":"SE","approximate_sqft":90},{"name":"living room","compass_zone":"N","approximate_sqft":220}]}
+
+If it is NOT a floor plan, return:
+{"plan_identified":false,"error":"not_a_floorplan"}
+
+Rules:
+- direction_confidence: "high" only if you can see a compass rose or north arrow. "medium" if you can infer from labels. "low" if completely unknown.
+- direction_clarity_note: null if high confidence. A one-sentence explanation if medium or low.
+- north_source: one of "compass_rose", "north_arrow", "label_inference", "unknown"
+- compass_zone: one of N, NE, E, SE, S, SW, W, NW
+- List every room you can identify in the rooms array
+- Replace all example values with what you actually see in this image
+
+Output ONLY the JSON. Nothing else.`;
+
+  try {
+    const reply = await claude(env, [{
+      role:'user',
+      content:[
+        { type:'image', source:{ type:'base64', media_type: mimeType || 'image/jpeg', data:imageBase64 } },
+        { type:'text', text:prompt }
+      ]
+    }], system, 1000);
+
+    if (!reply) return jsonRes({ plan_identified:false, error:'empty_response' });
+
+    const parsed = parseJSON(reply);
+
+    // If parsing failed, return a useful error
+    if (parsed.error === 'parse_failed') {
+      return jsonRes({
+        plan_identified: false,
+        error: 'could_not_parse',
+        raw: parsed.raw
+      });
+    }
+
+    return jsonRes({ ok:true, ...parsed });
+
+  } catch(e) {
+    console.error('Masterplan error:', e.message);
+    return jsonRes({
+      ok: false,
+      plan_identified: false,
+      error: e.message.includes('image') || e.message.includes('size') || e.message.includes('large')
+        ? 'image_too_large — please use a smaller floor plan image (under 2MB)'
+        : e.message
+    }, 500);
+  }
 }
 
 // ── GENERATE RENDER ──────────────────────────────────────────────────────────
+// Uses SDXL (1024×768) for consistent professional quality.
+// The user's uploaded photo is shown alongside as reference — not transformed,
+// because SD v1.5 img2img produces unreliable results with real room photos.
 async function handleRender(req, env) {
-  if (!env.AI) return jsonRes({ ok:false, error:'Workers AI binding missing. Go to Worker Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.' }, 503);
+  if (!env.AI) {
+    return jsonRes({ ok:false, error:'Workers AI binding missing. Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.' }, 503);
+  }
 
-  const { design_style_id, palette_id, room_type, roomImageBase64 } = await req.json();
+  const { design_style_id, palette_id, room_type } = await req.json();
 
   const STYLES = {
-    contemporary_indian:  'contemporary Indian interior, warm terracotta walls, kaolin clay ceiling, polished stone floors, brass accents, handloom textiles, indoor plants',
-    minimalist_modern:    'minimalist modern interior, pure white walls, smooth white ceiling, large-format grey porcelain floor, clean architectural lines, recessed lighting',
-    traditional_heritage: 'traditional Indian heritage interior, deep ochre and burgundy walls, ornate plaster ceiling, dark teak herringbone floor, antique brass fixtures',
-    boho_chic:            'bohemian chic interior, sage green walls, raw plaster feature wall, terracotta tile floor, macrame wall hanging, natural rattan',
-    industrial_modern:    'industrial modern interior, exposed concrete walls and ceiling, polished concrete floor, raw brick feature wall, steel accents',
-    art_deco_indian:      'Art Deco Indian interior, deep teal walls with gold geometric borders, ornate cream ceiling, black and gold marble floor',
-    japandi:              'Japandi interior, warm greige walls, pale oak ceiling beams, wide plank light wood floor, wabi-sabi plaster texture',
-    coastal_indian:       'coastal Indian interior, aquamarine limewash walls, whitewashed ceiling, pale teak floor, natural rope texture',
-  };
-  const PALETTES = {
-    warm_earthen:    'terracotta, warm brown, kaolin cream',
-    sage_serenity:   'sage green, pale moss, morning white',
-    terracotta_dawn: 'burnt terracotta, brick red, peach',
-    cloud_white:     'pure white, warm ivory, soft greige',
-    monsoon_blue:    'cerulean blue, deep navy, arctic white',
-    golden_hour:     'warm gold, amber, champagne',
-    forest_deep:     'forest green, dark fern, pale sage',
-    blush_rose:      'dusty rose, muted blush, warm cream',
-    midnight_charcoal:'charcoal, dark slate, warm grey',
-    coastal_sand:    'coastal sand, driftwood, seafoam',
+    contemporary_indian:  'contemporary Indian living room, warm terracotta accent wall, kaolin clay white walls, polished natural stone floor, brass pendant light, sheesham wood furniture, handloom cotton cushions, indoor plant in corner, warm ambient lighting',
+    minimalist_modern:    'minimalist modern bedroom, pure linen white walls, smooth white ceiling, large-format light grey porcelain floor tiles, clean-lined white furniture, recessed LED lighting, soft natural light from large window',
+    traditional_heritage: 'traditional Indian heritage drawing room, deep ochre and burgundy walls, ornate plaster ceiling with gold detail, dark teak herringbone wood floor, antique brass chandelier, carved wooden furniture, rich silk curtains',
+    boho_chic:            'bohemian chic bedroom, sage green walls, raw plaster feature wall, terracotta encaustic cement tile floor, macrame wall hanging, rattan furniture, layered dhurrie rug, Edison bulb warm lighting, indoor tropical plants',
+    industrial_modern:    'industrial modern living space, exposed raw concrete walls and ceiling, polished concrete floor, exposed brick feature wall, steel frame windows, minimal furniture, warm Edison bulb lighting',
+    art_deco_indian:      'Art Deco Indian sitting room, deep teal walls with gold geometric border, ornate cream plaster ceiling with cornice, black and gold geometric marble floor, antique brass accents, velvet upholstery',
+    japandi:              'Japandi meditation room, warm greige washi-texture walls, pale oak ceiling beams, wide-plank light ash wood floor, minimal furniture, soft diffused natural light, wabi-sabi imperfect plaster',
+    coastal_indian:       'coastal Indian bedroom, aquamarine limewash walls, whitewashed wooden ceiling, pale weathered teak plank floor, natural rope texture, light linen curtains, sea breeze atmosphere',
   };
 
-  const style   = STYLES[design_style_id]   || STYLES.contemporary_indian;
-  const palette = PALETTES[palette_id]       || PALETTES.warm_earthen;
-  const room    = (room_type||'bedroom').replace(/_/g,' ');
+  const PALETTES = {
+    warm_earthen:     'warm terracotta orange, tawny brown, kaolin cream',
+    sage_serenity:    'sage green, pale moss, crisp morning white',
+    terracotta_dawn:  'burnt terracotta, brick red, warm peach',
+    cloud_white:      'pure white, warm ivory, soft greige',
+    monsoon_blue:     'cerulean blue, deep navy, arctic white',
+    golden_hour:      'warm gold, amber honey, champagne cream',
+    forest_deep:      'deep forest green, dark fern, pale sage',
+    blush_rose:       'dusty rose, muted blush, warm cream',
+    midnight_charcoal:'warm charcoal, dark slate, soft warm grey',
+    coastal_sand:     'coastal sand, bleached driftwood, sea foam',
+  };
+
+  const style   = STYLES[design_style_id]  || STYLES.contemporary_indian;
+  const palette = PALETTES[palette_id]     || PALETTES.warm_earthen;
+  const room    = (room_type || 'room').replace(/_/g, ' ');
+
+  const prompt = [
+    `Photorealistic interior design photograph of an Indian ${room}.`,
+    style + '.',
+    `Exact colour palette: ${palette}.`,
+    'Professional interior photography. Soft natural lighting. Ultra realistic. High detail. No people. Wide angle showing full room.',
+  ].join(' ');
+
+  const negPrompt = 'cartoon, anime, sketch, watermark, text, logo, blurry, distorted, low quality, ugly, deformed, people, person, human, extra furniture';
 
   try {
-    let result;
+    const result = await env.AI.run(IMG_MODEL_XL, {
+      prompt,
+      negative_prompt: negPrompt,
+      num_steps: 20,
+      guidance:  7.5,
+      width:     1024,
+      height:    768,
+    });
 
-    if (roomImageBase64) {
-      // IMG2IMG — applies style to uploaded photo
-      const bin = atob(roomImageBase64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
-
-      result = await env.AI.run(IMG_MODEL_IMG2IMG, {
-        prompt: `${style}, colour palette: ${palette}, professional interior photography, ultra realistic, no people`,
-        negative_prompt: 'people, person, cartoon, blurry, distorted, text, watermark, low quality',
-        image: [...bytes],
-        strength: 0.75,
-        num_steps: 20,
-        guidance: 8,
-      });
-    } else {
-      // TXT2IMG fallback — higher quality output
-      result = await env.AI.run(IMG_MODEL_XL, {
-        prompt: `Photorealistic ${room} with ${style}. Colour palette: ${palette}. Professional interior photography. No people. 8K quality.`,
-        negative_prompt: 'people, cartoon, blurry, text, watermark, low quality, distorted',
-        num_steps: 20,
-        guidance: 7.5,
-        width: 1024,
-        height: 768,
-      });
+    const buf    = await new Response(result).arrayBuffer();
+    const bytes  = new Uint8Array(buf);
+    let binary   = '';
+    for (let i = 0; i < bytes.length; i += 8192) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
     }
 
-    // Convert stream → base64
-    const buf   = await new Response(result).arrayBuffer();
-    const bytes = new Uint8Array(buf);
-    let binary  = '';
-    for (let i=0; i<bytes.length; i+=8192) {
-      binary += String.fromCharCode(...bytes.subarray(i, i+8192));
-    }
-
-    return jsonRes({ ok:true, image_base64:btoa(binary), mime_type:'image/png', mode:roomImageBase64?'img2img':'txt2img' });
+    return jsonRes({
+      ok:           true,
+      image_base64: btoa(binary),
+      mime_type:    'image/png',
+      mode:         'inspiration',
+      prompt_used:  prompt,
+    });
 
   } catch(e) {
     return jsonRes({ ok:false, error:`Render failed: ${e.message}` }, 500);
