@@ -207,8 +207,8 @@ export class AIAnalyzer {
       let roomImageBase64 = null;
       let roomMimeType    = 'image/jpeg';
       if (roomPhotoFile) {
-        // Resize image client-side before sending to reduce payload
-        const resized = await this._resizeImage(roomPhotoFile, 768, 768);
+        // SD v1.5 img2img works best with 512x512 square input
+        const resized   = await this._resizeImageSquare(roomPhotoFile, 512);
         roomImageBase64 = resized.base64;
         roomMimeType    = resized.mimeType;
       }
@@ -217,41 +217,66 @@ export class AIAnalyzer {
         headers: { 'Content-Type':'application/json' },
         body:    JSON.stringify({ room_type, design_style_id, compass_zone, room_sqft, palette_id, palette_desc, roomImageBase64, roomMimeType })
       });
+      if (!response.ok) return { ok:false, error:`Render service returned ${response.status}` };
       const data = await response.json();
-      if (!data.ok) return { ok: false, error: data.error || 'Render generation failed' };
+      if (!data.ok) return { ok:false, error: data.error || 'Render generation failed' };
       return data;
     } catch (err) {
-      return { ok: false, error: `Could not generate render: ${err.message}` };
+      return { ok:false, error:`Could not generate render: ${err.message}` };
     }
   }
 
-  /**
-   * Send a chat message to the conversational assistant.
-   *
-   * @param {string}   userMessage
-   * @param {object}   currentAnalysis  - context from current room
-   * @param {array}    conversationHistory
-   * @returns {Promise<{ok, reply} | {ok:false, error}>}
-   */
   async chat(userMessage, currentAnalysis = null, conversationHistory = []) {
     try {
+      // Send only compact context — not the full vastu object (too large)
+      const compactAnalysis = currentAnalysis ? {
+        room_type:      currentAnalysis.room_type,
+        zone:           currentAnalysis.zone,
+        vastu_score:    currentAnalysis.vastu?.score,
+        selected_style: currentAnalysis.selected_style,
+        sqft:           currentAnalysis.sqft
+      } : null;
       const response = await fetch(`${this.workerUrl}/suggest-changes`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userMessage, currentAnalysis, conversationHistory })
+        body:    JSON.stringify({
+          userMessage,
+          currentAnalysis:     compactAnalysis,
+          conversationHistory: (conversationHistory||[]).slice(-6)
+        })
       });
+      if (!response.ok) return { ok:false, error:`Chat service returned ${response.status}` };
       const data = await response.json();
-      if (data.error) return { ok: false, error: data.error };
-      return { ok: true, reply: data.reply || 'No response generated.' };
+      if (data.error) return { ok:false, error:data.error };
+      return { ok:true, reply: data.reply || 'No response generated.' };
     } catch (err) {
-      return { ok: false, error: `Chat unavailable: ${err.message}` };
+      return { ok:false, error:`Chat unavailable: ${err.message}` };
     }
   }
 
-  /**
-   * Resizes an image client-side before sending to reduce payload size.
-   * SD img2img works well at 512-768px — no need to send full 4K photos.
-   */
+  // Square-crop + resize for SD v1.5 img2img (needs square input)
+  async _resizeImageSquare(file, size=512) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width  - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+        const mimeType = 'image/jpeg';
+        const base64   = canvas.toDataURL(mimeType, 0.88).split(',')[1];
+        resolve({ base64, mimeType });
+      };
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.src = url;
+    });
+  }
+
   async _resizeImage(file, maxW=768, maxH=768) {
     return new Promise((resolve, reject) => {
       const img = new Image();
