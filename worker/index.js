@@ -4,49 +4,74 @@
  * Secrets:   ANTHROPIC_API_KEY
  * Bindings:  AI (Workers AI)
  */
-const ANTHROPIC_MODEL = 'claude-opus-4-6';
-const IMG_MODEL_XL    = '@cf/stabilityai/stable-diffusion-xl-base-1.0';
+const ANTHROPIC_MODEL   = 'claude-opus-4-6';
+const IMG_MODEL_XL      = '@cf/stabilityai/stable-diffusion-xl-base-1.0';
 const IMG_MODEL_IMG2IMG = '@cf/runwayml/stable-diffusion-v1-5-img2img';
-const CORS = {
+
+// Always added to every response — including error responses from the platform
+const CORS_HEADERS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-export default { async fetch(req, env) {
-  if (req.method === 'OPTIONS') return new Response(null, { status:204, headers:CORS });
-  const url   = new URL(req.url);
-  const path  = url.pathname;
-  const res   = (d,s=200) => new Response(JSON.stringify(d), { status:s, headers:{...CORS,'Content-Type':'application/json'} });
+function addCors(response) {
+  const r = new Response(response.body, response);
+  Object.entries(CORS_HEADERS).forEach(([k,v]) => r.headers.set(k,v));
+  return r;
+}
 
-  try {
-    if (path === '/health') return res({
-      status:'ok', version:'v5',
-      has_key: !!(env.ANTHROPIC_API_KEY),
-      has_ai:  !!(env.AI)
-    });
+function jsonRes(data, status=200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...CORS_HEADERS, 'Content-Type':'application/json' }
+  });
+}
 
-    if (req.method !== 'POST') return res({ error:'POST required' }, 405);
+export default {
+  async fetch(req, env) {
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { status:204, headers:CORS_HEADERS });
+    }
 
-    if (path === '/validate-photo')     return handleValidate(req, env, res);
-    if (path === '/analyze-room')       return handleAnalyze(req, env, res);
-    if (path === '/analyze-masterplan') return handleMasterplan(req, env, res);
-    if (path === '/generate-render')    return handleRender(req, env, res);
-    if (path === '/suggest-changes')    return handleChat(req, env, res);
-
-    return res({ error:'Unknown endpoint' }, 404);
-  } catch(e) {
-    console.error(e);
-    return res({ error: e.message }, 500);
+    try {
+      const response = await handleRequest(req, env);
+      return addCors(response);
+    } catch(e) {
+      console.error('Unhandled worker error:', e);
+      return jsonRes({ error: e.message || 'Internal server error' }, 500);
+    }
   }
-}};
+};
+
+async function handleRequest(req, env) {
+  const path = new URL(req.url).pathname;
+  const res  = jsonRes; // alias
+
+  if (path === '/health') return jsonRes({
+    status:'ok', version:'v5',
+    has_key: !!(env.ANTHROPIC_API_KEY),
+    has_ai:  !!(env.AI)
+  });
+
+  if (req.method !== 'POST') return jsonRes({ error:'POST required' }, 405);
+
+  if (path === '/validate-photo')     return handleValidate(req, env);
+  if (path === '/analyze-room')       return handleAnalyze(req, env);
+  if (path === '/analyze-masterplan') return handleMasterplan(req, env);
+  if (path === '/generate-render')    return handleRender(req, env);
+  if (path === '/suggest-changes')    return handleChat(req, env);
+
+  return jsonRes({ error:'Unknown endpoint' }, 404);
+}
 
 // ── VALIDATE PHOTO ──────────────────────────────────────────────────────────
-async function handleValidate(req, env, res) {
-  if (!env.ANTHROPIC_API_KEY) return res({ is_valid_room:true, _skipped:true, reason:'No API key' });
+async function handleValidate(req, env) {
+  if (!env.ANTHROPIC_API_KEY) return jsonRes({ is_valid_room:true, _skipped:true, reason:'No API key' });
   try {
     const { imageBase64, mimeType } = await req.json();
-    if (!imageBase64) return res({ is_valid_room:true, _skipped:true });
+    if (!imageBase64) return jsonRes({ is_valid_room:true, _skipped:true });
 
     const reply = await claude(env, [{
       role: 'user',
@@ -57,18 +82,18 @@ async function handleValidate(req, env, res) {
     }], null, 80);
 
     const parsed = parseJSON(reply);
-    if (typeof parsed.is_valid_room !== 'boolean') return res({ is_valid_room:true, _skipped:true });
-    return res(parsed);
+    if (typeof parsed.is_valid_room !== 'boolean') return jsonRes({ is_valid_room:true, _skipped:true });
+    return jsonRes(parsed);
   } catch(e) {
-    return res({ is_valid_room:true, _skipped:true });
+    return jsonRes({ is_valid_room:true, _skipped:true });
   }
 }
 
 // ── ANALYZE ROOM ─────────────────────────────────────────────────────────────
-async function handleAnalyze(req, env, res) {
-  if (!env.ANTHROPIC_API_KEY) return res({ ok:false, error:'ANTHROPIC_API_KEY not set' });
+async function handleAnalyze(req, env) {
+  if (!env.ANTHROPIC_API_KEY) return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set' });
   const { imageBase64, mimeType, roomLabel } = await req.json();
-  if (!imageBase64) return res({ ok:false, error:'imageBase64 required' }, 400);
+  if (!imageBase64) return jsonRes({ ok:false, error:'imageBase64 required' }, 400);
 
   const prompt = `You are an expert interior design analyst for Indian homes.
 Analyse this ${roomLabel||'room'} photo and return ONLY this JSON (no markdown, no text before or after):
@@ -84,14 +109,14 @@ Replace all values with what you actually observe in the photo. Return ONLY the 
     ]
   }]);
 
-  return res(parseJSON(reply));
+  return jsonRes(parseJSON(reply));
 }
 
 // ── ANALYZE MASTERPLAN ───────────────────────────────────────────────────────
-async function handleMasterplan(req, env, res) {
-  if (!env.ANTHROPIC_API_KEY) return res({ ok:false, error:'ANTHROPIC_API_KEY not set' });
+async function handleMasterplan(req, env) {
+  if (!env.ANTHROPIC_API_KEY) return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set' });
   const { imageBase64, mimeType } = await req.json();
-  if (!imageBase64) return res({ ok:false, error:'imageBase64 required' }, 400);
+  if (!imageBase64) return jsonRes({ ok:false, error:'imageBase64 required' }, 400);
 
   const prompt = `Analyse this floor plan image. Return ONLY this JSON (no markdown, no text before/after):
 {"plan_identified":true,"confidence":"high","direction_confidence":"high","direction_clarity_note":null,"building":{"total_sqft":1200,"bhk_type":"2BHK"},"orientation":{"north_direction":"top","north_source":"compass_rose","main_entrance_direction":"east"},"rooms":[{"name":"master bedroom","compass_zone":"SW","approximate_sqft":180},{"name":"kitchen","compass_zone":"SE","approximate_sqft":90}]}
@@ -110,12 +135,12 @@ Return ONLY the JSON.`;
   }]);
 
   const parsed = parseJSON(reply);
-  return res({ ok:true, ...parsed });
+  return jsonRes({ ok:true, ...parsed });
 }
 
 // ── GENERATE RENDER ──────────────────────────────────────────────────────────
-async function handleRender(req, env, res) {
-  if (!env.AI) return res({ ok:false, error:'Workers AI binding missing. Go to Worker Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.' }, 503);
+async function handleRender(req, env) {
+  if (!env.AI) return jsonRes({ ok:false, error:'Workers AI binding missing. Go to Worker Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.' }, 503);
 
   const { design_style_id, palette_id, room_type, roomImageBase64 } = await req.json();
 
@@ -183,22 +208,22 @@ async function handleRender(req, env, res) {
       binary += String.fromCharCode(...bytes.subarray(i, i+8192));
     }
 
-    return res({ ok:true, image_base64:btoa(binary), mime_type:'image/png', mode:roomImageBase64?'img2img':'txt2img' });
+    return jsonRes({ ok:true, image_base64:btoa(binary), mime_type:'image/png', mode:roomImageBase64?'img2img':'txt2img' });
 
   } catch(e) {
-    return res({ ok:false, error:`Render failed: ${e.message}` }, 500);
+    return jsonRes({ ok:false, error:`Render failed: ${e.message}` }, 500);
   }
 }
 
 // ── CHAT ─────────────────────────────────────────────────────────────────────
-async function handleChat(req, env, res) {
-  if (!env.ANTHROPIC_API_KEY) return res({ ok:false, error:'ANTHROPIC_API_KEY not set in Worker secrets.' });
+async function handleChat(req, env) {
+  if (!env.ANTHROPIC_API_KEY) return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set in Worker secrets.' });
 
   let body;
-  try { body = await req.json(); } catch(e) { return res({ ok:false, error:'Invalid JSON body' }, 400); }
+  try { body = await req.json(); } catch(e) { return jsonRes({ ok:false, error:'Invalid JSON body' }, 400); }
 
   const { userMessage, currentAnalysis, conversationHistory=[] } = body;
-  if (!userMessage) return res({ ok:false, error:'userMessage required' }, 400);
+  if (!userMessage) return jsonRes({ ok:false, error:'userMessage required' }, 400);
 
   const system = `You are Griha, an AI interior design assistant specialising in Vastu-compliant Indian homes.
 Help users with surface design (walls, paint, ceiling, flooring), Vastu compliance, and colour recommendations.
@@ -215,9 +240,9 @@ Be specific — mention Asian Paints or Berger paint codes when relevant. Keep r
   ];
 
   const reply = await claude(env, messages, system, 400);
-  if (!reply) return res({ ok:false, error:'Empty response from AI. Try again.' });
+  if (!reply) return jsonRes({ ok:false, error:'Empty response from AI. Try again.' });
 
-  return res({ ok:true, reply });
+  return jsonRes({ ok:true, reply });
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
