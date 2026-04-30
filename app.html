@@ -966,8 +966,21 @@ async function triggerRender(idx){
     return;
   }
   const dataUrl = 'data:'+(result.mime_type||'image/png')+';base64,'+result.image_base64;
-  preview.innerHTML = `<img class="rs-img" src="${dataUrl}" alt="AI render — ${styleId.replace(/_/g,' ')}" loading="lazy" style="opacity:0;transition:opacity .4s;" onload="this.style.opacity=1">`;
-  if(note)  note.textContent = cap(styleId.replace(/_/g,' '))+' · '+cap(palId.replace(/_/g,' '))+' · '+(result.mode==='img2img'?'Applied to your photo':'Generated from description');
+
+  // Show user's uploaded photo + AI inspiration side by side
+  const userPhotoHtml = room.previews[0]
+    ? `<div style="position:relative;flex:1;">
+        <img src="${room.previews[0]}" alt="Your room" style="width:100%;height:100%;object-fit:cover;display:block;">
+        <div style="position:absolute;bottom:8px;left:8px;background:rgba(26,23,20,0.75);color:#fff;font-size:10px;padding:3px 9px;border-radius:100px;backdrop-filter:blur(4px);">Your room</div>
+       </div>`
+    : '';
+
+  const splitLayout = userPhotoHtml
+    ? `<div style="display:flex;height:100%;gap:2px;">${userPhotoHtml}<div style="position:relative;flex:1;"><img class="rs-img" src="${dataUrl}" alt="Design inspiration" style="opacity:0;transition:opacity .4s;" onload="this.style.opacity=1"><div style="position:absolute;bottom:8px;left:8px;background:rgba(192,80,42,0.85);color:#fff;font-size:10px;padding:3px 9px;border-radius:100px;backdrop-filter:blur(4px);">AI design inspiration</div></div></div>`
+    : `<img class="rs-img" src="${dataUrl}" alt="Design inspiration" style="opacity:0;transition:opacity .4s;" onload="this.style.opacity=1">`;
+
+  preview.innerHTML = splitLayout;
+  if(note)  note.textContent = 'Left: your uploaded room · Right: ' + cap(styleId.replace(/_/g,' ')) + ' design inspiration · ' + cap(palId.replace(/_/g,' ')) + ' palette';
   if(regen) regen.classList.add('show');
   if(dl){   dl.classList.add('show'); dl.href=dataUrl; dl.download='Griha-'+room.label.replace(/\s/g,'-')+'-render.png'; }
 
