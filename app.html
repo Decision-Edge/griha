@@ -980,7 +980,9 @@ async function triggerRender(idx){
     : `<img class="rs-img" src="${dataUrl}" alt="Design inspiration" style="opacity:0;transition:opacity .4s;" onload="this.style.opacity=1">`;
 
   preview.innerHTML = splitLayout;
-  if(note)  note.textContent = 'Left: your uploaded room · Right: ' + cap(styleId.replace(/_/g,' ')) + ' design inspiration · ' + cap(palId.replace(/_/g,' ')) + ' palette';
+  if(note)  note.textContent = result.mode === 'vision_guided'
+    ? `Left: your room · Right: ${cap(styleId.replace(/_/g,' '))} · ${cap(palId.replace(/_/g,' '))} — AI read your room's layout to generate this`
+    : `${cap(styleId.replace(/_/g,' '))} · ${cap(palId.replace(/_/g,' '))} — style inspiration`;
   if(regen) regen.classList.add('show');
   if(dl){   dl.classList.add('show'); dl.href=dataUrl; dl.download='Griha-'+room.label.replace(/\s/g,'-')+'-render.png'; }
 
