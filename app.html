@@ -137,12 +137,13 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .vr-source{font-size:10px;color:var(--ch40);margin-top:3px;font-style:italic;}
 /* RENDER STUDIO */
 .render-studio{border:1.5px solid var(--terra);border-radius:var(--r-lg);overflow:hidden;background:var(--charcoal);}
-.rs-header{padding:14px 20px;background:linear-gradient(135deg,var(--charcoal) 0%,#2A1F1A 100%);border-bottom:1px solid rgba(255,255,255,0.07);}
+.rs-header{padding:14px 20px;background:linear-gradient(135deg,#1A1714 0%,#2A1F1A 100%);border-bottom:1px solid rgba(255,255,255,0.07);}
 .rs-title{font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--warm-white);}
 .rs-subtitle{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;}
-.rs-body{display:grid;grid-template-columns:1fr 220px;min-height:360px;}
-.rs-preview{position:relative;background:#111009;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:360px;}
-.rs-img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;}
+.rs-body{display:grid;grid-template-columns:1fr 230px;}
+/* 4:3 ratio — shows image fully without distortion */
+.rs-preview{position:relative;background:#0D0B09;aspect-ratio:4/3;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.rs-img{width:100%;height:100%;object-fit:contain;display:block;}
 .rs-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;height:100%;width:100%;}
 .rs-placeholder-icon{font-size:48px;opacity:.25;}
 .rs-placeholder-title{font-size:14px;font-weight:500;color:rgba(255,255,255,0.5);}
@@ -965,7 +966,7 @@ async function triggerRender(idx){
     return;
   }
   const dataUrl = 'data:'+(result.mime_type||'image/png')+';base64,'+result.image_base64;
-  preview.innerHTML = `<img class="rs-img" src="${dataUrl}" alt="AI render">`;
+  preview.innerHTML = `<img class="rs-img" src="${dataUrl}" alt="AI render — ${styleId.replace(/_/g,' ')}" loading="lazy" style="opacity:0;transition:opacity .4s;" onload="this.style.opacity=1">`;
   if(note)  note.textContent = cap(styleId.replace(/_/g,' '))+' · '+cap(palId.replace(/_/g,' '))+' · '+(result.mode==='img2img'?'Applied to your photo':'Generated from description');
   if(regen) regen.classList.add('show');
   if(dl){   dl.classList.add('show'); dl.href=dataUrl; dl.download='Griha-'+room.label.replace(/\s/g,'-')+'-render.png'; }
