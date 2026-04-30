@@ -72,12 +72,22 @@ export class AIAnalyzer {
     }
   }
 
-  // AI inspiration render — uses SDXL for consistent quality
-  async generateRender({ room_type, design_style_id, palette_id, compass_zone, room_sqft }) {
+  // AI inspiration render — Claude Vision reads the room, SDXL generates matching design
+  async generateRender({ room_type, design_style_id, palette_id, compass_zone, room_sqft, roomPhotoFile }) {
     try {
-      // No longer sending the user's photo — SDXL txt2img produces better quality
+      // Send the user's room photo so Claude Vision can read its architecture
+      let roomImageBase64 = null;
+      let roomMimeType    = 'image/jpeg';
+      if (roomPhotoFile) {
+        // Resize to max 1024px — enough for Claude Vision to read architectural details
+        roomImageBase64 = await resizeMax(roomPhotoFile, 1024);
+        roomMimeType    = 'image/jpeg';
+      }
+
       const r = await post(`${this.workerUrl}/generate-render`, {
-        room_type, design_style_id, palette_id, compass_zone, room_sqft
+        room_type, design_style_id, palette_id, compass_zone, room_sqft,
+        roomImageBase64,
+        roomMimeType,
       });
       const d = await r.json();
       if (!d.ok) return { ok:false, error: d.error || 'Render failed' };

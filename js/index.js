@@ -179,53 +179,77 @@ Output ONLY the JSON. Nothing else.`;
 }
 
 // ── GENERATE RENDER ──────────────────────────────────────────────────────────
-// Uses SDXL (1024×768) for consistent professional quality.
-// The user's uploaded photo is shown alongside as reference — not transformed,
-// because SD v1.5 img2img produces unreliable results with real room photos.
+// Step 1: Claude Vision reads the user's room photo → extracts architectural features
+// Step 2: SDXL generates a 1024×768 image that matches THAT SPECIFIC room's layout
 async function handleRender(req, env) {
   if (!env.AI) {
     return jsonRes({ ok:false, error:'Workers AI binding missing. Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.' }, 503);
   }
 
-  const { design_style_id, palette_id, room_type } = await req.json();
+  const body = await req.json().catch(() => ({}));
+  const { design_style_id, palette_id, room_type, roomImageBase64, roomMimeType } = body;
 
   const STYLES = {
-    contemporary_indian:  'contemporary Indian living room, warm terracotta accent wall, kaolin clay white walls, polished natural stone floor, brass pendant light, sheesham wood furniture, handloom cotton cushions, indoor plant in corner, warm ambient lighting',
-    minimalist_modern:    'minimalist modern bedroom, pure linen white walls, smooth white ceiling, large-format light grey porcelain floor tiles, clean-lined white furniture, recessed LED lighting, soft natural light from large window',
-    traditional_heritage: 'traditional Indian heritage drawing room, deep ochre and burgundy walls, ornate plaster ceiling with gold detail, dark teak herringbone wood floor, antique brass chandelier, carved wooden furniture, rich silk curtains',
-    boho_chic:            'bohemian chic bedroom, sage green walls, raw plaster feature wall, terracotta encaustic cement tile floor, macrame wall hanging, rattan furniture, layered dhurrie rug, Edison bulb warm lighting, indoor tropical plants',
-    industrial_modern:    'industrial modern living space, exposed raw concrete walls and ceiling, polished concrete floor, exposed brick feature wall, steel frame windows, minimal furniture, warm Edison bulb lighting',
-    art_deco_indian:      'Art Deco Indian sitting room, deep teal walls with gold geometric border, ornate cream plaster ceiling with cornice, black and gold geometric marble floor, antique brass accents, velvet upholstery',
-    japandi:              'Japandi meditation room, warm greige washi-texture walls, pale oak ceiling beams, wide-plank light ash wood floor, minimal furniture, soft diffused natural light, wabi-sabi imperfect plaster',
-    coastal_indian:       'coastal Indian bedroom, aquamarine limewash walls, whitewashed wooden ceiling, pale weathered teak plank floor, natural rope texture, light linen curtains, sea breeze atmosphere',
+    contemporary_indian:  'contemporary Indian interior, warm terracotta accent wall, kaolin clay white walls, sheesham wood furniture, brass pendant light, handloom textiles, indoor plants, warm amber lighting',
+    minimalist_modern:    'minimalist modern interior, pure linen white walls, smooth white ceiling, large-format light grey porcelain floor, clean-lined furniture, recessed LED lighting, Scandinavian simplicity',
+    traditional_heritage: 'traditional Indian heritage interior, deep ochre and burgundy walls, ornate plaster ceiling with gold, dark teak herringbone floor, antique brass chandelier, carved wooden furniture, rich brocade',
+    boho_chic:            'boho chic interior, sage green walls, raw plaster accent wall, terracotta cement tiles, macrame wall hanging, rattan furniture, layered dhurrie rug, Edison bulb lighting, tropical plants',
+    industrial_modern:    'industrial modern interior, exposed raw concrete walls, polished concrete floor, anthracite ceiling, exposed brick feature wall, minimal steel furniture',
+    art_deco_indian:      'Art Deco Indian interior, deep teal walls with gold geometric border, ornate cream ceiling with cornice, black and gold marble floor, antique brass accents',
+    japandi:              'Japandi interior, warm greige washi walls, pale oak ceiling beams, wide-plank ash wood floor, minimal furniture, wabi-sabi plaster, soft diffused light',
+    coastal_indian:       'coastal Indian interior, aquamarine limewash walls, whitewashed wooden ceiling, pale weathered teak floor, natural rope texture, light linen curtains',
   };
-
   const PALETTES = {
-    warm_earthen:     'warm terracotta orange, tawny brown, kaolin cream',
-    sage_serenity:    'sage green, pale moss, crisp morning white',
-    terracotta_dawn:  'burnt terracotta, brick red, warm peach',
-    cloud_white:      'pure white, warm ivory, soft greige',
-    monsoon_blue:     'cerulean blue, deep navy, arctic white',
-    golden_hour:      'warm gold, amber honey, champagne cream',
-    forest_deep:      'deep forest green, dark fern, pale sage',
-    blush_rose:       'dusty rose, muted blush, warm cream',
-    midnight_charcoal:'warm charcoal, dark slate, soft warm grey',
-    coastal_sand:     'coastal sand, bleached driftwood, sea foam',
+    warm_earthen:     'colour scheme: warm terracotta, tawny brown, kaolin cream',
+    sage_serenity:    'colour scheme: sage green, pale moss, crisp white',
+    terracotta_dawn:  'colour scheme: burnt terracotta, brick red, warm peach',
+    cloud_white:      'colour scheme: pure white, warm ivory, soft greige',
+    monsoon_blue:     'colour scheme: cerulean blue, deep navy, arctic white',
+    golden_hour:      'colour scheme: warm gold, amber, champagne cream',
+    forest_deep:      'colour scheme: forest green, dark fern, pale sage',
+    blush_rose:       'colour scheme: dusty rose, muted blush, warm cream',
+    midnight_charcoal:'colour scheme: warm charcoal, dark slate, warm grey',
+    coastal_sand:     'colour scheme: coastal sand, bleached driftwood, sea foam',
   };
 
   const style   = STYLES[design_style_id]  || STYLES.contemporary_indian;
   const palette = PALETTES[palette_id]     || PALETTES.warm_earthen;
   const room    = (room_type || 'room').replace(/_/g, ' ');
 
+  // ── Step 1: Claude Vision reads the room photo ──
+  let roomDescription = '';
+  if (roomImageBase64 && env.ANTHROPIC_API_KEY) {
+    try {
+      const desc = await claude(env, [{
+        role: 'user',
+        content: [
+          { type:'image', source:{ type:'base64', media_type: roomMimeType||'image/jpeg', data: roomImageBase64 } },
+          { type:'text',  text: 'Describe the fixed architectural features of this room in one short sentence. Include: window count and positions, door positions, ceiling height, ceiling type, floor type, any built-in features. Do not mention furniture, colours, or decor. Be specific and concise. Example: "One large window on east wall, one door on north, standard 9-foot flat ceiling, vitrified tile floor, built-in wardrobe on west wall."' }
+        ]
+      }], null, 150);
+      if (desc && desc.length > 15) roomDescription = desc.trim();
+    } catch(e) {
+      // Non-fatal — continue without room-specific details
+      console.warn('Vision step failed:', e.message);
+    }
+  }
+
+  // ── Step 2: Build prompt incorporating the actual room's architecture ──
+  const roomContext = roomDescription
+    ? `The room has this specific layout and architecture: ${roomDescription}.`
+    : `A typical Indian ${room}.`;
+
   const prompt = [
-    `Photorealistic interior design photograph of an Indian ${room}.`,
-    style + '.',
-    `Exact colour palette: ${palette}.`,
-    'Professional interior photography. Soft natural lighting. Ultra realistic. High detail. No people. Wide angle showing full room.',
+    `Photorealistic professional interior design photograph of an Indian ${room}.`,
+    roomContext,
+    `Redesigned in ${style}.`,
+    `${palette}.`,
+    'Soft natural lighting. Ultra realistic. High detail. Wide angle view showing full room. No people.',
   ].join(' ');
 
-  const negPrompt = 'cartoon, anime, sketch, watermark, text, logo, blurry, distorted, low quality, ugly, deformed, people, person, human, extra furniture';
+  const negPrompt = 'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality, people, person, human, unrealistic proportions';
 
+  // ── Step 3: Generate with SDXL ──
   try {
     const result = await env.AI.run(IMG_MODEL_XL, {
       prompt,
@@ -236,25 +260,26 @@ async function handleRender(req, env) {
       height:    768,
     });
 
-    const buf    = await new Response(result).arrayBuffer();
-    const bytes  = new Uint8Array(buf);
-    let binary   = '';
+    const buf   = await new Response(result).arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary  = '';
     for (let i = 0; i < bytes.length; i += 8192) {
       binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
     }
 
     return jsonRes({
-      ok:           true,
-      image_base64: btoa(binary),
-      mime_type:    'image/png',
-      mode:         'inspiration',
-      prompt_used:  prompt,
+      ok:               true,
+      image_base64:     btoa(binary),
+      mime_type:        'image/png',
+      mode:             roomImageBase64 ? 'vision_guided' : 'style_only',
+      room_description: roomDescription || null,
     });
 
   } catch(e) {
     return jsonRes({ ok:false, error:`Render failed: ${e.message}` }, 500);
   }
 }
+
 
 // ── CHAT ─────────────────────────────────────────────────────────────────────
 async function handleChat(req, env) {
