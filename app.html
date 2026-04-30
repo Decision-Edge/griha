@@ -516,17 +516,24 @@ async function validatePhotoAsync(roomId, slotIdx, file) {
   try {
     const r = await S.M.ai.validatePhoto(file);
     document.getElementById(badgeId)?.remove();
-    if(r._skipped) return;
-    if(!r.is_valid_room) {
+
+    // Only reject if worker explicitly confirms it is NOT a room.
+    // Any error, network issue, or _skipped → accept the photo silently.
+    if(r.ok && r.is_valid_room === false) {
       const room = UPLOAD.rooms.find(x=>x.id===roomId);
       if(room){ if(room.previews[slotIdx]) URL.revokeObjectURL(room.previews[slotIdx]); room.photos[slotIdx]=null; room.previews[slotIdx]=null; }
       renderAllRoomCards(); updateFooter();
-      showSlotErr(roomId, r.reason||'This doesn\'t appear to be a room photo. Please upload an interior room photo.');
-    } else {
+      showSlotErr(roomId, r.reason||'This does not appear to be a room photo. Please upload an interior room photo.');
+    } else if(r.ok && r.is_valid_room === true) {
+      // Show brief success badge
       const slotEl = document.getElementById('slot-'+roomId+'-'+slotIdx);
       if(slotEl){ const ok=document.createElement('div'); ok.style.cssText='position:absolute;top:6px;left:6px;background:rgba(79,98,80,0.85);color:#fff;font-size:10px;padding:3px 8px;border-radius:100px;'; ok.textContent='✓ Room detected'; slotEl.appendChild(ok); setTimeout(()=>ok.remove(),2500); }
     }
-  } catch(e){ document.getElementById(badgeId)?.remove(); }
+    // All other cases (error, skipped, unknown) → do nothing, keep the photo
+  } catch(e) {
+    document.getElementById(badgeId)?.remove();
+    // Any exception → accept photo silently, validation is best-effort
+  }
 }
 
 function showSlotErr(roomId, msg) {
