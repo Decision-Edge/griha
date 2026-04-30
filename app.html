@@ -140,9 +140,9 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .rs-header{padding:14px 20px;background:linear-gradient(135deg,var(--charcoal) 0%,#2A1F1A 100%);border-bottom:1px solid rgba(255,255,255,0.07);}
 .rs-title{font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--warm-white);}
 .rs-subtitle{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;}
-.rs-body{display:grid;grid-template-columns:1fr 200px;min-height:380px;}
-.rs-preview{position:relative;background:#1A1210;display:flex;align-items:center;justify-content:center;min-height:340px;overflow:hidden;}
-.rs-img{width:100%;height:auto;display:block;aspect-ratio:1/1;object-fit:cover;}
+.rs-body{display:grid;grid-template-columns:1fr 220px;min-height:360px;}
+.rs-preview{position:relative;background:#111009;display:flex;align-items:center;justify-content:center;overflow:hidden;min-height:360px;}
+.rs-img{width:100%;height:100%;object-fit:cover;display:block;position:absolute;inset:0;}
 .rs-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;height:100%;width:100%;}
 .rs-placeholder-icon{font-size:48px;opacity:.25;}
 .rs-placeholder-title{font-size:14px;font-weight:500;color:rgba(255,255,255,0.5);}
@@ -324,6 +324,13 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 </nav>
 
 <!-- UPLOAD PHASE -->
+<!-- Worker connection status bar -->
+<div id="workerStatus" style="display:none;padding:8px 24px;font-size:12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);">
+  <span id="wsIcon" style="font-size:14px;">⏳</span>
+  <span id="wsText" style="color:var(--ch70);">Checking AI connection…</span>
+  <a id="wsHelp" href="#" style="display:none;color:var(--terra);font-weight:500;margin-left:auto;" onclick="return false;">How to fix →</a>
+</div>
+
 <div id="uploadPhase">
   <div class="upload-hero">
     <div class="upload-hero-eyebrow">AI-powered · Vastu compliant · Indian homes</div>
@@ -476,6 +483,51 @@ async function init() {
   addRoom();
   setupListeners();
   restoreSession();
+  // Test worker connection and show status
+  testWorkerConnection();
+}
+
+async function testWorkerConnection() {
+  const bar  = document.getElementById('workerStatus');
+  const icon = document.getElementById('wsIcon');
+  const text = document.getElementById('wsText');
+  const help = document.getElementById('wsHelp');
+  if (!bar) return;
+  bar.style.display = 'flex';
+
+  const result = await S.M.ai.testConnection();
+
+  if (result.ok) {
+    const issues = [];
+    if (!result.has_key) issues.push('ANTHROPIC_API_KEY not set');
+    if (!result.has_ai)  issues.push('Workers AI binding missing');
+
+    if (issues.length === 0) {
+      icon.textContent = '✓';
+      icon.style.color = 'var(--sage)';
+      text.textContent = 'AI services connected · Photo analysis, renders and chat ready';
+      text.style.color = 'var(--sage)';
+      setTimeout(() => bar.style.display = 'none', 4000);
+    } else {
+      icon.textContent = '⚠';
+      icon.style.color = 'var(--gold)';
+      text.textContent = `Worker connected but: ${issues.join(', ')}`;
+      text.style.color = 'var(--gold)';
+      help.style.display = 'block';
+      help.onclick = () => { alert(`To fix:\n${issues.map(i => '• ' + i).join('\n')}\n\nGo to: Cloudflare → Workers → griha-worker → Settings`); return false; };
+    }
+  } else {
+    icon.textContent = '✗';
+    icon.style.color = 'var(--terra)';
+    text.innerHTML = `<strong>Worker not connected</strong> — AI analysis, renders and chat are unavailable. 
+      <span style="color:var(--ch70);">Deploy worker/index.js to Cloudflare Workers (griha-worker) to enable these features. The app works in offline mode with smart defaults.</span>`;
+    help.style.display = 'block';
+    help.textContent = 'Setup guide';
+    help.onclick = () => { 
+      alert('To deploy the Worker:\n1. Go to dash.cloudflare.com → Workers & Pages → griha-worker\n2. Click Edit Code\n3. Paste the entire contents of worker/index.js\n4. Click Deploy\n\nThe URL must be: https://griha-worker.sayan-biz000.workers.dev'); 
+      return false; 
+    };
+  }
 }
 
 // ─── UPLOAD MANAGEMENT ────────────────────────────────────────────────────────
@@ -905,7 +957,7 @@ async function triggerRender(idx){
   regen?.classList.remove('show');
   dl?.classList.remove('show');
   preview.innerHTML = `<div class="rs-loading"><div class="rs-spinner"></div><div class="rs-loading-title">Transforming your ${room.label}</div><div class="rs-loading-sub">${room.photos[0]?'Applying '+styleId.replace(/_/g,' ')+' to your uploaded photo':'Generating from style description'}</div></div>`;
-  const result = await S.M.ai.generateRender({ room_type:normalise(room.label), design_style_id:styleId, compass_zone:getZone(room.label), room_sqft:room.ai?.observations?.estimated_sqft||150, palette_id:palId, palette_desc:'', roomPhotoFile:room.photos[0]||null });
+  const result = await S.M.ai.generateRender({ room_type:normalise(room.label), design_style_id:styleId, palette_id:palId, compass_zone:getZone(room.label), room_sqft:room.ai?.observations?.estimated_sqft||150, roomPhotoFile:room.photos[0]||null });
   if(genBtn){ genBtn.disabled=false; genBtn.textContent='✦ Generate surface preview'; }
   if(!result.ok){
     preview.innerHTML = `<div class="rs-placeholder"><div class="rs-placeholder-icon">⚠️</div><div class="rs-placeholder-title" style="color:rgba(255,255,255,.7);">Render failed</div><div class="rs-placeholder-sub">${result.error?.includes('binding')?'Add Workers AI binding: Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.':result.error||'Check your Worker is deployed with the AI binding.'}</div></div>`;
@@ -956,7 +1008,7 @@ async function generateAllRooms(){
     const ph=document.getElementById('cph-'+i);
     if(RENDER_CACHE[i][cKey]){ _showCarouselRender(i,RENDER_CACHE[i][cKey],room.label); continue; }
     if(ph) ph.innerHTML='<div class="rs-spinner" style="width:32px;height:32px;margin-bottom:8px;"></div><div style="font-size:12px;color:rgba(255,255,255,.5);">Generating '+room.label+'…</div>';
-    const r=await S.M.ai.generateRender({ room_type:normalise(room.label), design_style_id:sId, compass_zone:getZone(room.label), room_sqft:room.ai?.observations?.estimated_sqft||150, palette_id:pId, palette_desc:'', roomPhotoFile:room.photos[0]||null });
+    const r=await S.M.ai.generateRender({ room_type:normalise(room.label), design_style_id:sId, palette_id:pId, compass_zone:getZone(room.label), room_sqft:room.ai?.observations?.estimated_sqft||150, roomPhotoFile:room.photos[0]||null });
     if(r.ok){ RENDER_CACHE[i][cKey]=r.image_base64; _showCarouselRender(i,r.image_base64,room.label); }
     else if(ph) ph.innerHTML='<div class="carousel-placeholder-icon">⚠️</div><div class="carousel-placeholder-text">'+room.label+' failed</div>';
   }
@@ -1101,8 +1153,8 @@ async function sendPrompt(idx,msg){
       vastu_score:    room.vastu?.score,
       selected_style: document.getElementById('rsStyle-'+idx)?.value,
       sqft:           room.ai?.observations?.estimated_sqft
-    },S.chatHistory);
-    updateCsMsg(idx,r.ok?r.reply:'Connection error — check your Worker is deployed.');
+    }, S.chatHistory);
+    updateCsMsg(idx, r.ok ? r.reply : `⚠ ${r.error||'Chat unavailable'}`);
     if(r.ok){ S.chatHistory.push({role:'user',content:msg},{role:'assistant',content:r.reply}); if(S.chatHistory.length>20) S.chatHistory=S.chatHistory.slice(-20); }
   }
   if(sendBtn) sendBtn.disabled=false;
