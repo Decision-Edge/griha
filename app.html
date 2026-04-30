@@ -431,6 +431,8 @@ import { LightingEngine }  from './js/lighting-engine.js';
 import { CarpenterSpec }   from './js/carpenter-spec.js';
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
+const ai = new AIAnalyzer();
+console.log("AI Analyzer ready", ai);
 const ROOM_TYPES  = ['Master bedroom','Living room','Kitchen','Washroom','Balcony','Pooja room','Kids bedroom','Guest bedroom','Study','Dining room'];
 const SLOT_LABELS = ['Main view','Second angle','Third angle'];
 const STYLE_OPTIONS = [
