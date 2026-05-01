@@ -25,26 +25,13 @@ function getClientIP(req) {
   return req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For')?.split(',')[0]?.trim() || 'unknown';
 }
 
-// ── Rate limiting ────────────────────────────────────────────────────────────
-const FREE = { analyses:1, renders:1 };
+// ── Rate limiting (disabled during development) ──────────────────────────────
 async function checkRateLimit(env, ip, type) {
-  if (!env.RATE_KV) return { allowed:true };
-  const key = `rate:${ip}:${new Date().toISOString().slice(0,10)}`;
-  try {
-    const stored = await env.RATE_KV.get(key);
-    const counts = stored ? JSON.parse(stored) : { analyses:0, renders:0 };
-    return counts[type+'s'] >= FREE[type+'s'] ? { allowed:false } : { allowed:true };
-  } catch(e) { return { allowed:true }; }
+  // TODO: re-enable before launch
+  return { allowed: true };
 }
 async function consumeCredit(env, ip, type) {
-  if (!env.RATE_KV) return;
-  const key = `rate:${ip}:${new Date().toISOString().slice(0,10)}`;
-  try {
-    const stored = await env.RATE_KV.get(key);
-    const counts = stored ? JSON.parse(stored) : { analyses:0, renders:0 };
-    counts[type+'s'] = (counts[type+'s']||0) + 1;
-    await env.RATE_KV.put(key, JSON.stringify(counts), { expirationTtl:90000 });
-  } catch(e) {}
+  // TODO: re-enable before launch
 }
 
 // ── Main handler ─────────────────────────────────────────────────────────────
