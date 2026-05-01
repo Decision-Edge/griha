@@ -82,11 +82,21 @@ async function route(req, env) {
         image: pixel, prompt: 'test', samples: 1,
         scheduler: 'DPM++ 2M Karras', num_inference_steps: 1,
         guidance_scale: 1, strength: 0.1, seed: 1,
-        img_width: 512, img_height: 512, base64: true,
+        img_width: 512, img_height: 512, base64: false,
       }),
     });
     const text = await r.text();
-    return jsonRes({ status: r.status, headers: Object.fromEntries(r.headers), body: text.slice(0, 500) });
+    const isFormatOk = r.status === 406 || r.status === 200;
+    return jsonRes({
+      status:         r.status,
+      format_accepted: isFormatOk,
+      needs_credits:  r.status === 406,
+      body:           text.slice(0, 300),
+      verdict:        r.status === 200 ? 'WORKING - ready to render' :
+                      r.status === 406 ? 'FORMAT OK - just add credits at cloud.segmind.com/billing' :
+                      r.status === 401 ? 'INVALID API KEY' :
+                      'UNEXPECTED ERROR - check body above'
+    });
   }
 
   if (req.method !== 'POST') return jsonRes({ error:'POST required' }, 405);
@@ -223,55 +233,45 @@ async function handleRender(req, env) {
   try {
     const response = await fetch('https://api.segmind.com/v1/sdxl-img2img', {
       method:  'POST',
-      headers: {
-        'x-api-key':    env.SEGMIND_API_KEY,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'x-api-key': env.SEGMIND_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        image:               roomImageBase64,  // base64 string directly — no data URI prefix
+        image:               roomImageBase64,
         prompt,
         negative_prompt:     negPrompt,
         samples:             1,
         scheduler:           'DPM++ 2M Karras',
         num_inference_steps: 30,
         guidance_scale:      8,
-        strength:            0.45,  // 0.45 = visible style change while preserving room structure
+        strength:            0.45,
         seed:                12345,
         img_width:           1024,
         img_height:          1024,
-        base64:              true,   // return base64 directly — no URL fetch needed
+        base64:              false,  // returns raw image bytes — more reliable than base64 mode
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text().catch(() => '');
       let errMsg = errText.slice(0, 300);
-      try { errMsg = JSON.parse(errText).message || errMsg; } catch {}
+      try { errMsg = JSON.parse(errText).error || errMsg; } catch {}
       console.error('Segmind error', response.status, errMsg);
-
-      if (response.status === 401 || response.status === 403) {
-        return jsonRes({ ok:false, error:'Invalid SEGMIND_API_KEY. Check at segmind.com → Dashboard → API Key.' });
-      }
-      if (response.status === 402) {
-        return jsonRes({ ok:false, error:'No Segmind credits. Top up at segmind.com → Dashboard → Billing.' });
-      }
-      if (response.status === 429) {
-        return jsonRes({ ok:false, error:'Segmind rate limit. Wait a moment and try again.' });
-      }
+      if (response.status === 401 || response.status === 403) return jsonRes({ ok:false, error:'Invalid SEGMIND_API_KEY.' });
+      if (response.status === 402 || response.status === 406) return jsonRes({ ok:false, error:'No Segmind credits. Top up at cloud.segmind.com/billing?type=TOPUP' });
+      if (response.status === 429) return jsonRes({ ok:false, error:'Segmind rate limit. Wait a moment.' });
       return jsonRes({ ok:false, error:'Segmind ' + response.status + ': ' + errMsg }, 502);
     }
 
-    const data = await response.json();
-
-    // Segmind returns base64 directly when base64:true
-    // Response format: { "image": "<base64>", ... }
-    const b64 = data.image || data.output || data.base64;
-    if (!b64) {
-      console.error('Segmind response keys:', Object.keys(data));
-      return jsonRes({ ok:false, error:'Segmind returned no image. Response: ' + JSON.stringify(data).slice(0,100) }, 502);
+    // base64:false → Segmind returns raw image bytes (image/jpeg)
+    const imgBuf  = await response.arrayBuffer();
+    const imgArr  = new Uint8Array(imgBuf);
+    let binary    = '';
+    for (let i = 0; i < imgArr.length; i += 8192) {
+      binary += String.fromCharCode(...imgArr.subarray(i, i + 8192));
     }
+    const b64 = btoa(binary);
+    if (!b64) return jsonRes({ ok:false, error:'No image returned from Segmind.' }, 502);
 
-    return jsonRes({ ok:true, image_base64:b64, mime_type:'image/png', mode:'img2img' });
+    return jsonRes({ ok:true, image_base64:b64, mime_type:'image/jpeg', mode:'img2img' });
 
   } catch(e) {
     console.error('Render error:', e.message);
