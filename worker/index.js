@@ -312,110 +312,64 @@ Output ONLY the JSON. Nothing else.`;
   }
 }
 
-// ── GENERATE RENDER ──────────────────────────────────────────────────────────
-// Two-step pipeline:
-// 1. Claude Vision reads the room photo → extracts exact room description
-// 2. Stability AI SDXL v1 JSON API generates a high-quality redesigned room
-//    using that description so the output matches the uploaded room's layout
-// Uses the v1 JSON API (no multipart/binary) — proven reliable in CF Workers
+// ── GENERATE RENDER ─────────────────────────────────────────────────────────
+// Single direct call to Stability AI SDXL v1 JSON API.
+// Claude Vision step removed — it caused combined 30s+ timeout → CF returns 502.
 async function handleRender(req, env) {
   if (!env.STABILITY_API_KEY) {
-    return jsonRes({ ok:false, error:'STABILITY_API_KEY not set. Go to: Cloudflare → griha-worker → Settings → Variables and Secrets → Add STABILITY_API_KEY' }, 503);
+    return jsonRes({ ok:false, error:'STABILITY_API_KEY not set. Cloudflare → griha-worker → Settings → Variables and Secrets → Add STABILITY_API_KEY' }, 503);
   }
 
-  // Rate limit — free tier: 1 render per IP per day
   const ip = getClientIP(req);
   try {
     const rateCheck = await checkRateLimit(env, ip, 'render');
     if (!rateCheck.allowed) {
       return jsonRes({
-        ok: false, limit_reached: true, type: 'render',
-        message: "You've used your free render. Buy a credit pack to generate more previews.",
-        packs: [
-          { name: 'Starter',   price: 299, includes: '3 rooms + 5 renders', tag: 'starter' },
-          { name: 'Full Home', price: 799, includes: 'Unlimited rooms + renders', tag: 'full_home' }
+        ok:false, limit_reached:true, type:'render',
+        message:"You've used your free render. Buy a credit pack to continue.",
+        packs:[
+          { name:'Starter',   price:299, includes:'3 rooms + 5 renders',      tag:'starter'   },
+          { name:'Full Home', price:799, includes:'Unlimited rooms + renders', tag:'full_home' }
         ]
       }, 429);
     }
-  } catch(rateErr) {
-    console.warn('Render rate check failed (non-fatal):', rateErr.message);
-  }
+  } catch(e) {}
 
   let body;
   try { body = await req.json(); }
   catch(e) { return jsonRes({ ok:false, error:'Invalid request body' }, 400); }
 
-  const { design_style_id, palette_id, room_type, roomImageBase64, roomMimeType } = body;
+  const { design_style_id, palette_id, room_type } = body;
 
-  // Style-specific surface transformation instructions
-  const STYLE_SURFACE = {
-    contemporary_indian:  { walls:'terracotta orange walls with kaolin cream ceiling', floor:'polished beige natural stone tiles', light:'warm brass pendant light, warm amber glow', accent:'sheesham wood furniture, handloom cotton cushions in mustard and rust, indoor plants' },
-    minimalist_modern:    { walls:'pure linen white walls and ceiling, flat matte finish', floor:'large-format light grey porcelain tiles 600x600mm', light:'recessed white LED downlights, soft even illumination', accent:'white and grey upholstery, clean minimal furniture, no clutter' },
-    traditional_heritage: { walls:'deep ochre yellow walls with burgundy dado panel, gold border stencil', floor:'dark teak herringbone wood flooring', light:'antique brass chandelier, warm golden candlelight glow', accent:'carved dark wood furniture, heavy silk curtains in deep red and gold' },
-    boho_chic:            { walls:'sage green walls with raw white plaster texture on feature wall', floor:'terracotta encaustic cement patterned floor tiles', light:'rattan woven pendant light, warm Edison bulb glow', accent:'macrame wall art, layered colourful dhurrie rug, tropical plants everywhere' },
-    industrial_modern:    { walls:'raw exposed concrete grey walls, exposed red brick feature wall', floor:'sealed polished dark concrete floor', light:'black steel Edison bulb pendants, cool industrial lighting', accent:'black steel frame furniture, minimal industrial decor, exposed pipes' },
-    art_deco_indian:      { walls:'deep teal walls with gold geometric Art Deco stencil pattern', floor:'black and gold geometric marble mosaic floor', light:'antique brass wall sconces, dramatic uplighting in gold', accent:'velvet upholstery, gold gilded mirror, Art Deco brass fixtures' },
-    japandi:              { walls:'warm greige walls with subtle washi paper texture, muted and calm', floor:'wide-plank pale ash wood flooring', light:'paper lantern pendant, soft warm diffused light', accent:'minimal pale wood furniture, linen curtains, single bonsai plant' },
-    coastal_indian:       { walls:'aquamarine blue-green limewash textured walls, weathered coastal feel', floor:'pale weathered teak plank flooring', light:'natural rope pendant light, warm soft coastal glow', accent:'light linen curtains, natural jute rug, driftwood shelf decor' },
+  const STYLES = {
+    contemporary_indian:  'contemporary Indian interior, warm terracotta #C47040 painted walls, polished beige stone floor, smooth white ceiling, warm brass pendant light, sheesham wood furniture, mustard and rust handloom cushions, indoor ceramic pot plants',
+    minimalist_modern:    'minimalist modern interior, pure linen white #F5F0E8 painted walls and ceiling, large-format light grey porcelain floor tiles, recessed white LED lights, clean-lined white furniture, linen curtains, zero clutter',
+    traditional_heritage: 'traditional Indian heritage interior, deep ochre #B07D20 walls with burgundy dado rail and gold stencil border, dark teak herringbone wood floor, antique brass chandelier, carved dark wood furniture, deep red and gold silk curtains',
+    boho_chic:            'bohemian chic interior, sage green #779971 walls with raw white plaster feature wall, terracotta patterned cement floor tiles, rattan pendant light, macrame wall hanging, colourful layered dhurrie rug, tropical plants',
+    industrial_modern:    'industrial modern interior, raw grey concrete walls, exposed red brick accent wall, dark sealed polished concrete floor, black steel Edison bulb pendants, black steel furniture, exposed black painted pipes on ceiling',
+    art_deco_indian:      'Art Deco Indian interior, deep teal #2E5F82 walls with gold geometric stencil border, black and gold geometric marble floor, ornate cream ceiling cornice with gold, antique brass sconces, velvet jewel-tone upholstery',
+    japandi:              'Japandi interior, warm greige #C8BC9F walls, wide-plank pale ash wood floor, white ceiling with pale oak beams, paper pendant light, minimal natural wood furniture, linen curtains, single architectural plant',
+    coastal_indian:       'coastal Indian interior, aquamarine #5B8FAE limewash walls, pale teak wood plank floor, whitewashed wooden plank ceiling, rope pendant light, light linen curtains, jute rug, driftwood decorations',
+  };
+  const PALETTES = {
+    warm_earthen:     'dominant colours warm terracotta #C47040 and kaolin cream #EAE1D5',
+    sage_serenity:    'dominant colours sage green #779971 and morning mist #E8EEE6',
+    terracotta_dawn:  'dominant colours burnt terracotta #9A4820 and pale peach #F5ECE1',
+    cloud_white:      'dominant colours pure white #F5F0E8 and warm greige #C8BC9F',
+    monsoon_blue:     'dominant colours cerulean blue #5B8FAE and arctic white #EBF0F5',
+    golden_hour:      'dominant colours warm gold #B07D20 and champagne #F4EAD5',
+    forest_deep:      'dominant colours forest green #2B4D25 and pale sage #E8EEE6',
+    blush_rose:       'dominant colours dusty rose #D4927B and warm cream #FAF0EA',
+    midnight_charcoal:'dominant colours charcoal #2C2C2A and warm grey #8C8C8A',
+    coastal_sand:     'dominant colours coastal sand #DED3B8 and sea foam #E8EDE6',
   };
 
-  const PALETTE = {
-    warm_earthen:     'dominant colours: warm terracotta #C47040, kaolin clay #EAE1D5, teak brown #8E6D4E',
-    sage_serenity:    'dominant colours: sage green #779971, pale moss #B5CDAC, morning mist #E8EEE6',
-    terracotta_dawn:  'dominant colours: burnt terracotta #9A4820, brick spice, warm peach #F5ECE1',
-    cloud_white:      'dominant colours: pure white #F5F0E8, warm ivory #EDE8DC, soft greige',
-    monsoon_blue:     'dominant colours: cerulean blue #5B8FAE, deep navy, arctic white',
-    golden_hour:      'dominant colours: warm gold #B07D20, amber, champagne cream',
-    forest_deep:      'dominant colours: forest green #2B4D25, dark fern, pale sage',
-    blush_rose:       'dominant colours: dusty rose #D4927B, muted blush, warm cream',
-    midnight_charcoal:'dominant colours: warm charcoal #2C2C2A, dark slate, warm grey',
-    coastal_sand:     'dominant colours: coastal sand #DED3B8, bleached driftwood, sea foam',
-  };
+  const style  = STYLES[design_style_id]  || STYLES.contemporary_indian;
+  const palette = PALETTES[palette_id]    || PALETTES.warm_earthen;
+  const room   = (room_type || 'room').replace(/_/g, ' ');
 
-  const sk  = design_style_id || 'contemporary_indian';
-  const pk  = palette_id      || 'warm_earthen';
-  const srf = STYLE_SURFACE[sk] || STYLE_SURFACE.contemporary_indian;
-  const pal = PALETTE[pk]       || PALETTE.warm_earthen;
-  const room = (room_type || 'room').replace(/_/g, ' ');
-
-  // Step 1: Claude Vision reads the room photo to get exact architectural description
-  let roomDescription = '';
-  if (roomImageBase64 && env.ANTHROPIC_API_KEY) {
-    try {
-      const desc = await claude(env, [{
-        role: 'user',
-        content: [
-          { type:'image', source:{ type:'base64', media_type: roomMimeType||'image/jpeg', data: roomImageBase64 } },
-          { type:'text',  text: 'Describe the fixed architectural features of this room in 2 sentences. Include: number and position of windows (which walls), door position, ceiling height (low/standard/high), ceiling type (flat/POP/false/beams), floor type currently, and any built-in features (wardrobes, AC unit, kitchen counter). Do not mention furniture or colours. Be precise and brief. Example: "Standard 9-foot flat ceiling, two east-facing windows, one door on the north wall, vitrified tile floor, built-in wardrobe on the west wall."' }
-        ]
-      }], null, 150);
-      if (desc && desc.length > 15) roomDescription = desc.trim();
-    } catch(e) {
-      console.warn('Vision step skipped:', e.message);
-    }
-  }
-
-  // Step 2: Build a highly directive prompt using room architecture + style
-  const architectureContext = roomDescription
-    ? `The room has this exact layout: ${roomDescription}.`
-    : `An Indian ${room} with standard proportions.`;
-
-  const prompt = [
-    `Photorealistic professional interior design photograph of an Indian ${room}.`,
-    architectureContext,
-    `WALLS: ${srf.walls}.`,
-    `FLOOR: ${srf.floor}.`,
-    `CEILING AND LIGHTING: ${srf.light}.`,
-    `FURNISHINGS AND DECOR: ${srf.accent}.`,
-    `COLOUR PALETTE: ${pal}.`,
-    'Ultra realistic. 8K quality. Professional interior photography. Wide angle view showing the full room. No people. Highly detailed surfaces.',
-  ].join(' ');
-
-  const negPrompt = 'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality, people, person, human, overexposed, painting, illustration';
-
-  // Stability AI SDXL v1 — valid dimensions: 1024x1024, 1152x896, 1216x832, 1344x768, 1536x640
-  // Max steps on free tier: 30. Max prompt length: 2000 chars.
-  const promptTrimmed = prompt.slice(0, 1800); // hard cap to stay under limit
+  const prompt    = `Photorealistic professional interior design photo of an Indian ${room}. ${style}. Colour palette: ${palette}. Soft natural daylight. Ultra realistic. High detail. Wide angle. No people.`;
+  const negPrompt = 'cartoon, blurry, distorted, low quality, watermark, text, people, person, overexposed, painting, sketch, anime, deformed';
 
   try {
     const response = await fetch(
@@ -429,55 +383,42 @@ async function handleRender(req, env) {
         },
         body: JSON.stringify({
           text_prompts: [
-            { text: promptTrimmed, weight: 1  },
-            { text: negPrompt,     weight: -1 },
+            { text:prompt,    weight:1  },
+            { text:negPrompt, weight:-1 },
           ],
-          cfg_scale: 12,
+          cfg_scale: 10,
           height:    768,
           width:     1344,
-          steps:     30,
+          steps:     25,
           samples:   1,
         }),
       }
     );
 
-    // Capture the real error message from Stability AI before returning 502
     if (!response.ok) {
-      let errMsg = `Stability AI returned ${response.status}`;
-      try {
-        const errBody = await response.text();
-        const parsed  = JSON.parse(errBody);
-        errMsg = parsed.message || parsed.name || errBody.slice(0, 200);
-      } catch {}
-      console.error('Stability AI error:', response.status, errMsg);
-
-      if (response.status === 401) return jsonRes({ ok:false, error:'Invalid STABILITY_API_KEY. Check at platform.stability.ai → Account → API Keys.' });
+      const errText = await response.text().catch(() => `HTTP ${response.status}`);
+      let errMsg = errText.slice(0, 300);
+      try { errMsg = JSON.parse(errText).message || errMsg; } catch {}
+      console.error('Stability AI error', response.status, errMsg);
+      if (response.status === 401) return jsonRes({ ok:false, error:'Invalid STABILITY_API_KEY. Check platform.stability.ai → Account → API Keys.' });
       if (response.status === 402) return jsonRes({ ok:false, error:'No Stability AI credits. Top up at platform.stability.ai → Billing.' });
-      if (response.status === 400) return jsonRes({ ok:false, error:`Stability AI rejected the request: ${errMsg}` });
-      if (response.status === 500) return jsonRes({ ok:false, error:`Stability AI internal error. Try again in a moment.` });
-      return jsonRes({ ok:false, error:`Stability AI error ${response.status}: ${errMsg}` }, 502);
+      if (response.status === 429) return jsonRes({ ok:false, error:'Stability AI rate limit — wait a moment and try again.' });
+      return jsonRes({ ok:false, error:`Stability AI ${response.status}: ${errMsg}` }, 502);
     }
 
-    const data   = await response.json();
-    const base64 = data.artifacts?.[0]?.base64;
-    if (!base64) return jsonRes({ ok:false, error:'Stability AI returned no image data.' }, 502);
+    const data = await response.json();
+    const b64  = data.artifacts?.[0]?.base64;
+    if (!b64) return jsonRes({ ok:false, error:'No image returned. Check credits at platform.stability.ai.' }, 502);
 
-    try { await consumeCredit(env, ip, 'render'); } catch(e) { /* non-fatal */ }
+    try { await consumeCredit(env, ip, 'render'); } catch(e) {}
 
-    return jsonRes({
-      ok:           true,
-      image_base64: base64,
-      mime_type:    'image/png',
-      mode:         roomDescription ? 'vision_guided' : 'style_only',
-      room_seen:    roomDescription || null,
-    });
+    return jsonRes({ ok:true, image_base64:b64, mime_type:'image/png', mode:'txt2img' });
 
   } catch(e) {
     console.error('Render error:', e.message);
     return jsonRes({ ok:false, error:`Render failed: ${e.message}` }, 500);
   }
 }
-
 
 // ── CHAT ─────────────────────────────────────────────────────────────────────
 async function handleChat(req, env) {
