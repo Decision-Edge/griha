@@ -90,25 +90,26 @@ export default {
 
 async function handleRequest(req, env) {
   const path = new URL(req.url).pathname;
-  const res  = jsonRes; // alias
 
+  // Health + debug are GET endpoints — must be before the POST gate
   if (path === '/health') return jsonRes({
-    status:'ok', version:'v5',
-    has_key: !!(env.ANTHROPIC_API_KEY),
-    has_ai:  !!(env.AI)
+    status:'ok', version:'v6',
+    has_anthropic_key: !!(env.ANTHROPIC_API_KEY),
+    has_stability_key: !!(env.STABILITY_API_KEY),
+    has_rate_kv:       !!(env.RATE_KV),
   });
 
-  if (req.method !== 'POST') return jsonRes({ error:'POST required' }, 405);
-
-  // Debug endpoint — shows what's configured without exposing secret values
   if (path === '/debug') return jsonRes({
     has_anthropic_key: !!(env.ANTHROPIC_API_KEY),
     has_stability_key: !!(env.STABILITY_API_KEY),
     has_rate_kv:       !!(env.RATE_KV),
     version:           'v6',
     timestamp:         new Date().toISOString(),
-    tip_503:           !env.STABILITY_API_KEY ? 'Add STABILITY_API_KEY in Worker Settings → Variables and Secrets' : null,
+    fix_503:           !env.STABILITY_API_KEY ? 'STABILITY_API_KEY missing — add in Worker Settings → Variables and Secrets' : 'OK',
+    fix_500:           !env.ANTHROPIC_API_KEY ? 'ANTHROPIC_API_KEY missing — add in Worker Settings → Variables and Secrets' : 'OK',
   });
+
+  if (req.method !== 'POST') return jsonRes({ error:'POST required for this endpoint' }, 405);
 
   if (path === '/validate-photo')     return handleValidate(req, env);
   if (path === '/analyze-room')       return handleAnalyze(req, env);
@@ -311,175 +312,147 @@ Output ONLY the JSON. Nothing else.`;
   }
 }
 
-// ── GENERATE RENDER via Stability AI SDXL ───────────────────────────────────
-// Uses api.stability.ai stable-image/generate/sd3 for txt2img (no photo)
-// and  api.stability.ai v1 image-to-image for img2img (with user photo).
-// Both run SDXL at 1024px — far better than Cloudflare Workers AI SD v1.5.
-//
-// Requires: STABILITY_API_KEY secret in Worker Settings → Variables and Secrets
-// Get key at: platform.stability.ai → Account → API Keys
+// ── GENERATE RENDER ─────────────────────────────────────────────────────────
+// Uses Stability AI SD3 for txt2img (no photo) or img2img (with user's photo).
+// Multipart form-data is built manually — avoids Cloudflare FormData/Blob issues.
 async function handleRender(req, env) {
-  // Check free tier limit first
-  const ip = getClientIP(req);
-  const rateCheck = await checkRateLimit(env, ip, 'render');
-  if (!rateCheck.allowed) {
-    return jsonRes({
-      ok: false,
-      limit_reached: true,
-      type: 'render',
-      message: 'You\'ve used your free render. Buy a credit pack to generate more room previews.',
-      packs: [
-        { name: 'Starter', price: 299, includes: '3 rooms + 5 renders', tag: 'starter' },
-        { name: 'Full Home', price: 799, includes: 'Unlimited rooms + renders', tag: 'full_home' }
-      ]
-    }, 429);
-  }
-
   if (!env.STABILITY_API_KEY) {
-    return jsonRes({
-      ok: false,
-      error: 'STABILITY_API_KEY not set. Go to: Cloudflare → griha-worker → Settings → Variables and Secrets → Add → Name: STABILITY_API_KEY → Value: your key from platform.stability.ai'
-    }, 503);
+    return jsonRes({ ok:false, error:'STABILITY_API_KEY not set. Go to: Cloudflare → griha-worker → Settings → Variables and Secrets → Add STABILITY_API_KEY' }, 503);
   }
 
-  const body = await req.json().catch(() => ({}));
-  const { design_style_id, palette_id, room_type, roomImageBase64, roomMimeType } = body;
+  let body;
+  try { body = await req.json(); } catch(e) { return jsonRes({ ok:false, error:'Invalid request body' }, 400); }
 
-  // Style prompts — describe the redesigned room interior
+  const { design_style_id, palette_id, room_type, roomImageBase64 } = body;
+
   const STYLES = {
-    contemporary_indian:
-      'contemporary Indian interior design, warm terracotta accent wall, kaolin clay white walls, polished natural stone floor, sheesham wood furniture, brass pendant light, handloom textiles, indoor plants, warm golden ambient lighting, professional interior photography',
-    minimalist_modern:
-      'minimalist modern interior design, pure linen white walls, smooth white ceiling, large-format light grey porcelain floor, clean-lined furniture, recessed LED lighting, Scandinavian simplicity, soft natural light, professional interior photography',
-    traditional_heritage:
-      'traditional Indian heritage interior design, deep ochre and burgundy walls, ornate plaster ceiling with gold border, dark teak herringbone floor, antique brass chandelier, carved wooden furniture, rich silk curtains, warm amber lighting, professional interior photography',
-    boho_chic:
-      'bohemian chic interior design, sage green walls, raw plaster feature wall, terracotta encaustic cement floor tiles, macrame wall hanging, rattan furniture, layered dhurrie rug, Edison bulb pendants, tropical indoor plants, professional interior photography',
-    industrial_modern:
-      'industrial modern interior design, exposed raw concrete walls and ceiling, polished sealed concrete floor, exposed brick feature wall, steel frame elements, warm Edison bulb lighting, professional interior photography',
-    art_deco_indian:
-      'Art Deco Indian interior design, deep teal walls with gold geometric stencil border, ornate cream plaster ceiling with cornice, black and gold geometric marble floor, antique brass sconce lighting, velvet upholstery, professional interior photography',
-    japandi:
-      'Japandi interior design, warm greige washi-texture walls, pale oak ceiling beams, wide-plank light ash wood floor, minimal furniture, wabi-sabi plaster finish, soft diffused natural light, professional interior photography',
-    coastal_indian:
-      'coastal Indian interior design, aquamarine limewash walls, whitewashed wooden ceiling, pale weathered teak floor, natural rope texture details, light linen curtains, soft coastal light, professional interior photography',
+    contemporary_indian:  'contemporary Indian interior, warm terracotta accent wall, kaolin clay white walls, sheesham wood furniture, brass pendant light, handloom textiles, indoor plants, warm amber lighting',
+    minimalist_modern:    'minimalist modern interior, pure linen white walls, smooth white ceiling, large-format light grey porcelain floor, clean-lined furniture, recessed LED lighting, Scandinavian simplicity',
+    traditional_heritage: 'traditional Indian heritage interior, deep ochre and burgundy walls, ornate plaster ceiling with gold detail, dark teak herringbone floor, antique brass chandelier, carved wooden furniture',
+    boho_chic:            'boho chic interior, sage green walls, raw plaster feature wall, terracotta encaustic cement tiles, macrame wall hanging, rattan furniture, layered dhurrie rug, Edison bulb pendants',
+    industrial_modern:    'industrial modern interior, exposed raw concrete walls, polished concrete floor, anthracite ceiling, exposed brick feature wall, minimal steel furniture',
+    art_deco_indian:      'Art Deco Indian interior, deep teal walls with gold geometric border, ornate cream plaster ceiling, black and gold marble floor, antique brass accents',
+    japandi:              'Japandi interior, warm greige washi walls, pale oak ceiling beams, wide-plank light ash floor, wabi-sabi plaster finish, soft diffused natural light',
+    coastal_indian:       'coastal Indian interior, aquamarine limewash walls, whitewashed wooden ceiling, pale weathered teak floor, natural rope texture, light linen curtains',
   };
-
   const PALETTES = {
-    warm_earthen:     'colour palette: warm terracotta #C47040, kaolin cream #EAE1D5, teak brown #8E6D4E',
-    sage_serenity:    'colour palette: sage green #779971, pale moss #B5CDAC, morning white #E8EEE6',
-    terracotta_dawn:  'colour palette: burnt terracotta #9A4820, brick spice red, warm peach #F5ECE1',
-    cloud_white:      'colour palette: pure linen white #F5F0E8, warm ivory #EDE8DC, soft greige #C8BC9F',
-    monsoon_blue:     'colour palette: cerulean blue #5B8FAE, deep navy #2E5F82, arctic white #EBF0F5',
-    golden_hour:      'colour palette: warm gold #B07D20, amber honey #D4960A, champagne cream #F4EAD5',
-    forest_deep:      'colour palette: forest green #2B4D25, deep fern #4E7848, pale sage #E8EEE6',
-    blush_rose:       'colour palette: dusty rose #D4927B, muted blush #ECC4B8, warm cream #FAF0EA',
-    midnight_charcoal:'colour palette: warm charcoal #2C2C2A, dark slate #3D3D3B, warm grey #8C8C8A',
-    coastal_sand:     'colour palette: coastal sand #DED3B8, bleached driftwood #B09070, sea foam #E8EDE6',
+    warm_earthen:     'colour palette warm terracotta, tawny brown, kaolin cream',
+    sage_serenity:    'colour palette sage green, pale moss, crisp white',
+    terracotta_dawn:  'colour palette burnt terracotta, brick red, warm peach',
+    cloud_white:      'colour palette pure white, warm ivory, soft greige',
+    monsoon_blue:     'colour palette cerulean blue, deep navy, arctic white',
+    golden_hour:      'colour palette warm gold, amber honey, champagne cream',
+    forest_deep:      'colour palette forest green, dark fern, pale sage',
+    blush_rose:       'colour palette dusty rose, muted blush, warm cream',
+    midnight_charcoal:'colour palette warm charcoal, dark slate, warm grey',
+    coastal_sand:     'colour palette coastal sand, bleached driftwood, sea foam',
   };
 
-  const style   = STYLES[design_style_id]  || STYLES.contemporary_indian;
-  const palette = PALETTES[palette_id]     || PALETTES.warm_earthen;
+  const style   = STYLES[design_style_id] || STYLES.contemporary_indian;
+  const palette = PALETTES[palette_id]    || PALETTES.warm_earthen;
   const room    = (room_type || 'room').replace(/_/g, ' ');
 
-  const prompt     = `Photorealistic professional interior design photograph. Indian ${room}. ${style}. ${palette}. Ultra realistic. High detail. Wide angle view showing full room. No people. 8K quality.`;
-  const negPrompt  = 'cartoon, anime, sketch, watermark, text, logo, blurry, distorted, low quality, ugly, deformed, people, person, human, extra limbs, painting, illustration';
+  const prompt    = `Photorealistic professional interior design photograph of an Indian ${room}. ${style}. ${palette}. Ultra realistic. Soft natural lighting. Wide angle view. No people. 8K quality.`;
+  const negPrompt = 'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality, people, person, human';
 
   try {
-    let imageBytes;
-    let mode;
+    const boundary = '----StabilityBoundary' + Math.random().toString(36).slice(2);
+    let formParts  = '';
+
+    const addField = (name, value) => {
+      formParts += `--${boundary}
+Content-Disposition: form-data; name="${name}"
+
+${value}
+`;
+    };
 
     if (roomImageBase64) {
-      // ── IMG2IMG: Stability AI SDXL image-to-image ──────────────────────────────
-      // Takes the user's actual room photo as the starting point.
-      // image_strength 0.35 = preserves 65% of the original photo structure
-      // (room layout, walls, windows, proportions), applies 35% style transformation.
-      // Raise image_strength to reduce original photo influence.
+      // IMG2IMG — user's photo as the base
+      addField('mode',          'image-to-image');
+      addField('prompt',        prompt);
+      addField('negative_prompt', negPrompt);
+      addField('strength',      '0.45');
+      addField('output_format', 'png');
+      addField('model',         'sd3-large-turbo');
 
-      // Decode base64 → binary for multipart form
-      // Use Stability AI v2beta stable-image API with JSON body (no FormData issues)
-      const response = await fetch(
-        'https://api.stability.ai/v2beta/stable-image/generate/sd3',
-        {
-          method:  'POST',
-          headers: {
-            'Authorization': `Bearer ${env.STABILITY_API_KEY}`,
-            'Content-Type':  'application/json',
-            'Accept':        'application/json',
-          },
-          body: JSON.stringify({
-            prompt,
-            negative_prompt:  negPrompt,
-            image:            roomImageBase64,   // base64 string directly
-            strength:         0.65,              // how much to change (0=keep original, 1=ignore)
-            model:            'sd3-large',
-            mode:             'image-to-image',
-            output_format:    'png',
-          }),
-        }
-      );
+      // Append the image as binary file part
+      const imageData = Uint8Array.from(atob(roomImageBase64), c => c.charCodeAt(0));
+      const fileHeader = `--${boundary}
+Content-Disposition: form-data; name="image"; filename="room.jpg"
+Content-Type: image/jpeg
+
+`;
+      const fileFooter = `
+--${boundary}--
+`;
+
+      // Build final body as Uint8Array
+      const enc        = new TextEncoder();
+      const headerBytes = enc.encode(formParts + fileHeader);
+      const footerBytes = enc.encode(fileFooter);
+      const total       = new Uint8Array(headerBytes.length + imageData.length + footerBytes.length);
+      total.set(headerBytes, 0);
+      total.set(imageData,   headerBytes.length);
+      total.set(footerBytes, headerBytes.length + imageData.length);
+
+      const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${env.STABILITY_API_KEY}`,
+          'Accept':        'image/*',
+          'Content-Type':  `multipart/form-data; boundary=${boundary}`,
+        },
+        body: total,
+      });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const msg = err.errors?.join(', ') || err.message || `Stability API ${response.status}`;
-        if (response.status === 401) return jsonRes({ ok:false, error:'Invalid STABILITY_API_KEY. Go to platform.stability.ai → Account → API Keys.' });
-        if (response.status === 402) return jsonRes({ ok:false, error:'No Stability AI credits. Add at platform.stability.ai → Billing.' });
-        return jsonRes({ ok:false, error:`Stability API error: ${msg}` }, 502);
+        const errText = await response.text().catch(() => response.status);
+        return jsonRes({ ok:false, error:`Stability AI ${response.status}: ${errText}` }, 502);
       }
 
-      const data = await response.json();
-      // v2beta returns { image: "<base64>", finish_reason: "SUCCESS" }
-      const base64 = data.image || data.artifacts?.[0]?.base64;
-      if (!base64) return jsonRes({ ok:false, error:'Stability API returned no image. Check your API key and credits.' }, 502);
-
-      imageBytes = base64;
-      mode = 'img2img';
+      const imgBuffer  = await response.arrayBuffer();
+      const imgBytes   = new Uint8Array(imgBuffer);
+      let binary       = '';
+      for (let i = 0; i < imgBytes.length; i += 8192) {
+        binary += String.fromCharCode(...imgBytes.subarray(i, i + 8192));
+      }
+      return jsonRes({ ok:true, image_base64: btoa(binary), mime_type:'image/png', mode:'img2img' });
 
     } else {
-      // ── TXT2IMG: Stability AI Stable Image (no photo uploaded) ─────────────────
-      const response = await fetch(
-        'https://api.stability.ai/v2beta/stable-image/generate/sd3',
-        {
-          method:  'POST',
-          headers: {
-            'Authorization': `Bearer ${env.STABILITY_API_KEY}`,
-            'Content-Type':  'application/json',
-            'Accept':        'application/json',
-          },
-          body: JSON.stringify({
-            prompt,
-            negative_prompt: negPrompt,
-            model:           'sd3-large',
-            mode:            'text-to-image',
-            aspect_ratio:    '16:9',
-            output_format:   'png',
-          }),
-        }
-      );
+      // TXT2IMG — no photo, generate from description
+      addField('mode',          'text-to-image');
+      addField('prompt',        prompt);
+      addField('negative_prompt', negPrompt);
+      addField('aspect_ratio',  '16:9');
+      addField('output_format', 'png');
+      addField('model',         'sd3-large-turbo');
+      formParts += `--${boundary}--
+`;
+
+      const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/sd3', {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${env.STABILITY_API_KEY}`,
+          'Accept':        'image/*',
+          'Content-Type':  `multipart/form-data; boundary=${boundary}`,
+        },
+        body: formParts,
+      });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        const msg = err.errors?.join(', ') || err.message || `Stability API ${response.status}`;
-        if (response.status === 401) return jsonRes({ ok:false, error:'Invalid STABILITY_API_KEY. Go to platform.stability.ai → Account → API Keys.' });
-        if (response.status === 402) return jsonRes({ ok:false, error:'No Stability AI credits. Add at platform.stability.ai → Billing.' });
-        return jsonRes({ ok:false, error:`Stability API error: ${msg}` }, 502);
+        const errText = await response.text().catch(() => response.status);
+        return jsonRes({ ok:false, error:`Stability AI ${response.status}: ${errText}` }, 502);
       }
 
-      const data = await response.json();
-      const base64 = data.image || data.artifacts?.[0]?.base64;
-      if (!base64) return jsonRes({ ok:false, error:'Stability API returned no image.' }, 502);
-
-      imageBytes = base64;
-      mode = 'txt2img';
+      const imgBuffer = await response.arrayBuffer();
+      const imgBytes  = new Uint8Array(imgBuffer);
+      let binary      = '';
+      for (let i = 0; i < imgBytes.length; i += 8192) {
+        binary += String.fromCharCode(...imgBytes.subarray(i, i + 8192));
+      }
+      return jsonRes({ ok:true, image_base64: btoa(binary), mime_type:'image/png', mode:'txt2img' });
     }
-
-    await consumeCredit(env, ip, 'render');
-    return jsonRes({
-      ok:          true,
-      image_base64: imageBytes,
-      mime_type:   'image/png',
-      mode,
-    });
 
   } catch(e) {
     console.error('Render error:', e.message);
