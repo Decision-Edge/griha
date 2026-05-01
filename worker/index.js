@@ -100,6 +100,16 @@ async function handleRequest(req, env) {
 
   if (req.method !== 'POST') return jsonRes({ error:'POST required' }, 405);
 
+  // Debug endpoint — shows what's configured without exposing secret values
+  if (path === '/debug') return jsonRes({
+    has_anthropic_key: !!(env.ANTHROPIC_API_KEY),
+    has_stability_key: !!(env.STABILITY_API_KEY),
+    has_rate_kv:       !!(env.RATE_KV),
+    version:           'v6',
+    timestamp:         new Date().toISOString(),
+    tip_503:           !env.STABILITY_API_KEY ? 'Add STABILITY_API_KEY in Worker Settings → Variables and Secrets' : null,
+  });
+
   if (path === '/validate-photo')     return handleValidate(req, env);
   if (path === '/analyze-room')       return handleAnalyze(req, env);
   if (path === '/analyze-masterplan') return handleMasterplan(req, env);
@@ -134,79 +144,106 @@ async function handleValidate(req, env) {
 
 // ── ANALYZE ROOM ─────────────────────────────────────────────────────────────
 async function handleAnalyze(req, env) {
-  if (!env.ANTHROPIC_API_KEY) return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set. Add it in Worker Settings → Variables and Secrets.' });
-
-  const ip = getClientIP(req);
-
-  // Rate limit check
-  const rateCheck = await checkRateLimit(env, ip, 'analysis');
-  if (!rateCheck.allowed) {
-    return jsonRes({
-      ok: false, limit_reached: true, type: 'analysis',
-      message: "You've used your free room analysis. Buy a credit pack to analyse more rooms.",
-      packs: [
-        { name: 'Starter',   price: 299, includes: '3 rooms + 5 renders', tag: 'starter' },
-        { name: 'Full Home', price: 799, includes: 'Unlimited rooms + renders', tag: 'full_home' }
-      ]
-    }, 429);
-  }
-
+  // NEVER return 500 — always return something useful
   try {
-    const body = await req.json().catch(() => ({}));
-    const { imageBase64, mimeType, roomLabel } = body;
+    if (!env.ANTHROPIC_API_KEY) {
+      return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set. Add in Worker Settings → Variables and Secrets.' });
+    }
 
+    const ip = getClientIP(req);
+
+    // Rate limit — wrapped in try/catch so a KV failure never blocks analysis
+    let ratePassed = true;
+    try {
+      const rateCheck = await checkRateLimit(env, ip, 'analysis');
+      if (!rateCheck.allowed) {
+        return jsonRes({
+          ok: false, limit_reached: true, type: 'analysis',
+          message: "You've used your free room analysis. Buy a credit pack to analyse more rooms.",
+          packs: [
+            { name: 'Starter',   price: 299, includes: '3 rooms + 5 renders', tag: 'starter' },
+            { name: 'Full Home', price: 799, includes: 'Unlimited rooms + renders', tag: 'full_home' }
+          ]
+        }, 429);
+      }
+    } catch(rateErr) {
+      console.warn('Rate limit check failed (non-fatal):', rateErr.message);
+      ratePassed = false; // skip consumeCredit if rate check failed
+    }
+
+    // Parse request body
+    let body;
+    try { body = await req.json(); }
+    catch(e) { return jsonRes({ ok:false, error:'Could not parse request. Please try again.' }, 400); }
+
+    const { imageBase64, mimeType, roomLabel } = body || {};
     if (!imageBase64) return jsonRes({ ok:false, error:'No image received. Please try uploading the photo again.' }, 400);
 
-    // Check image size — Anthropic rejects images over ~5MB base64
-    if (imageBase64.length > 6_000_000) {
-      return jsonRes({ ok:false, error:'Photo is too large. Please use an image under 3MB (the app will resize it automatically).' }, 413);
+    // Size check — Anthropic rejects base64 images over ~5MB
+    if (imageBase64.length > 6_800_000) {
+      return jsonRes({ ok:false, error:'Photo too large for analysis. It will be resized automatically — please try again.' }, 413);
     }
 
     const prompt = `You are an expert interior design analyst for Indian homes.
-Analyse this ${roomLabel||'room'} photo and return ONLY valid JSON — no markdown, no explanation, nothing else.
+Analyse this ${roomLabel||'room'} photo. Return ONLY a valid JSON object. No markdown, no explanation, no text outside the JSON.
 
-{"room_identified":true,"confidence":"high","observations":{"estimated_sqft":160,"ceiling_height":"standard","ceiling_type":"flat","window_count":1,"light_direction":"east","light_quality":"bright","natural_light_assessment":"Good morning light","overhead_beams_detected":false,"beam_count":0,"electrical_points_visible":2,"electrical_point_positions":["near_door","opposite_wall"],"existing_furniture":["bed","wardrobe"],"wall_colours_existing":["white"],"flooring_type":"vitrified_tile","flooring_colour":"beige","ceiling_colour":"white","wall_condition":"good","style_detected":["contemporary_indian"],"vastu_observations":{"sleeping_head_direction_visible":"unknown","mirror_facing_bed":false}}}
+Use this exact structure (replace all values with what you observe):
+{"room_identified":true,"confidence":"high","observations":{"estimated_sqft":160,"ceiling_height":"standard","ceiling_type":"flat","window_count":1,"light_direction":"east","light_quality":"bright","natural_light_assessment":"Good natural light","overhead_beams_detected":false,"beam_count":0,"electrical_points_visible":2,"electrical_point_positions":["near_door","opposite_wall"],"existing_furniture":["bed","wardrobe"],"wall_colours_existing":["white"],"flooring_type":"vitrified_tile","flooring_colour":"beige","ceiling_colour":"white","wall_condition":"good","style_detected":["contemporary_indian"],"vastu_observations":{"sleeping_head_direction_visible":"unknown","mirror_facing_bed":false}}}`;
 
-Replace ALL values with what you actually observe in the photo. Return ONLY the JSON.`;
-
-    const reply = await claude(env, [{
-      role: 'user',
-      content: [
-        { type:'image', source:{ type:'base64', media_type: mimeType||'image/jpeg', data: imageBase64 } },
-        { type:'text',  text: prompt }
-      ]
-    }]);
-
-    if (!reply) return jsonRes({ ok:false, error:'Empty response from AI. Please try again.' }, 502);
-
-    const parsed = parseJSON(reply);
-
-    // Never return a 500 — if parsing fails, return a safe fallback
-    if (parsed.error) {
-      return jsonRes({
-        room_identified: true, confidence: 'low', _fallback: true,
-        observations: {
-          estimated_sqft: 150, ceiling_height: 'standard', ceiling_type: 'flat',
-          window_count: 1, light_direction: 'east', light_quality: 'moderate',
-          natural_light_assessment: 'Moderate natural light',
-          overhead_beams_detected: false, beam_count: 0,
-          electrical_points_visible: 2, electrical_point_positions: ['near_door'],
-          existing_furniture: [], wall_colours_existing: ['white'],
-          flooring_type: 'tile', flooring_colour: 'beige', ceiling_colour: 'white',
-          wall_condition: 'good', style_detected: ['contemporary_indian'],
-          vastu_observations: { sleeping_head_direction_visible: 'unknown', mirror_facing_bed: false }
-        }
-      });
+    // Call Claude — if this fails, return a usable fallback (never 500)
+    let reply;
+    try {
+      reply = await claude(env, [{
+        role: 'user',
+        content: [
+          { type:'image', source:{ type:'base64', media_type: mimeType||'image/jpeg', data: imageBase64 } },
+          { type:'text',  text: prompt }
+        ]
+      }], null, 1024);
+    } catch(claudeErr) {
+      console.error('Claude API error:', claudeErr.message);
+      // Return a fallback with an error flag — app will show amber banner
+      return jsonRes(buildFallback(claudeErr.message));
     }
 
-    await consumeCredit(env, ip, 'analysis');
+    if (!reply) return jsonRes(buildFallback('Empty response from Claude'));
+
+    const parsed = parseJSON(reply);
+    if (parsed.error || !parsed.observations) return jsonRes(buildFallback('Could not parse analysis'));
+
+    // Consume credit only on real success
+    if (ratePassed) {
+      try { await consumeCredit(env, ip, 'analysis'); } catch(e) { /* non-fatal */ }
+    }
+
     return jsonRes(parsed);
 
   } catch(e) {
-    console.error('handleAnalyze error:', e.message);
-    return jsonRes({ ok:false, error:`Analysis failed: ${e.message}` }, 500);
+    console.error('Unexpected handleAnalyze error:', e.message);
+    return jsonRes(buildFallback(e.message));
   }
 }
+
+function buildFallback(reason) {
+  return {
+    room_identified: true,
+    confidence: 'low',
+    _fallback: true,
+    _fallback_reason: reason,
+    observations: {
+      estimated_sqft: 150, ceiling_height: 'standard', ceiling_type: 'flat',
+      window_count: 1, light_direction: 'east', light_quality: 'moderate',
+      natural_light_assessment: 'Moderate natural light',
+      overhead_beams_detected: false, beam_count: 0,
+      electrical_points_visible: 2, electrical_point_positions: ['near_door'],
+      existing_furniture: [], wall_colours_existing: ['white'],
+      flooring_type: 'tile', flooring_colour: 'beige', ceiling_colour: 'white',
+      wall_condition: 'good', style_detected: ['contemporary_indian'],
+      vastu_observations: { sleeping_head_direction_visible: 'unknown', mirror_facing_bed: false }
+    }
+  };
+}
+
 
 // ── ANALYZE MASTERPLAN ───────────────────────────────────────────────────────
 async function handleMasterplan(req, env) {
