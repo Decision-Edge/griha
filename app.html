@@ -315,6 +315,35 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
   .rs-controls{border-left:none;border-top:1px solid rgba(255,255,255,0.07);}
   .vastu-modal{width:100%;align-self:flex-end;}
 }
+
+/* ── PAYWALL MODAL ── */
+.paywall-overlay{position:fixed;inset:0;z-index:600;background:rgba(26,23,20,0.75);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);}
+.paywall-modal{background:var(--warm-white);border-radius:var(--r-lg);width:100%;max-width:480px;overflow:hidden;box-shadow:0 32px 64px rgba(0,0,0,0.25);}
+.paywall-top{padding:28px 28px 20px;text-align:center;border-bottom:1px solid var(--border);}
+.paywall-icon{font-size:36px;margin-bottom:12px;}
+.paywall-title{font-family:var(--font-d);font-size:28px;font-weight:400;color:var(--charcoal);margin-bottom:8px;}
+.paywall-sub{font-size:14px;color:var(--ch70);line-height:1.65;font-weight:300;}
+.paywall-packs{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:20px 28px;}
+.pack-card{border:1.5px solid var(--border-md);border-radius:var(--r-md);padding:16px;cursor:pointer;transition:all .2s;position:relative;}
+.pack-card:hover{border-color:var(--terra);transform:translateY(-2px);box-shadow:0 6px 20px var(--ch12);}
+.pack-card.featured{border-color:var(--terra);background:var(--terra-l);}
+.pack-feat-badge{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--terra);color:#fff;font-size:10px;font-weight:500;padding:2px 10px;border-radius:100px;white-space:nowrap;}
+.pack-name{font-size:12px;font-weight:500;color:var(--charcoal);margin-bottom:4px;}
+.pack-price{font-family:var(--font-d);font-size:32px;font-weight:400;color:var(--terra);line-height:1;margin-bottom:6px;}
+.pack-price span{font-size:14px;font-family:var(--font-b);font-weight:300;color:var(--ch70);}
+.pack-includes{font-size:11px;color:var(--ch70);line-height:1.6;}
+.pack-item{display:flex;gap:5px;align-items:flex-start;}
+.pack-item::before{content:'✓';color:var(--sage);font-size:10px;flex-shrink:0;margin-top:1px;}
+.paywall-footer{padding:12px 28px 20px;display:flex;flex-direction:column;gap:8px;}
+.paywall-cta{width:100%;padding:13px;border-radius:100px;background:var(--terra);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;transition:all .2s;}
+.paywall-cta:hover{background:var(--terra-h);}
+.paywall-dismiss{width:100%;padding:8px;border-radius:100px;background:transparent;color:var(--ch40);font-size:12px;border:none;cursor:pointer;}
+.paywall-dismiss:hover{color:var(--charcoal);}
+.free-used-bar{display:flex;gap:16px;padding:12px 28px;background:var(--cream);border-top:1px solid var(--border);}
+.fub-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ch70);}
+.fub-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.fub-dot.used{background:var(--terra);}
+.fub-dot.avail{background:var(--sage);}
 </style>
 </head>
 <body>
@@ -421,6 +450,50 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
   </div>
 </div>
 
+<!-- Paywall modal -->
+<div id="paywallModal" style="display:none;" class="paywall-overlay" onclick="if(event.target===this)closePaywall()">
+  <div class="paywall-modal">
+    <div class="paywall-top">
+      <div class="paywall-icon" id="paywallIcon">🎨</div>
+      <div class="paywall-title" id="paywallTitle">You've used your free render</div>
+      <div class="paywall-sub" id="paywallSub">You've experienced what Griha can do. Unlock your full home design with a one-time credit pack.</div>
+    </div>
+    <div class="free-used-bar">
+      <div class="fub-item"><div class="fub-dot used"></div>1 room analysis used</div>
+      <div class="fub-item"><div class="fub-dot used"></div>1 render used</div>
+      <div class="fub-item"><div class="fub-dot avail"></div>Vastu report — always free</div>
+    </div>
+    <div class="paywall-packs">
+      <div class="pack-card">
+        <div class="pack-name">Starter</div>
+        <div class="pack-price">₹299 <span>one-time</span></div>
+        <div class="pack-includes">
+          <div class="pack-item">3 room analyses</div>
+          <div class="pack-item">5 AI renders</div>
+          <div class="pack-item">Vastu reports</div>
+          <div class="pack-item">Carpenter specs</div>
+        </div>
+      </div>
+      <div class="pack-card featured">
+        <div class="pack-feat-badge">Most popular</div>
+        <div class="pack-name">Full Home</div>
+        <div class="pack-price">₹799 <span>one-time</span></div>
+        <div class="pack-includes">
+          <div class="pack-item">Unlimited rooms</div>
+          <div class="pack-item">Unlimited renders</div>
+          <div class="pack-item">Vastu reports</div>
+          <div class="pack-item">Carpenter specs</div>
+          <div class="pack-item">Priority support</div>
+        </div>
+      </div>
+    </div>
+    <div class="paywall-footer">
+      <button class="paywall-cta" onclick="handlePaywallCTA()">Get started — ₹299</button>
+      <button class="paywall-dismiss" onclick="closePaywall()">Continue with free features only</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { AIAnalyzer }      from './js/ai-analyzer.js';
 import { VastuEngine }     from './js/vastu-engine.js';
@@ -431,8 +504,6 @@ import { LightingEngine }  from './js/lighting-engine.js';
 import { CarpenterSpec }   from './js/carpenter-spec.js';
 
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const ai = new AIAnalyzer();
-console.log("AI Analyzer ready", ai);
 const ROOM_TYPES  = ['Master bedroom','Living room','Kitchen','Washroom','Balcony','Pooja room','Kids bedroom','Guest bedroom','Study','Dining room'];
 const SLOT_LABELS = ['Main view','Second angle','Third angle'];
 const STYLE_OPTIONS = [
@@ -486,6 +557,7 @@ async function init() {
   addRoom();
   setupListeners();
   restoreSession();
+  patchAIWithPaywall();
   // Test worker connection and show status
   testWorkerConnection();
 }
@@ -1267,6 +1339,65 @@ window.showSaved         = showSaved;
 window.clearSession      = clearSession;
 window._removeRoom       = removeRoom;
 window._removePhoto      = removePhoto;
+
+
+// ── Paywall ────────────────────────────────────────────────────────────────
+function showPaywall(type) {
+  const modal    = document.getElementById('paywallModal');
+  const title    = document.getElementById('paywallTitle');
+  const sub      = document.getElementById('paywallSub');
+  const icon     = document.getElementById('paywallIcon');
+  const cta      = modal.querySelector('.paywall-cta');
+
+  if (type === 'analysis') {
+    icon.textContent  = '🏠';
+    title.textContent = "You've used your free room analysis";
+    sub.textContent   = 'Your first room has been analysed. To design more rooms in your home, get a credit pack.';
+  } else {
+    icon.textContent  = '🎨';
+    title.textContent = "You've used your free render";
+    sub.textContent   = "You've seen what Griha's AI can do with your room. Unlock unlimited renders to explore every design option.";
+  }
+  modal.style.display = 'flex';
+}
+
+function closePaywall() {
+  document.getElementById('paywallModal').style.display = 'none';
+}
+
+function handlePaywallCTA() {
+  // Phase 3: this will open Razorpay checkout
+  // For now, show a "coming soon" note and collect email
+  closePaywall();
+  const email = prompt('Leave your email and we\u2019ll notify you when payments go live and give you an early bird discount:');
+  if (email && email.includes('@')) {
+    alert('Thank you! We\u2019ll be in touch at ' + email + ' with your early bird access within 24 hours.');
+    // TODO Phase 3: POST to /api/waitlist with email
+  }
+}
+window.closePaywall      = closePaywall;
+window.handlePaywallCTA  = handlePaywallCTA;
+
+// Hook into AI calls to intercept 429 limit_reached responses
+// Patch the AIAnalyzer methods to show paywall on 429
+const _origAnalyzeRoom   = S.M.ai?.analyzeRoom?.bind(S.M.ai);
+const _origGenerateRender = S.M.ai?.generateRender?.bind(S.M.ai);
+
+function patchAIWithPaywall() {
+  if (!S.M.ai) return;
+  const orig_analyze = S.M.ai.analyzeRoom.bind(S.M.ai);
+  S.M.ai.analyzeRoom = async function(...args) {
+    const result = await orig_analyze(...args);
+    if (result?.limit_reached) { showPaywall('analysis'); return { ok:false, _paywall:true }; }
+    return result;
+  };
+  const orig_render = S.M.ai.generateRender.bind(S.M.ai);
+  S.M.ai.generateRender = async function(...args) {
+    const result = await orig_render(...args);
+    if (result?.limit_reached) { showPaywall('render'); return { ok:false, _paywall:true }; }
+    return result;
+  };
+}
 
 init();
 </script>
