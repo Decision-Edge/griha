@@ -153,34 +153,25 @@ async function handleMasterplan(req, env) {
   } catch(e) { return jsonRes({ ok:false, error:e.message }, 500); }
 }
 
-// ── /generate-render ──────────────────────────────────────────────────────────
-// Primary: CF Workers AI img2img — transforms user's actual room photo
-// Fallback: Stability AI txt2img — style-guided room generation
+// ── /generate-render — Stability AI img2img ──────────────────────────────────
+// Takes user's room photo → Stability AI SDXL img2img → transformed version
+// strength 0.40: strong enough to apply style, low enough to keep room structure
 async function handleRender(req, env) {
-  const ip = getClientIP(req);
-  try {
-    const rc = await checkRateLimit(env, ip, 'render');
-    if (!rc.allowed) return jsonRes({
-      ok:false, limit_reached:true, type:'render',
-      message:"You've used your free render. Buy a credit pack to continue.",
-      packs:[
-        { name:'Starter',   price:299, includes:'3 rooms + 5 renders',      tag:'starter'   },
-        { name:'Full Home', price:799, includes:'Unlimited rooms + renders', tag:'full_home' }
-      ]
-    }, 429);
-  } catch(e) {}
+  if (!env.STABILITY_API_KEY) {
+    return jsonRes({ ok:false, error:'STABILITY_API_KEY not set. Cloudflare → Settings → Variables and Secrets → Add STABILITY_API_KEY' }, 503);
+  }
 
   const { design_style_id, palette_id, room_type, roomImageBase64 } = await req.json().catch(()=>({}));
 
   const STYLES = {
-    contemporary_indian:  'contemporary Indian interior, warm terracotta #C47040 painted walls, polished beige stone floor, smooth white ceiling, warm brass pendant light, sheesham wood furniture, mustard handloom cushions, indoor plants',
-    minimalist_modern:    'minimalist modern interior, pure white #F5F0E8 walls and ceiling, large-format light grey porcelain floor, recessed LED lights, clean white furniture, linen curtains',
-    traditional_heritage: 'traditional Indian interior, deep ochre #B07D20 walls with burgundy dado and gold border stencil, dark teak herringbone floor, brass chandelier, carved dark wood furniture, silk curtains',
+    contemporary_indian:  'contemporary Indian interior, warm terracotta #C47040 walls, polished beige stone floor, brass pendant light, sheesham wood furniture, mustard handloom cushions, indoor plants',
+    minimalist_modern:    'minimalist modern interior, pure white #F5F0E8 walls and ceiling, light grey porcelain floor, recessed LED lights, clean white furniture, linen curtains',
+    traditional_heritage: 'traditional Indian interior, deep ochre #B07D20 walls with burgundy dado and gold stencil, teak herringbone floor, brass chandelier, carved dark furniture, silk curtains',
     boho_chic:            'bohemian chic interior, sage green #779971 walls, raw plaster feature wall, terracotta cement tiles, rattan pendant, macrame wall art, dhurrie rug, tropical plants',
-    industrial_modern:    'industrial modern interior, raw concrete walls, exposed brick accent, dark polished concrete floor, black steel Edison pendants, black steel furniture',
+    industrial_modern:    'industrial modern interior, raw concrete walls, exposed brick accent, dark concrete floor, black steel Edison pendants, black steel furniture',
     art_deco_indian:      'Art Deco Indian interior, deep teal #2E5F82 walls with gold geometric stencil, black gold marble floor, ornate cream cornice, brass sconces, velvet upholstery',
-    japandi:              'Japandi interior, warm greige #C8BC9F walls, pale ash wood floor, white ceiling with oak beams, paper pendant light, minimal wood furniture, linen curtains',
-    coastal_indian:       'coastal Indian interior, aquamarine #5B8FAE limewash walls, pale teak plank floor, whitewashed wooden ceiling, rope pendant, linen curtains, jute rug',
+    japandi:              'Japandi interior, warm greige #C8BC9F walls, pale ash wood floor, white ceiling with oak beams, paper pendant light, minimal wood furniture',
+    coastal_indian:       'coastal Indian interior, aquamarine #5B8FAE limewash walls, pale teak plank floor, whitewashed ceiling, rope pendant, linen curtains, jute rug',
   };
   const PALETTES = {
     warm_earthen:'warm terracotta #C47040 and kaolin cream #EAE1D5', sage_serenity:'sage green #779971 and morning mist #E8EEE6',
@@ -190,68 +181,102 @@ async function handleRender(req, env) {
     midnight_charcoal:'charcoal #2C2C2A and warm grey #8C8C8A', coastal_sand:'coastal sand #DED3B8 and sea foam #E8EDE6',
   };
 
-  const style   = STYLES[design_style_id]  || STYLES.contemporary_indian;
-  const palette = PALETTES[palette_id]     || PALETTES.warm_earthen;
+  const style   = STYLES[design_style_id] || STYLES.contemporary_indian;
+  const palette = PALETTES[palette_id]    || PALETTES.warm_earthen;
   const room    = (room_type||'room').replace(/_/g,' ');
-  const prompt  = `Photorealistic professional interior design photo of an Indian ${room}. ${style}. Colours: ${palette}. Soft natural daylight. Ultra realistic. Wide angle. No people.`;
-  const negP    = 'cartoon, blurry, distorted, low quality, watermark, text, people, person, overexposed, painting, sketch, anime';
+  const prompt  = `Photorealistic interior design photo of an Indian ${room}. ${style}. Colour palette: ${palette}. Keep same room layout. Soft natural light. Ultra realistic. No people.`;
+  const negP    = 'cartoon, blurry, distorted, low quality, watermark, text, people, overexposed, painting, sketch, anime';
 
-  // PRIMARY: CF Workers AI img2img (uses actual room photo)
-  if (env.AI && roomImageBase64) {
+  // IMG2IMG: use the user's actual room photo as the base
+  if (roomImageBase64) {
     try {
-      const bin   = atob(roomImageBase64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const imgBytes = Uint8Array.from(atob(roomImageBase64), c => c.charCodeAt(0));
+      const boundary = 'grihaBoundary' + Date.now();
+      const enc      = new TextEncoder();
 
-      const result = await env.AI.run('@cf/runwayml/stable-diffusion-v1-5-img2img', {
-        prompt, negative_prompt:negP, image:[...bytes], strength:0.6, num_steps:20, guidance:8,
-      });
-      const buf = await new Response(result).arrayBuffer();
-      const arr = new Uint8Array(buf);
-      let b = '';
-      for (let i=0; i<arr.length; i+=8192) b += String.fromCharCode(...arr.subarray(i,i+8192));
-      try { await consumeCredit(env, ip, 'render'); } catch(e) {}
-      return jsonRes({ ok:true, image_base64:btoa(b), mime_type:'image/png', mode:'img2img' });
-    } catch(e) { console.warn('img2img failed:', e.message); }
+      const CRLF = '\r\n';
+      const fields = [
+        ['init_image_mode',          'IMAGE_STRENGTH'],
+        ['image_strength',           '0.40'],
+        ['cfg_scale',                '10'],
+        ['steps',                    '30'],
+        ['samples',                  '1'],
+        ['text_prompts[0][text]',    prompt],
+        ['text_prompts[0][weight]',  '1'],
+        ['text_prompts[1][text]',    negP],
+        ['text_prompts[1][weight]',  '-1'],
+      ];
+
+      let textParts = '';
+      for (const [name, value] of fields) {
+        textParts += '--' + boundary + CRLF + 'Content-Disposition: form-data; name="' + name + '"' + CRLF + CRLF + value + CRLF;
+      }
+      const imgHeader = '--' + boundary + CRLF + 'Content-Disposition: form-data; name="init_image"; filename="room.jpg"' + CRLF + 'Content-Type: image/jpeg' + CRLF + CRLF;
+      const imgFooter = CRLF + '--' + boundary + '--' + CRLF;
+
+      const textBytes   = enc.encode(textParts + imgHeader);
+      const footerBytes = enc.encode(imgFooter);
+      const body        = new Uint8Array(textBytes.length + imgBytes.length + footerBytes.length);
+      body.set(textBytes,  0);
+      body.set(imgBytes,   textBytes.length);
+      body.set(footerBytes, textBytes.length + imgBytes.length);
+
+      const r = await fetch(
+        'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/image-to-image',
+        {
+          method:  'POST',
+          headers: {
+            'Authorization': `Bearer ${env.STABILITY_API_KEY}`,
+            'Accept':        'application/json',
+            'Content-Type':  `multipart/form-data; boundary=${boundary}`,
+          },
+          body,
+        }
+      );
+
+      if (r.ok) {
+        const data = await r.json();
+        const b64  = data.artifacts?.[0]?.base64;
+        if (b64) return jsonRes({ ok:true, image_base64:b64, mime_type:'image/png', mode:'img2img' });
+      } else {
+        const errText = await r.text().catch(()=>'');
+        let errMsg = errText.slice(0,200); try { errMsg = JSON.parse(errText).message||errMsg; } catch {}
+        console.error('img2img failed:', r.status, errMsg);
+        if (r.status === 401) return jsonRes({ ok:false, error:'Invalid STABILITY_API_KEY.' });
+        if (r.status === 402) return jsonRes({ ok:false, error:'No Stability AI credits. Top up at platform.stability.ai → Billing.' });
+        if (r.status === 429) return jsonRes({ ok:false, error:'Stability AI rate limit. Wait a moment.' });
+        // For other errors fall through to txt2img
+        console.warn('Falling back to txt2img, img2img error:', r.status, errMsg);
+      }
+    } catch(e) {
+      console.warn('img2img exception, falling back:', e.message);
+    }
   }
 
-  // SECONDARY: CF Workers AI txt2img
-  if (env.AI) {
-    try {
-      const result = await env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
-        prompt, negative_prompt:negP, num_steps:20, guidance:8, width:1024, height:768,
-      });
-      const buf = await new Response(result).arrayBuffer();
-      const arr = new Uint8Array(buf);
-      let b = '';
-      for (let i=0; i<arr.length; i+=8192) b += String.fromCharCode(...arr.subarray(i,i+8192));
-      try { await consumeCredit(env, ip, 'render'); } catch(e) {}
-      return jsonRes({ ok:true, image_base64:btoa(b), mime_type:'image/png', mode:'txt2img_cf' });
-    } catch(e) { console.warn('CF txt2img failed:', e.message); }
-  }
-
-  // FALLBACK: Stability AI txt2img
-  if (!env.STABILITY_API_KEY) {
-    return jsonRes({ ok:false, error:'Add Workers AI binding: Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → Variable name "AI".' }, 503);
-  }
+  // TXT2IMG fallback (no photo uploaded, or img2img failed with non-auth error)
   try {
-    const r = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
-      method:'POST',
-      headers:{ 'Authorization':`Bearer ${env.STABILITY_API_KEY}`, 'Content-Type':'application/json', 'Accept':'application/json' },
-      body:JSON.stringify({ text_prompts:[{text:prompt,weight:1},{text:negP,weight:-1}], cfg_scale:10, height:768, width:1344, steps:25, samples:1 }),
-    });
+    const r = await fetch(
+      'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
+      {
+        method:  'POST',
+        headers: { 'Authorization':`Bearer ${env.STABILITY_API_KEY}`, 'Content-Type':'application/json', 'Accept':'application/json' },
+        body: JSON.stringify({
+          text_prompts:[{text:prompt,weight:1},{text:negP,weight:-1}],
+          cfg_scale:10, height:768, width:1344, steps:30, samples:1,
+        }),
+      }
+    );
     if (!r.ok) {
       const t = await r.text().catch(()=>'');
-      let m=t.slice(0,200); try{m=JSON.parse(t).message||m;}catch{}
+      let m = t.slice(0,200); try{m=JSON.parse(t).message||m;}catch{}
       if (r.status===402) return jsonRes({ ok:false, error:'No Stability AI credits. Top up at platform.stability.ai → Billing.' });
       if (r.status===429) return jsonRes({ ok:false, error:'Rate limited. Wait a moment and try again.' });
       return jsonRes({ ok:false, error:`Stability AI ${r.status}: ${m}` }, 502);
     }
-    const d = await r.json();
-    const b64 = d.artifacts?.[0]?.base64;
+    const data = await r.json();
+    const b64  = data.artifacts?.[0]?.base64;
     if (!b64) return jsonRes({ ok:false, error:'No image returned.' }, 502);
-    try { await consumeCredit(env, ip, 'render'); } catch(e) {}
-    return jsonRes({ ok:true, image_base64:b64, mime_type:'image/png', mode:'txt2img_stability' });
+    return jsonRes({ ok:true, image_base64:b64, mime_type:'image/png', mode:'txt2img' });
   } catch(e) {
     return jsonRes({ ok:false, error:`Render failed: ${e.message}` }, 500);
   }
