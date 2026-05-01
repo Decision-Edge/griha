@@ -75,7 +75,7 @@ async function route(req, env) {
     if (!env.SEGMIND_API_KEY) return jsonRes({ error:'SEGMIND_API_KEY not set' });
     // Call with a minimal 1x1 pixel image to test auth and endpoint
     const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-    const r = await fetch('https://api.segmind.com/v1/sdxl-img2img', {
+    const r = await fetch('https://api.segmind.com/v1/sdxl-controlnet', {
       method: 'POST',
       headers: { 'x-api-key': env.SEGMIND_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -184,7 +184,7 @@ async function handleMasterplan(req, env) {
 
 // ── /generate-render — Segmind SDXL img2img ─────────────────────────────────
 // Segmind API: pure JSON, base64 in/out, no multipart, fast (<15s)
-// Endpoint verified from Segmind docs: api.segmind.com/v1/sdxl-img2img
+// Endpoint: api.segmind.com/v1/sdxl-controlnet — ControlNet with edge detection
 // Requires: SEGMIND_API_KEY in Worker Settings → Variables and Secrets
 // Get key at: segmind.com → Sign up → Dashboard → API Key
 async function handleRender(req, env) {
@@ -231,7 +231,9 @@ async function handleRender(req, env) {
   const negPrompt = 'different room, moved furniture, new furniture, different windows, different layout, cartoon, blurry, distorted, watermark, text, people, low quality, painting, sketch';
 
   try {
-    const response = await fetch('https://api.segmind.com/v1/sdxl-img2img', {
+    // sdxl-controlnet: locks your room's exact structure via edge detection
+    // then applies style/colour changes. Better than img2img for room relevance.
+    const response = await fetch('https://api.segmind.com/v1/sdxl-controlnet', {
       method:  'POST',
       headers: { 'x-api-key': env.SEGMIND_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -242,11 +244,9 @@ async function handleRender(req, env) {
         scheduler:           'DPM++ 2M Karras',
         num_inference_steps: 30,
         guidance_scale:      8,
-        strength:            0.45,
+        controlnet_scale:    0.8,
         seed:                12345,
-        img_width:           1024,
-        img_height:          1024,
-        base64:              false,  // returns raw image bytes — more reliable than base64 mode
+        base64:              false,
       }),
     });
 
