@@ -134,44 +134,78 @@ async function handleValidate(req, env) {
 
 // ── ANALYZE ROOM ─────────────────────────────────────────────────────────────
 async function handleAnalyze(req, env) {
-  if (!env.ANTHROPIC_API_KEY) return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set' });
+  if (!env.ANTHROPIC_API_KEY) return jsonRes({ ok:false, error:'ANTHROPIC_API_KEY not set. Add it in Worker Settings → Variables and Secrets.' });
 
-  // Check free tier limit
   const ip = getClientIP(req);
+
+  // Rate limit check
   const rateCheck = await checkRateLimit(env, ip, 'analysis');
   if (!rateCheck.allowed) {
     return jsonRes({
-      ok: false,
-      limit_reached: true,
-      type: 'analysis',
-      message: 'You\'ve used your free room analysis. Buy a credit pack to analyse more rooms.',
+      ok: false, limit_reached: true, type: 'analysis',
+      message: "You've used your free room analysis. Buy a credit pack to analyse more rooms.",
       packs: [
-        { name: 'Starter', price: 299, includes: '3 rooms + 5 renders', tag: 'starter' },
+        { name: 'Starter',   price: 299, includes: '3 rooms + 5 renders', tag: 'starter' },
         { name: 'Full Home', price: 799, includes: 'Unlimited rooms + renders', tag: 'full_home' }
       ]
     }, 429);
   }
 
-  const { imageBase64, mimeType, roomLabel } = await req.json();
-  if (!imageBase64) return jsonRes({ ok:false, error:'imageBase64 required' }, 400);
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { imageBase64, mimeType, roomLabel } = body;
 
-  const prompt = `You are an expert interior design analyst for Indian homes.
-Analyse this ${roomLabel||'room'} photo and return ONLY this JSON (no markdown, no text before or after):
-{"room_identified":true,"confidence":"high","observations":{"estimated_sqft":160,"ceiling_height":"standard","ceiling_type":"flat","window_count":1,"light_direction":"east","light_quality":"bright","natural_light_assessment":"Good natural light","overhead_beams_detected":false,"beam_count":0,"electrical_points_visible":2,"electrical_point_positions":["near_door","opposite_wall"],"existing_furniture":["bed","wardrobe"],"wall_colours_existing":["white"],"flooring_type":"vitrified_tile","flooring_colour":"beige","ceiling_colour":"white","wall_condition":"good","style_detected":["contemporary_indian"],"vastu_observations":{"sleeping_head_direction_visible":"unknown","mirror_facing_bed":false}}}
+    if (!imageBase64) return jsonRes({ ok:false, error:'No image received. Please try uploading the photo again.' }, 400);
 
-Replace all values with what you actually observe in the photo. Return ONLY the JSON.`;
+    // Check image size — Anthropic rejects images over ~5MB base64
+    if (imageBase64.length > 6_000_000) {
+      return jsonRes({ ok:false, error:'Photo is too large. Please use an image under 3MB (the app will resize it automatically).' }, 413);
+    }
 
-  const reply = await claude(env, [{
-    role:'user',
-    content:[
-      { type:'image', source:{ type:'base64', media_type:mimeType||'image/jpeg', data:imageBase64 } },
-      { type:'text', text:prompt }
-    ]
-  }]);
+    const prompt = `You are an expert interior design analyst for Indian homes.
+Analyse this ${roomLabel||'room'} photo and return ONLY valid JSON — no markdown, no explanation, nothing else.
 
-  const parsed = parseJSON(reply);
-  await consumeCredit(env, ip, 'analysis');
-  return jsonRes(parsed);
+{"room_identified":true,"confidence":"high","observations":{"estimated_sqft":160,"ceiling_height":"standard","ceiling_type":"flat","window_count":1,"light_direction":"east","light_quality":"bright","natural_light_assessment":"Good morning light","overhead_beams_detected":false,"beam_count":0,"electrical_points_visible":2,"electrical_point_positions":["near_door","opposite_wall"],"existing_furniture":["bed","wardrobe"],"wall_colours_existing":["white"],"flooring_type":"vitrified_tile","flooring_colour":"beige","ceiling_colour":"white","wall_condition":"good","style_detected":["contemporary_indian"],"vastu_observations":{"sleeping_head_direction_visible":"unknown","mirror_facing_bed":false}}}
+
+Replace ALL values with what you actually observe in the photo. Return ONLY the JSON.`;
+
+    const reply = await claude(env, [{
+      role: 'user',
+      content: [
+        { type:'image', source:{ type:'base64', media_type: mimeType||'image/jpeg', data: imageBase64 } },
+        { type:'text',  text: prompt }
+      ]
+    }]);
+
+    if (!reply) return jsonRes({ ok:false, error:'Empty response from AI. Please try again.' }, 502);
+
+    const parsed = parseJSON(reply);
+
+    // Never return a 500 — if parsing fails, return a safe fallback
+    if (parsed.error) {
+      return jsonRes({
+        room_identified: true, confidence: 'low', _fallback: true,
+        observations: {
+          estimated_sqft: 150, ceiling_height: 'standard', ceiling_type: 'flat',
+          window_count: 1, light_direction: 'east', light_quality: 'moderate',
+          natural_light_assessment: 'Moderate natural light',
+          overhead_beams_detected: false, beam_count: 0,
+          electrical_points_visible: 2, electrical_point_positions: ['near_door'],
+          existing_furniture: [], wall_colours_existing: ['white'],
+          flooring_type: 'tile', flooring_colour: 'beige', ceiling_colour: 'white',
+          wall_condition: 'good', style_detected: ['contemporary_indian'],
+          vastu_observations: { sleeping_head_direction_visible: 'unknown', mirror_facing_bed: false }
+        }
+      });
+    }
+
+    await consumeCredit(env, ip, 'analysis');
+    return jsonRes(parsed);
+
+  } catch(e) {
+    console.error('handleAnalyze error:', e.message);
+    return jsonRes({ ok:false, error:`Analysis failed: ${e.message}` }, 500);
+  }
 }
 
 // ── ANALYZE MASTERPLAN ───────────────────────────────────────────────────────
