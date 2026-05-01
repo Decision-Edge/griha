@@ -228,28 +228,50 @@ async function handleRender(req, env) {
   const styleDef = STYLES[design_style_id]  || STYLES.contemporary_indian;
   const palette  = PALETTES[palette_id]     || PALETTES.warm_earthen;
   const room     = (room_type||'room').replace(/_/g,' ');
-  // Build surface-specific prompt — focuses ONLY on what surfaces to change
-  // This is critical for img2img relevance: describe the transformation, not a new room
+  // ── PROMPT ENGINEERING: structure lock with full redundancy ──────────────────
+  // Technique: repeat the structural constraint 3x — models need repetition to obey
+  // Only describe the 3 surfaces (wall/floor/ceiling). Nothing else.
+  // Remove ALL style/atmosphere/furniture descriptions — they cause overreach.
+
+  const PRESERVE = 'PRESERVE ALL EXISTING FURNITURE, OBJECTS, WINDOWS, DOORS, WALLS STRUCTURE AND ROOM LAYOUT EXACTLY UNCHANGED';
+
   const prompt = [
-    `Interior design surface makeover of this exact ${room}.`,
-    styleDef.wall + '.',
-    styleDef.floor + '.',
-    styleDef.ceiling + '.',
-    styleDef.trim + '.',
-    `Colour scheme: ${palette}.`,
-    'All furniture, objects, windows, doors, and room dimensions stay identical.',
-    'Only walls, floor, and ceiling surfaces are changed.',
-    'Photorealistic professional interior photography.',
+    // 1. State what this is
+    `Photorealistic photo of the same ${room} with only surface finishes changed.`,
+    // 2. Lock structure — first repetition
+    PRESERVE + '.',
+    // 3. Surface changes only — wall, floor, ceiling
+    'CHANGE ONLY THESE THREE SURFACES:',
+    'WALLS: ' + styleDef.wall + '.',
+    'FLOOR: ' + styleDef.floor + '.',
+    'CEILING: ' + styleDef.ceiling + '.',
+    'Colour palette applied to surfaces only: ' + palette + '.',
+    // 4. Lock structure — second repetition (redundancy)
+    PRESERVE + '.',
+    // 5. Lock structure — third repetition
+    'Same camera angle, same perspective, same room, same furniture positions, same window light.',
+    // 6. Quality instruction last
+    'Ultra photorealistic. Professional interior photography. Natural lighting unchanged. No people.',
   ].join(' ');
 
-  // Strong negative prompt prevents the model from reinventing the room
+  // ── NEGATIVE PROMPT: maximum specificity ──────────────────────────────────
+  // Each category targets a different type of model misbehaviour
   const negP = [
-    'different room layout, different furniture, moved furniture, new furniture added',
-    'different windows, different doors, different room shape, different proportions',
-    'cartoon, anime, sketch, painting, illustration, watermark, text, logo',
-    'blurry, distorted, low quality, overexposed, underexposed, grainy',
-    'people, person, human, hands',
-    'completely different room, interior design concept, mood board',
+    // Prevent room reinvention
+    'different room, different layout, different furniture arrangement, moved sofa, moved bed, moved table',
+    'new furniture, added furniture, removed furniture, different furniture style',
+    'different windows, different doors, blocked windows, new windows, different wall positions',
+    // Prevent style overreach
+    'interior design concept, mood board, showroom, staged room, model home',
+    'completely redesigned, fully renovated, architectural change, structural change',
+    // Prevent quality issues
+    'cartoon, anime, sketch, illustration, painting, watercolor, drawing',
+    'blurry, out of focus, distorted, warped, deformed, low quality, pixelated',
+    'overexposed, underexposed, dark, too bright, bad lighting',
+    // Prevent people
+    'person, people, human, hands, face, body, mannequin',
+    // Prevent text/branding
+    'text, watermark, logo, label, sign, caption',
   ].join(', ');
 
   // IMG2IMG: use the user's actual room photo as the base
@@ -262,9 +284,9 @@ async function handleRender(req, env) {
       const CRLF = '\r\n';
       const fields = [
         ['init_image_mode',          'IMAGE_STRENGTH'],
-        ['image_strength',           '0.18'],
-        ['cfg_scale',                '7'],
-        ['steps',                    '40'],
+        ['image_strength',           '0.12'],
+        ['cfg_scale',                '5'],
+        ['steps',                    '50'],
         ['samples',                  '1'],
         ['text_prompts[0][text]',    prompt],
         ['text_prompts[0][weight]',  '1'],
