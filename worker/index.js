@@ -163,15 +163,17 @@ async function handleRender(req, env) {
 
   const { design_style_id, palette_id, room_type, roomImageBase64 } = await req.json().catch(()=>({}));
 
+  // Surface-only prompts — tell the model exactly what surface to change
+  // Keeping prompts focused on walls/floor/ceiling gives best room relevance
   const STYLES = {
-    contemporary_indian:  'contemporary Indian interior, warm terracotta #C47040 walls, polished beige stone floor, brass pendant light, sheesham wood furniture, mustard handloom cushions, indoor plants',
-    minimalist_modern:    'minimalist modern interior, pure white #F5F0E8 walls and ceiling, light grey porcelain floor, recessed LED lights, clean white furniture, linen curtains',
-    traditional_heritage: 'traditional Indian interior, deep ochre #B07D20 walls with burgundy dado and gold stencil, teak herringbone floor, brass chandelier, carved dark furniture, silk curtains',
-    boho_chic:            'bohemian chic interior, sage green #779971 walls, raw plaster feature wall, terracotta cement tiles, rattan pendant, macrame wall art, dhurrie rug, tropical plants',
-    industrial_modern:    'industrial modern interior, raw concrete walls, exposed brick accent, dark concrete floor, black steel Edison pendants, black steel furniture',
-    art_deco_indian:      'Art Deco Indian interior, deep teal #2E5F82 walls with gold geometric stencil, black gold marble floor, ornate cream cornice, brass sconces, velvet upholstery',
-    japandi:              'Japandi interior, warm greige #C8BC9F walls, pale ash wood floor, white ceiling with oak beams, paper pendant light, minimal wood furniture',
-    coastal_indian:       'coastal Indian interior, aquamarine #5B8FAE limewash walls, pale teak plank floor, whitewashed ceiling, rope pendant, linen curtains, jute rug',
+    contemporary_indian:  'repaint all walls warm terracotta orange colour #C47040, replace floor with polished beige natural stone tiles, paint ceiling smooth warm white, add warm brass wall sconces for lighting',
+    minimalist_modern:    'repaint all walls pure linen white #F5F0E8 flat matte finish, replace floor with large format light grey porcelain tiles, paint ceiling bright white with clean shadow gap',
+    traditional_heritage: 'repaint walls deep ochre yellow #B07D20 with dark burgundy painted dado panel below, replace floor with dark teak herringbone wood pattern, paint ceiling cream with gold cornice border',
+    boho_chic:            'repaint walls sage green #779971 colour, paint one accent wall with raw white plaster textured finish, replace floor with terracotta patterned encaustic cement tiles',
+    industrial_modern:    'paint walls to look like raw exposed concrete grey texture, paint one wall to look like exposed red brick, replace floor with dark sealed concrete polished finish',
+    art_deco_indian:      'repaint walls deep teal #2E5F82 with gold geometric Art Deco stencil border pattern, replace floor with black and gold geometric marble tiles, paint ceiling cream with ornate gold cornice',
+    japandi:              'repaint walls warm greige #C8BC9F with subtle matte texture, replace floor with wide plank pale ash wood, paint ceiling white with pale natural wood beam detail',
+    coastal_indian:       'repaint walls aquamarine blue-green #5B8FAE in limewash texture, replace floor with pale weathered teak wood planks, paint ceiling white with natural wood plank detail',
   };
   const PALETTES = {
     warm_earthen:'warm terracotta #C47040 and kaolin cream #EAE1D5', sage_serenity:'sage green #779971 and morning mist #E8EEE6',
@@ -184,8 +186,16 @@ async function handleRender(req, env) {
   const style   = STYLES[design_style_id] || STYLES.contemporary_indian;
   const palette = PALETTES[palette_id]    || PALETTES.warm_earthen;
   const room    = (room_type||'room').replace(/_/g,' ');
-  const prompt  = `Photorealistic interior design photo of an Indian ${room}. ${style}. Colour palette: ${palette}. Keep same room layout. Soft natural light. Ultra realistic. No people.`;
-  const negP    = 'cartoon, blurry, distorted, low quality, watermark, text, people, overexposed, painting, sketch, anime';
+  // Prompt focuses on surface transformation — what to change, not what to generate
+  const prompt = [
+    `Interior design surface transformation of this ${room} photo.`,
+    style + '.',
+    `Apply colour palette: ${palette}.`,
+    'Keep all furniture, windows, doors, and room layout exactly as they are.',
+    'Only change wall paint colour, floor material, and ceiling finish.',
+    'Photorealistic. Professional interior photography. No people.',
+  ].join(' ');
+  const negP = 'cartoon, blurry, distorted, watermark, text, people, different room, moved furniture, new furniture, different windows, different layout, painting, sketch, anime, low quality';
 
   // IMG2IMG: use the user's actual room photo as the base
   if (roomImageBase64) {
@@ -197,7 +207,7 @@ async function handleRender(req, env) {
       const CRLF = '\r\n';
       const fields = [
         ['init_image_mode',          'IMAGE_STRENGTH'],
-        ['image_strength',           '0.40'],
+        ['image_strength',           '0.25'],
         ['cfg_scale',                '10'],
         ['steps',                    '30'],
         ['samples',                  '1'],
