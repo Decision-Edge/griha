@@ -80,7 +80,7 @@ async function route(req, env) {
       headers: { 'x-api-key': env.SEGMIND_API_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         image: pixel, prompt: 'test', samples: 1,
-        scheduler: 'DPM++ 2M Karras', num_inference_steps: 1,
+        scheduler: 'DPM++ 2M Karras', num_inference_steps: 10,
         guidance_scale: 1, strength: 0.1, seed: 1,
         img_width: 512, img_height: 512, base64: false,
       }),
