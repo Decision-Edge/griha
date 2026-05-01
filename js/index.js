@@ -325,35 +325,95 @@ async function handleRender(req, env) {
 
   const { design_style_id, palette_id, room_type, roomImageBase64 } = body;
 
-  const STYLES = {
-    contemporary_indian:  'contemporary Indian interior, warm terracotta accent wall, kaolin clay white walls, sheesham wood furniture, brass pendant light, handloom textiles, indoor plants, warm amber lighting',
-    minimalist_modern:    'minimalist modern interior, pure linen white walls, smooth white ceiling, large-format light grey porcelain floor, clean-lined furniture, recessed LED lighting, Scandinavian simplicity',
-    traditional_heritage: 'traditional Indian heritage interior, deep ochre and burgundy walls, ornate plaster ceiling with gold detail, dark teak herringbone floor, antique brass chandelier, carved wooden furniture',
-    boho_chic:            'boho chic interior, sage green walls, raw plaster feature wall, terracotta encaustic cement tiles, macrame wall hanging, rattan furniture, layered dhurrie rug, Edison bulb pendants',
-    industrial_modern:    'industrial modern interior, exposed raw concrete walls, polished concrete floor, anthracite ceiling, exposed brick feature wall, minimal steel furniture',
-    art_deco_indian:      'Art Deco Indian interior, deep teal walls with gold geometric border, ornate cream plaster ceiling, black and gold marble floor, antique brass accents',
-    japandi:              'Japandi interior, warm greige washi walls, pale oak ceiling beams, wide-plank light ash floor, wabi-sabi plaster finish, soft diffused natural light',
-    coastal_indian:       'coastal Indian interior, aquamarine limewash walls, whitewashed wooden ceiling, pale weathered teak floor, natural rope texture, light linen curtains',
-  };
-  const PALETTES = {
-    warm_earthen:     'colour palette warm terracotta, tawny brown, kaolin cream',
-    sage_serenity:    'colour palette sage green, pale moss, crisp white',
-    terracotta_dawn:  'colour palette burnt terracotta, brick red, warm peach',
-    cloud_white:      'colour palette pure white, warm ivory, soft greige',
-    monsoon_blue:     'colour palette cerulean blue, deep navy, arctic white',
-    golden_hour:      'colour palette warm gold, amber honey, champagne cream',
-    forest_deep:      'colour palette forest green, dark fern, pale sage',
-    blush_rose:       'colour palette dusty rose, muted blush, warm cream',
-    midnight_charcoal:'colour palette warm charcoal, dark slate, warm grey',
-    coastal_sand:     'colour palette coastal sand, bleached driftwood, sea foam',
+  // Each style has a DOMINANT WALL COLOUR + specific surface instructions
+  // Prompts are directive and specific so the model makes VISIBLE changes
+  const STYLE_PROMPTS = {
+    contemporary_indian: {
+      wall:    'paint all walls with warm terracotta orange #C47040, one feature wall in deep burnt sienna',
+      floor:   'replace floor with polished beige natural stone tiles',
+      ceiling: 'smooth white plaster ceiling with warm ambient cove lighting',
+      accent:  'brass pendant light, sheesham wood accents, handloom cotton cushions in mustard and rust',
+    },
+    minimalist_modern: {
+      wall:    'paint all walls pure linen white #F5F0E8, one flat grey accent wall',
+      floor:   'replace floor with large-format light grey porcelain tiles 60x60cm',
+      ceiling: 'smooth white ceiling with recessed LED downlights, no visible fixtures',
+      accent:  'white and grey upholstery, clean architectural lines, minimal decor',
+    },
+    traditional_heritage: {
+      wall:    'paint walls deep ochre yellow #B07D20 with burgundy red dado panel below, ornate border stencil in gold',
+      floor:   'replace floor with dark teak herringbone wood flooring',
+      ceiling: 'ornate plaster ceiling with gold painted cornice and central medallion',
+      accent:  'antique brass chandelier, carved wooden furniture, rich silk curtains in deep red',
+    },
+    boho_chic: {
+      wall:    'paint walls sage green #779971, one textured raw plaster accent wall in warm white',
+      floor:   'replace floor with terracotta encaustic cement patterned tiles',
+      ceiling: 'white ceiling with rattan pendant light, exposed wooden beams',
+      accent:  'macrame wall hanging, layered colourful dhurrie rug, indoor tropical plants',
+    },
+    industrial_modern: {
+      wall:    'expose raw concrete walls in grey, one exposed red brick feature wall',
+      floor:   'replace floor with sealed polished dark concrete',
+      ceiling: 'anthracite dark grey painted ceiling with exposed black steel pipes',
+      accent:  'Edison bulb pendant lights, black steel frame furniture, minimal industrial decor',
+    },
+    art_deco_indian: {
+      wall:    'paint walls deep teal #2E5F82 with gold geometric Art Deco stencil border pattern',
+      floor:   'replace floor with black and gold geometric marble tiles',
+      ceiling: 'cream ceiling with ornate gilded cornice and Art Deco moulding',
+      accent:  'antique brass and gold fixtures, velvet upholstery, dramatic uplighting',
+    },
+    japandi: {
+      wall:    'paint walls warm greige #C8BC9F with subtle washi paper texture, soft and muted',
+      floor:   'replace floor with wide-plank pale ash wood flooring',
+      ceiling: 'white ceiling with pale oak exposed beams, soft diffused pendant light',
+      accent:  'minimal furniture in natural wood, simple linen curtains, single indoor plant',
+    },
+    coastal_indian: {
+      wall:    'paint walls aquamarine blue-green #5B8FAE with whitewashed limewash texture',
+      floor:   'replace floor with pale weathered teak plank flooring',
+      ceiling: 'whitewashed wooden plank ceiling with natural rope pendant light',
+      accent:  'light linen curtains, natural jute rug, coastal driftwood decor',
+    },
   };
 
-  const style   = STYLES[design_style_id] || STYLES.contemporary_indian;
-  const palette = PALETTES[palette_id]    || PALETTES.warm_earthen;
-  const room    = (room_type || 'room').replace(/_/g, ' ');
+  const PALETTE_COLOURS = {
+    warm_earthen:     { primary:'#C47040', secondary:'#EAE1D5', name:'warm terracotta and kaolin cream' },
+    sage_serenity:    { primary:'#779971', secondary:'#E8EEE6', name:'sage green and morning mist' },
+    terracotta_dawn:  { primary:'#9A4820', secondary:'#F5ECE1', name:'burnt terracotta and pale peach' },
+    cloud_white:      { primary:'#F5F0E8', secondary:'#C8BC9F', name:'pure white and soft greige' },
+    monsoon_blue:     { primary:'#5B8FAE', secondary:'#EBF0F5', name:'cerulean blue and arctic white' },
+    golden_hour:      { primary:'#B07D20', secondary:'#F4EAD5', name:'warm gold and champagne' },
+    forest_deep:      { primary:'#2B4D25', secondary:'#E8EEE6', name:'forest green and pale sage' },
+    blush_rose:       { primary:'#D4927B', secondary:'#FAF0EA', name:'dusty rose and warm cream' },
+    midnight_charcoal:{ primary:'#2C2C2A', secondary:'#8C8C8A', name:'charcoal and warm grey' },
+    coastal_sand:     { primary:'#DED3B8', secondary:'#E8EDE6', name:'coastal sand and sea foam' },
+  };
 
-  const prompt    = `Photorealistic professional interior design photograph of an Indian ${room}. ${style}. ${palette}. Ultra realistic. Soft natural lighting. Wide angle view. No people. 8K quality.`;
-  const negPrompt = 'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality, people, person, human';
+  const styleKey = design_style_id || 'contemporary_indian';
+  const palKey   = palette_id      || 'warm_earthen';
+  const style    = STYLE_PROMPTS[styleKey] || STYLE_PROMPTS.contemporary_indian;
+  const palette  = PALETTE_COLOURS[palKey] || PALETTE_COLOURS.warm_earthen;
+  const room     = (room_type || 'room').replace(/_/g, ' ');
+
+  // Build a very specific, directive prompt that forces visible surface changes
+  const prompt = [
+    `Interior design transformation of this ${room}.`,
+    `WALLS: ${style.wall}. Use exact hex colour ${palette.primary} as the dominant wall colour.`,
+    `FLOOR: ${style.floor}.`,
+    `CEILING: ${style.ceiling}.`,
+    `ACCENTS: ${style.accent}. Colour scheme: ${palette.name}.`,
+    'Keep the exact same room layout, window positions, door positions, and furniture arrangement.',
+    'Only change surface colours, materials, textures, and lighting.',
+    'Photorealistic. Professional interior photography. Ultra high quality. No people.',
+  ].join(' ');
+
+  const negPrompt = [
+    'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality',
+    'different room layout, different window positions, moved furniture, different room shape',
+    'people, person, human, new furniture items that were not in the original',
+  ].join(', ');
 
   try {
     const boundary = '----StabilityBoundary' + Math.random().toString(36).slice(2);
@@ -372,7 +432,7 @@ ${value}
       addField('mode',          'image-to-image');
       addField('prompt',        prompt);
       addField('negative_prompt', negPrompt);
-      addField('strength',      '0.45');
+      addField('strength',      '0.62');
       addField('output_format', 'png');
       addField('model',         'sd3-large-turbo');
 

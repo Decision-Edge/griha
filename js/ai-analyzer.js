@@ -17,7 +17,14 @@ export class AIAnalyzer {
       const r = await fetch(`${this.workerUrl}/health`, { signal: AbortSignal.timeout(5000) });
       if (!r.ok) return { ok:false, error:`Worker returned ${r.status}` };
       const d = await r.json();
-      return { ok:true, ...d };
+      // Normalise — worker v6 uses has_anthropic_key/has_stability_key
+      return {
+        ok:                true,
+        has_anthropic_key: d.has_anthropic_key ?? d.has_key ?? false,
+        has_stability_key: d.has_stability_key ?? false,
+        has_rate_kv:       d.has_rate_kv       ?? false,
+        version:           d.version || 'unknown',
+      };
     } catch(e) {
       return { ok:false, error:e.message };
     }
