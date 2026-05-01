@@ -199,22 +199,22 @@ async function handleRender(req, env) {
   }
 
   try {
-    // Step 1: Create prediction
-    const createRes = await fetch('https://api.replicate.com/v1/predictions', {
+    // Step 1: Create prediction using model endpoint (no version hash needed)
+    const createRes = await fetch('https://api.replicate.com/v1/models/adirik/interior-design/predictions', {
       method:  'POST',
       headers: {
-        'Authorization': `Bearer ${env.REPLICATE_API_KEY}`,
-        'Content-Type':  'application/json',
+        'Authorization':   `Bearer ${env.REPLICATE_API_KEY}`,
+        'Content-Type':    'application/json',
+        'Prefer':          'wait=60',  // wait up to 60s for result inline
       },
       body: JSON.stringify({
-        version: 'abf632b4e5b2a7c54d2a1fda3e2c1f6b',  // adirik/interior-design
         input: {
-          image:            imageDataUri,
-          prompt:           prompt,
-          negative_prompt:  'lowres, watermark, banner, logo, watermark, contactinfo, text, deformed, blurry, blur, out of focus, out of frame, surreal, ugly, cartoon',
-          guidance_scale:   15,
+          image:               imageDataUri,
+          prompt:              prompt,
+          negative_prompt:     'lowres, watermark, banner, logo, text, deformed, blurry, blur, out of focus, surreal, ugly, cartoon, different room, different layout, moved furniture',
+          guidance_scale:      15,
           num_inference_steps: 50,
-          strength:         0.8,
+          strength:            0.8,
         },
       }),
     });
@@ -223,30 +223,34 @@ async function handleRender(req, env) {
       const err = await createRes.json().catch(()=>({}));
       if (createRes.status === 401) return jsonRes({ ok:false, error:'Invalid REPLICATE_API_KEY. Check at replicate.com → Account Settings → API Tokens.' });
       if (createRes.status === 402) return jsonRes({ ok:false, error:'No Replicate credits. Add billing at replicate.com → Settings → Billing.' });
-      return jsonRes({ ok:false, error:`Replicate error: ${err.detail || createRes.status}` }, 502);
+      if (createRes.status === 404) return jsonRes({ ok:false, error:'Interior design model not found on Replicate. The model may have been updated.' });
+      return jsonRes({ ok:false, error:`Replicate error ${createRes.status}: ${err.detail || JSON.stringify(err)}` }, 502);
     }
 
     const prediction = await createRes.json();
-    const predId     = prediction.id;
 
-    // Step 2: Poll for result (Replicate is async)
+    // Check if Replicate returned result inline (Prefer: wait worked)
     let imageUrl = null;
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 2000)); // wait 2s between polls
+    if (prediction.status === 'succeeded') {
+      imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output;
+    }
 
-      const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${predId}`, {
-        headers: { 'Authorization': `Bearer ${env.REPLICATE_API_KEY}` },
-      });
-      const result = await pollRes.json();
-
-      if (result.status === 'succeeded') {
-        imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
-        break;
+    // If not done yet, poll for result
+    if (!imageUrl && prediction.id) {
+      for (let i = 0; i < 25; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
+          headers: { 'Authorization': `Bearer ${env.REPLICATE_API_KEY}` },
+        });
+        const result = await pollRes.json();
+        if (result.status === 'succeeded') {
+          imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+          break;
+        }
+        if (result.status === 'failed') {
+          return jsonRes({ ok:false, error:`Render failed: ${result.error || 'Model returned an error'}` }, 502);
+        }
       }
-      if (result.status === 'failed') {
-        return jsonRes({ ok:false, error:`Replicate prediction failed: ${result.error || 'unknown error'}` }, 502);
-      }
-      // status is 'starting' or 'processing' — keep polling
     }
 
     if (!imageUrl) {
