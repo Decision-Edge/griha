@@ -1378,11 +1378,6 @@ function handlePaywallCTA() {
 window.closePaywall      = closePaywall;
 window.handlePaywallCTA  = handlePaywallCTA;
 
-// Hook into AI calls to intercept 429 limit_reached responses
-// Patch the AIAnalyzer methods to show paywall on 429
-const _origAnalyzeRoom   = S.M.ai?.analyzeRoom?.bind(S.M.ai);
-const _origGenerateRender = S.M.ai?.generateRender?.bind(S.M.ai);
-
 function patchAIWithPaywall() {
   if (!S.M.ai) return;
   const orig_analyze = S.M.ai.analyzeRoom.bind(S.M.ai);
