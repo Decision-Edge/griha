@@ -154,7 +154,7 @@ async function handleMasterplan(req, env) {
 }
 
 // ── /generate-render — Replicate interior-design model ──────────────────────
-// Uses adirik/interior-design on Replicate — purpose-built for room redesign.
+// Uses timothybrooks/instruct-pix2pix — instruction-based image editing on Replicate.
 // Preserves room structure, furniture positions, windows exactly.
 // Requires: REPLICATE_API_KEY secret in Worker Settings.
 // Get key at: replicate.com → Account Settings → API Tokens
@@ -165,31 +165,32 @@ async function handleRender(req, env) {
 
   const { design_style_id, palette_id, room_type, roomImageBase64 } = await req.json().catch(()=>({}));
 
-  // Style prompts tuned for the interior-design model
-  const STYLE_PROMPTS = {
-    contemporary_indian:  'contemporary Indian interior design, warm terracotta walls, brass accents, sheesham wood, handloom textiles',
-    minimalist_modern:    'minimalist modern interior, pure white walls, grey porcelain floor, recessed LED lighting, clean lines, Scandinavian',
-    traditional_heritage: 'traditional Indian heritage interior, deep ochre walls, dark teak floor, antique brass chandelier, carved wood, silk curtains',
-    boho_chic:            'bohemian chic interior, sage green walls, terracotta tiles, macrame, rattan furniture, dhurrie rug, tropical plants',
-    industrial_modern:    'industrial modern interior, exposed concrete walls, polished concrete floor, black steel fixtures, Edison bulbs',
-    art_deco_indian:      'Art Deco Indian interior, deep teal walls, gold geometric patterns, black marble floor, antique brass, velvet',
-    japandi:              'Japandi interior, warm greige walls, pale ash wood floor, paper pendant, minimal furniture, wabi-sabi, natural materials',
-    coastal_indian:       'coastal Indian interior, aquamarine walls, teak wood floor, natural rope, linen curtains, jute rug, driftwood',
+  const STYLE_DEFS = {
+    contemporary_indian:  { wall:'Paint the walls warm terracotta orange', floor:'Replace the floor with polished beige stone tiles', ceiling:'Paint the ceiling smooth warm white' },
+    minimalist_modern:    { wall:'Paint the walls pure linen white', floor:'Replace the floor with large light grey porcelain tiles', ceiling:'Paint the ceiling brilliant white' },
+    traditional_heritage: { wall:'Paint the walls deep ochre yellow with a dark burgundy dado panel', floor:'Replace the floor with dark teak herringbone wood', ceiling:'Paint the ceiling cream with a gold cornice border' },
+    boho_chic:            { wall:'Paint the walls sage green', floor:'Replace the floor with terracotta patterned cement tiles', ceiling:'Paint the ceiling warm white' },
+    industrial_modern:    { wall:'Paint the walls raw grey concrete texture', floor:'Replace the floor with dark polished concrete', ceiling:'Paint the ceiling dark anthracite grey' },
+    art_deco_indian:      { wall:'Paint the walls deep teal with a gold geometric border stencil', floor:'Replace the floor with black and gold geometric marble tiles', ceiling:'Paint the ceiling cream with an ornate gold cornice' },
+    japandi:              { wall:'Paint the walls warm greige with a subtle matte texture', floor:'Replace the floor with wide plank pale ash wood', ceiling:'Paint the ceiling white with pale wood beam detail' },
+    coastal_indian:       { wall:'Paint the walls aquamarine in a limewash texture', floor:'Replace the floor with pale weathered teak wood planks', ceiling:'Paint the ceiling white with whitewashed wood plank detail' },
   };
+
   const PALETTE_DESCS = {
-    warm_earthen:'warm terracotta and kaolin cream tones',     sage_serenity:'sage green and pale moss tones',
-    terracotta_dawn:'burnt terracotta and peach tones',        cloud_white:'pure white and warm ivory tones',
-    monsoon_blue:'cerulean blue and arctic white tones',       golden_hour:'warm gold and champagne tones',
-    forest_deep:'deep forest green and pale sage tones',       blush_rose:'dusty rose and warm cream tones',
-    midnight_charcoal:'warm charcoal and grey tones',          coastal_sand:'coastal sand and sea foam tones',
+    warm_earthen:'using warm terracotta and kaolin cream as the dominant colours',
+    sage_serenity:'using sage green and pale moss as the dominant colours',
+    terracotta_dawn:'using burnt terracotta and pale peach as the dominant colours',
+    cloud_white:'using pure white and warm greige as the dominant colours',
+    monsoon_blue:'using cerulean blue and arctic white as the dominant colours',
+    golden_hour:'using warm gold and champagne cream as the dominant colours',
+    forest_deep:'using deep forest green and pale sage as the dominant colours',
+    blush_rose:'using dusty rose and warm cream as the dominant colours',
+    midnight_charcoal:'using warm charcoal and grey as the dominant colours',
+    coastal_sand:'using coastal sand and sea foam as the dominant colours',
   };
 
-  const stylePrompt = STYLE_PROMPTS[design_style_id] || STYLE_PROMPTS.contemporary_indian;
-  const paletteDesc = PALETTE_DESCS[palette_id]      || PALETTE_DESCS.warm_earthen;
-  const room        = (room_type||'room').replace(/_/g,' ');
-  const prompt      = `${stylePrompt}, ${paletteDesc}, professional interior photography, ultra realistic, 8K`;
-
-  // Convert base64 to data URI for Replicate
+  const styleDef   = STYLE_DEFS[design_style_id]  || STYLE_DEFS.contemporary_indian;
+  const paletteDesc = PALETTE_DESCS[palette_id]   || PALETTE_DESCS.warm_earthen;
   const imageDataUri = roomImageBase64
     ? `data:image/jpeg;base64,${roomImageBase64}`
     : null;
@@ -199,25 +200,38 @@ async function handleRender(req, env) {
   }
 
   try {
-    // Step 1: Create prediction using model endpoint (no version hash needed)
-    const createRes = await fetch('https://api.replicate.com/v1/models/adirik/interior-design/predictions', {
-      method:  'POST',
-      headers: {
-        'Authorization':   `Bearer ${env.REPLICATE_API_KEY}`,
-        'Content-Type':    'application/json',
-        'Prefer':          'wait=60',  // wait up to 60s for result inline
-      },
-      body: JSON.stringify({
-        input: {
-          image:               imageDataUri,
-          prompt:              prompt,
-          negative_prompt:     'lowres, watermark, banner, logo, text, deformed, blurry, blur, out of focus, surreal, ugly, cartoon, different room, different layout, moved furniture',
-          guidance_scale:      15,
-          num_inference_steps: 50,
-          strength:            0.8,
+    // instruct-pix2pix: instruction-based image editing
+    // image_guidance_scale controls how closely output follows input photo
+    // Higher = stays closer to original room photo
+    const instruction = [
+      styleDef.wall + '.',
+      styleDef.floor + '.',
+      styleDef.ceiling + '.',
+      `Apply ${paletteDesc}.`,
+      'Keep all furniture, windows, doors and room layout exactly the same.',
+    ].join(' ');
+
+    const createRes = await fetch(
+      'https://api.replicate.com/v1/models/timothybrooks/instruct-pix2pix/predictions',
+      {
+        method:  'POST',
+        headers: {
+          'Authorization': `Bearer ${env.REPLICATE_API_KEY}`,
+          'Content-Type':  'application/json',
+          'Prefer':        'wait=60',
         },
-      }),
-    });
+        body: JSON.stringify({
+          input: {
+            image:               imageDataUri,
+            prompt:              instruction,
+            negative_prompt:     'blurry, distorted, low quality, different room, different furniture, different windows, cartoon, drawing, ugly',
+            num_inference_steps: 100,
+            image_guidance_scale: 1.8,  // high = stays very close to original photo
+            guidance_scale:       7.5,
+          },
+        }),
+      }
+    );
 
     if (!createRes.ok) {
       const err = await createRes.json().catch(()=>({}));
