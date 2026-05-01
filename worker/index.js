@@ -411,9 +411,12 @@ async function handleRender(req, env) {
     'Ultra realistic. 8K quality. Professional interior photography. Wide angle view showing the full room. No people. Highly detailed surfaces.',
   ].join(' ');
 
-  const negPrompt = 'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality, people, person, human, overexposed, underexposed, painting, illustration';
+  const negPrompt = 'cartoon, anime, sketch, watermark, text, blurry, distorted, low quality, people, person, human, overexposed, painting, illustration';
 
-  // Step 3: Call Stability AI SDXL v1 JSON API (reliable, no multipart issues)
+  // Stability AI SDXL v1 — valid dimensions: 1024x1024, 1152x896, 1216x832, 1344x768, 1536x640
+  // Max steps on free tier: 30. Max prompt length: 2000 chars.
+  const promptTrimmed = prompt.slice(0, 1800); // hard cap to stay under limit
+
   try {
     const response = await fetch(
       'https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image',
@@ -426,32 +429,39 @@ async function handleRender(req, env) {
         },
         body: JSON.stringify({
           text_prompts: [
-            { text: prompt,    weight: 1  },
-            { text: negPrompt, weight: -1 },
+            { text: promptTrimmed, weight: 1  },
+            { text: negPrompt,     weight: -1 },
           ],
-          cfg_scale: 12,   // higher = follows prompt more strictly (style more visible)
+          cfg_scale: 12,
           height:    768,
           width:     1344,
-          steps:     40,   // more steps = higher quality
+          steps:     30,
           samples:   1,
         }),
       }
     );
 
+    // Capture the real error message from Stability AI before returning 502
     if (!response.ok) {
-      const err = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
-      const msg = err.message || err.name || `Stability API returned ${response.status}`;
+      let errMsg = `Stability AI returned ${response.status}`;
+      try {
+        const errBody = await response.text();
+        const parsed  = JSON.parse(errBody);
+        errMsg = parsed.message || parsed.name || errBody.slice(0, 200);
+      } catch {}
+      console.error('Stability AI error:', response.status, errMsg);
+
       if (response.status === 401) return jsonRes({ ok:false, error:'Invalid STABILITY_API_KEY. Check at platform.stability.ai → Account → API Keys.' });
       if (response.status === 402) return jsonRes({ ok:false, error:'No Stability AI credits. Top up at platform.stability.ai → Billing.' });
-      if (response.status === 400) return jsonRes({ ok:false, error:`Bad request to Stability AI: ${msg}` });
-      return jsonRes({ ok:false, error:`Stability AI error ${response.status}: ${msg}` }, 502);
+      if (response.status === 400) return jsonRes({ ok:false, error:`Stability AI rejected the request: ${errMsg}` });
+      if (response.status === 500) return jsonRes({ ok:false, error:`Stability AI internal error. Try again in a moment.` });
+      return jsonRes({ ok:false, error:`Stability AI error ${response.status}: ${errMsg}` }, 502);
     }
 
     const data   = await response.json();
     const base64 = data.artifacts?.[0]?.base64;
     if (!base64) return jsonRes({ ok:false, error:'Stability AI returned no image data.' }, 502);
 
-    // Consume render credit on success
     try { await consumeCredit(env, ip, 'render'); } catch(e) { /* non-fatal */ }
 
     return jsonRes({
