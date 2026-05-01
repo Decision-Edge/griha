@@ -70,8 +70,6 @@ async function route(req, env) {
     }
   });
 
-  if (req.method !== 'POST') return jsonRes({ error:'POST required' }, 405);
-
   // Test Segmind connection — GET this in browser to see exact error
   if (path === '/test-segmind') {
     if (!env.SEGMIND_API_KEY) return jsonRes({ error:'SEGMIND_API_KEY not set' });
@@ -90,6 +88,8 @@ async function route(req, env) {
     const text = await r.text();
     return jsonRes({ status: r.status, headers: Object.fromEntries(r.headers), body: text.slice(0, 500) });
   }
+
+  if (req.method !== 'POST') return jsonRes({ error:'POST required' }, 405);
 
   if (path === '/validate-photo')     return handleValidate(req, env);
   if (path === '/analyze-room')       return handleAnalyze(req, env);
