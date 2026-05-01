@@ -574,8 +574,8 @@ async function testWorkerConnection() {
 
   if (result.ok) {
     const issues = [];
-    if (!result.has_key) issues.push('ANTHROPIC_API_KEY not set');
-    if (!result.has_ai)  issues.push('Workers AI binding missing');
+    if (!result.has_anthropic_key) issues.push('ANTHROPIC_API_KEY not set — add in Worker Settings → Variables and Secrets');
+    if (!result.has_stability_key) issues.push('STABILITY_API_KEY not set — add in Worker Settings → Variables and Secrets');
 
     if (issues.length === 0) {
       icon.textContent = '✓';
@@ -1035,7 +1035,7 @@ async function triggerRender(idx){
   const result = await S.M.ai.generateRender({ room_type:normalise(room.label), design_style_id:styleId, palette_id:palId, compass_zone:getZone(room.label), room_sqft:room.ai?.observations?.estimated_sqft||150, roomPhotoFile:room.photos[0]||null });
   if(genBtn){ genBtn.disabled=false; genBtn.textContent='✦ Generate surface preview'; }
   if(!result.ok){
-    preview.innerHTML = `<div class="rs-placeholder"><div class="rs-placeholder-icon">⚠️</div><div class="rs-placeholder-title" style="color:rgba(255,255,255,.7);">Render failed</div><div class="rs-placeholder-sub">${result.error?.includes('binding')?'Add Workers AI binding: Cloudflare → griha-worker → Settings → Bindings → Add → Workers AI → name it "AI" → Save and Deploy.':result.error||'Check your Worker is deployed with the AI binding.'}</div></div>`;
+    preview.innerHTML = `<div class="rs-placeholder"><div class="rs-placeholder-icon">⚠️</div><div class="rs-placeholder-title" style="color:rgba(255,255,255,.7);">Render failed</div><div class="rs-placeholder-sub">${result.error||'Render failed. Check your STABILITY_API_KEY is set in Worker Settings → Variables and Secrets.'}</div></div>`;
     if(note) note.textContent = 'Render failed — '+( result.error||'').slice(0,60);
     return;
   }
