@@ -88,26 +88,112 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .ao-room-status.done{color:var(--sage);}
 .ao-room-status.analysing{color:var(--gold);animation:pulse 1.2s ease-in-out infinite;}
 .ao-room-status.pending{color:var(--ch40);}
-/* RESULTS PHASE */
+/* ── RESULTS PHASE ─────────────────────────────────────────────────────────── */
 #resultsPhase{display:none;}
-.results-layout{display:flex;min-height:calc(100vh - 56px);}
-.r-sidebar{width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--cream);display:flex;flex-direction:column;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}
+
+/* Topbar inside results */
+.r-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 32px;border-bottom:1px solid var(--border);background:var(--warm-white);gap:16px;flex-wrap:wrap;}
+.r-room-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+.r-room-tab{font-size:12px;font-weight:400;padding:6px 16px;border-radius:100px;border:1px solid var(--border-md);color:var(--ch70);cursor:pointer;background:transparent;transition:all .15s;white-space:nowrap;}
+.r-room-tab.active{background:var(--charcoal);color:#fff;border-color:var(--charcoal);}
+.r-room-tab:hover:not(.active){border-color:var(--charcoal);color:var(--charcoal);}
+.r-topbar-actions{display:flex;align-items:center;gap:8px;}
+
+/* 70/30 layout */
+.results-layout{display:grid;grid-template-columns:1fr 320px;gap:0;min-height:calc(100vh - 112px);}
+.r-main{overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;gap:20px;min-width:0;}
+.r-panel{background:var(--cream);border-left:1px solid var(--border);overflow-y:auto;padding:20px 18px;display:flex;flex-direction:column;gap:16px;position:sticky;top:112px;height:calc(100vh - 112px);}
+
+/* Room header */
+.r-room-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.r-room-title{font-family:var(--font-d);font-size:24px;font-weight:500;line-height:1.1;}
+.r-room-meta{font-size:12px;color:var(--ch40);margin-top:3px;line-height:1.6;}
+.r-room-thumbs{display:flex;gap:6px;margin-top:8px;}
+.r-room-thumb{width:56px;height:40px;object-fit:cover;border-radius:5px;border:1px solid var(--border);}
+
+/* ── AI Surface Preview — compact ── */
+.render-studio{border:1px solid rgba(255,255,255,0.06);border-radius:var(--r-lg);overflow:hidden;background:var(--charcoal);}
+.rs-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.07);}
+.rs-title{font-family:var(--font-d);font-size:17px;font-weight:400;color:var(--warm-white);}
+.rs-subtitle{font-size:11px;color:rgba(255,255,255,0.3);}
+/* Controls bar: horizontal above preview */
+.rs-controls-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.07);flex-wrap:wrap;}
+.rs-ctrl-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:140px;}
+.rs-ctrl-label{font-size:9px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);}
+.rs-dropdown{width:100%;padding:7px 10px;border-radius:var(--r-sm);border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.8);font-family:var(--font-b);font-size:11px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='white' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px;}
+.rs-dropdown:focus{border-color:rgba(192,80,42,0.5);}
+.rs-dropdown option{background:#1A1714;color:#fff;}
+.rs-generate-btn{padding:9px 20px;border-radius:var(--r-sm);background:var(--terra);color:#fff;font-size:12px;font-weight:500;border:none;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.rs-generate-btn:hover{background:var(--terra-h);}
+.rs-generate-btn:disabled{opacity:.5;cursor:not-allowed;}
+/* Preview — aspect ratio 16:9, shows split view */
+.rs-preview{position:relative;background:#111;overflow:hidden;aspect-ratio:16/9;}
+.rs-img{width:100%;height:100%;object-fit:cover;display:block;}
+.rs-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;height:100%;text-align:center;padding:24px;}
+.rs-placeholder-icon{font-size:36px;opacity:.2;}
+.rs-placeholder-title{font-size:13px;font-weight:500;color:rgba(255,255,255,0.4);}
+.rs-placeholder-sub{font-size:11px;color:rgba(255,255,255,0.2);line-height:1.6;max-width:200px;}
+.rs-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:100%;}
+.rs-spinner{width:36px;height:36px;border:2px solid rgba(255,255,255,0.1);border-top-color:var(--terra);border-radius:50%;animation:spin 1s linear infinite;}
+.rs-loading-title{font-size:13px;font-weight:500;color:rgba(255,255,255,0.6);}
+.rs-loading-sub{font-size:11px;color:rgba(255,255,255,0.3);}
+.rs-footer{padding:9px 14px;background:rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.rs-footer-note{font-size:11px;color:rgba(255,255,255,0.25);flex:1;}
+.rs-regen-btn{padding:5px 14px;border-radius:100px;background:var(--terra);border:none;color:#fff;font-size:11px;font-weight:500;cursor:pointer;display:none;white-space:nowrap;}
+.rs-regen-btn.show{display:inline-flex;align-items:center;gap:4px;}
+.rs-download-btn{padding:5px 14px;border-radius:100px;background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.5);font-size:11px;cursor:pointer;transition:all .15s;text-decoration:none;display:none;white-space:nowrap;}
+.rs-download-btn.show{display:inline-flex;align-items:center;gap:4px;}
+.rs-download-btn:hover{border-color:rgba(255,255,255,0.4);color:#fff;}
+
+/* ── Right panel — Vastu + Insights ── */
+.rp-vastu-score{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--warm-white);border-radius:var(--r-md);border:1px solid var(--border);}
+.rp-score-num{font-family:var(--font-d);font-size:48px;font-weight:400;line-height:1;color:var(--score-colour,#888);}
+.rp-score-label{font-size:10px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ch40);margin-bottom:3px;}
+.rp-score-grade{font-size:14px;font-weight:500;}
+.rp-score-breakdown{font-size:11px;color:var(--ch40);margin-top:3px;}
+.rp-section-title{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ch40);margin-bottom:8px;}
+.rp-rules{display:flex;flex-direction:column;gap:6px;}
+.rp-rule{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:var(--r-sm);border:1px solid transparent;}
+.rp-rule.violated{background:var(--terra-l);border-color:rgba(192,80,42,0.2);}
+.rp-rule.warning{background:var(--gold-l);border-color:rgba(176,125,32,0.15);}
+.rp-rule.compliant{background:var(--sage-l);border-color:rgba(79,98,80,0.15);}
+.rp-rule-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px;color:#fff;}
+.rp-rule.violated .rp-rule-icon{background:var(--terra);}
+.rp-rule.warning .rp-rule-icon{background:var(--gold);}
+.rp-rule.compliant .rp-rule-icon{background:var(--sage);}
+.rp-rule-title{font-size:11px;font-weight:500;margin-bottom:1px;}
+.rp-rule-desc{font-size:10px;color:var(--ch70);line-height:1.4;}
+.rp-insights{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:var(--r-md);overflow:hidden;border:1px solid var(--border);}
+.rp-insight{background:var(--warm-white);padding:9px 11px;}
+.rp-insight-lbl{font-size:9px;color:var(--ch40);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px;}
+.rp-insight-val{font-size:12px;font-weight:500;color:var(--charcoal);}
+.rp-insight-sub{font-size:10px;color:var(--ch40);margin-top:1px;}
+.rp-actions{display:flex;flex-direction:column;gap:6px;}
+.rp-action{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border-md);background:transparent;font-size:12px;font-weight:500;color:var(--charcoal);cursor:pointer;transition:all .15s;}
+.rp-action:hover{border-color:var(--terra);color:var(--terra);background:var(--terra-l);}
+
+/* ── Design Companion ── */
+.companion-card{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.companion-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.companion-avatar{width:28px;height:28px;background:var(--charcoal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0;}
+.companion-name{font-size:13px;font-weight:500;color:var(--charcoal);}
+.companion-online{font-size:10px;color:var(--sage);margin-left:auto;}
+
+/* sidebar items kept for JS compatibility */
 .r-sb-section{padding:12px 14px;border-bottom:1px solid var(--border);}
 .r-sb-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ch40);margin-bottom:8px;}
 .r-room-list{display:flex;flex-direction:column;gap:3px;}
 .r-room-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r-sm);cursor:pointer;transition:all .14s;border:1px solid transparent;}
 .r-room-item:hover{background:var(--warm-white);}
 .r-room-item.active{background:var(--warm-white);border-color:var(--border);}
-.r-room-thumb{width:36px;height:28px;object-fit:cover;border-radius:4px;flex-shrink:0;}
 .r-room-thumb-placeholder{width:36px;height:28px;background:var(--border);border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
 .r-room-name{font-size:12px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .r-room-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .r-room-dot.analysing{background:var(--gold);animation:pulse 1.2s ease-in-out infinite;}
 .r-room-dot.done{background:var(--sage);}
 .r-room-dot.error{background:var(--terra);}
-.r-back-btn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ch70);padding:10px 14px;cursor:pointer;border:none;background:none;width:100%;text-align:left;border-top:1px solid var(--border);margin-top:auto;}
+.r-back-btn{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ch70);padding:10px 14px;cursor:pointer;border:none;background:var(--warm-white);border-top:1px solid var(--border);width:100%;text-align:left;transition:color .15s;}
 .r-back-btn:hover{color:var(--terra);}
-.r-main{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;}
 /* RESULTS CONTENT */
 .r-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;}
 .r-room-title{font-family:var(--font-d);font-size:28px;font-weight:500;line-height:1.1;}
@@ -434,18 +520,20 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 
 <!-- RESULTS PHASE -->
 <div id="resultsPhase">
+  <!-- Room tabs topbar -->
+  <div class="r-topbar">
+    <div class="r-room-tabs" id="resultRoomList"></div>
+    <div class="r-topbar-actions">
+      <button class="r-back-btn" onclick="goBackToUpload()" style="border:1px solid var(--border-md);border-radius:100px;padding:6px 14px;margin:0;font-size:12px;">← Upload more rooms</button>
+    </div>
+  </div>
+  <!-- 70/30 grid -->
   <div class="results-layout">
-    <aside class="r-sidebar">
-      <div class="r-sb-section">
-        <div class="r-sb-label">Your rooms</div>
-        <div class="r-room-list" id="resultRoomList"></div>
-      </div>
-      <button class="r-back-btn" onclick="goBackToUpload()">← Edit rooms / Upload more</button>
-    </aside>
     <main class="r-main" id="rMain">
       <div id="carouselSection" style="display:none;"></div>
       <div id="resultsArea"></div>
     </main>
+    <aside class="r-panel" id="rPanel"></aside>
   </div>
 </div>
 
@@ -791,15 +879,14 @@ function goBackToUpload(){
   document.getElementById('uploadPhase').style.display='block';
 }
 
-// ─── RESULTS SIDEBAR ──────────────────────────────────────────────────────────
+// ─── RESULTS SIDEBAR → now renders as tab buttons in topbar ──────────────────
 function renderResultsSidebar(){
-  const list=document.getElementById('resultRoomList');
-  list.innerHTML=S.rooms.map((r,i)=>`
-    <div class="r-room-item${i===S.activeRoom?' active':''}" onclick="selectResultRoom(${i})">
-      ${r.previews[0]?`<img class="r-room-thumb" src="${r.previews[0]}" alt="${r.label}">`:`<div class="r-room-thumb-placeholder">🏠</div>`}
-      <span class="r-room-name">${r.label}</span>
-      <div class="r-room-dot ${r.status}"></div>
-    </div>`).join('');
+  const list = document.getElementById('resultRoomList');
+  if(!list) return;
+  list.innerHTML = S.rooms.map((r,i)=>`
+    <button class="r-room-tab${i===S.activeRoom?' active':''}" id="rnTab-${i}" onclick="selectResultRoom(${i})">
+      ${r.label}
+    </button>`).join('');
 }
 
 function selectResultRoom(idx){
@@ -824,192 +911,145 @@ function renderRoomResults(idx){
   const obs   = room.ai?.observations||{};
   const zone  = getZone(room.label);
   const area  = document.getElementById('resultsArea');
+  const panel = document.getElementById('rPanel');
 
   if(!room.ai?.ok){
-    area.innerHTML=`<div style="padding:24px;"><div style="background:var(--terra-l);border:1px solid rgba(192,80,42,0.25);border-radius:var(--r-md);padding:14px 16px;font-size:13px;font-weight:500;color:var(--terra);">Analysis unavailable — deploy the Cloudflare Worker to enable photo analysis.</div></div>`;
+    if(area) area.innerHTML=`<div style="background:var(--terra-l);border:1px solid rgba(192,80,42,0.25);border-radius:var(--r-md);padding:14px 16px;font-size:13px;color:var(--terra);">Analysis unavailable — deploy the Cloudflare Worker to enable photo analysis.</div>`;
+    if(panel) panel.innerHTML='';
     return;
   }
 
-  const fb = room.ai._isFallback ? `<div style="background:var(--gold-l);border:1px solid rgba(176,125,32,0.25);border-radius:var(--r-md);padding:10px 14px;font-size:12px;color:var(--gold);display:flex;align-items:center;gap:8px;"><span>💡</span> Using smart defaults — deploy Worker for photo-specific analysis.</div>` : '';
-
-  const mpWarn = (S.masterplan?.direction_confidence && S.masterplan.direction_confidence!=='high')
-    ? `<div style="padding:10px 14px;border-radius:var(--r-sm);border:1px solid ${S.masterplan.direction_confidence==='low'?'rgba(192,80,42,0.3)':'rgba(176,125,32,0.3)'};background:${S.masterplan.direction_confidence==='low'?'var(--terra-l)':'var(--gold-l)'};font-size:12px;color:${S.masterplan.direction_confidence==='low'?'var(--terra)':'var(--gold)'};line-height:1.6;"><strong>${S.masterplan.direction_confidence==='low'?'⚠ Compass direction unclear':'💡 Direction partially inferred'}</strong> ${S.masterplan.direction_clarity_note||''} <a href="javascript:void(0)" onclick="openChecklist()" style="font-weight:500;text-decoration:underline;color:inherit;">Open Vastu checklist →</a></div>`
+  const fb = room.ai._isFallback
+    ? `<div style="background:var(--gold-l);border:1px solid rgba(176,125,32,0.2);border-radius:var(--r-sm);padding:9px 13px;font-size:12px;color:var(--gold);display:flex;gap:8px;align-items:center;"><span>💡</span>Using smart defaults — deploy Worker for photo-specific analysis.</div>`
     : '';
 
-  // Vastu rules (compact for right panel)
-  const vastuRules = [
-    {rules:vastu.violated_rules||[],  icon:'✗', cls:'violated'},
-    {rules:vastu.warning_rules||[],   icon:'!',  cls:'warning'},
-    {rules:vastu.compliant_rules||[], icon:'✓',  cls:'compliant'}
-  ].map(g=>g.rules.slice(0,4).map(r=>`
-    <div class="vastu-rule vastu-${g.cls}" style="margin-bottom:4px;">
-      <div class="vr-icon">${g.icon}</div>
-      <div>
-        <div class="vr-title">${r.title}</div>
-        <div class="vr-desc">${(r.message||r.user_explanation||'').slice(0,90)}${(r.message||r.user_explanation||'').length>90?'…':''}</div>
-      </div>
-    </div>`).join('')).join('');
+  const mpWarn = (S.masterplan?.direction_confidence && S.masterplan.direction_confidence!=='high')
+    ? `<div style="padding:9px 13px;border-radius:var(--r-sm);border:1px solid ${S.masterplan.direction_confidence==='low'?'rgba(192,80,42,0.3)':'rgba(176,125,32,0.3)'};background:${S.masterplan.direction_confidence==='low'?'var(--terra-l)':'var(--gold-l)'};font-size:12px;color:${S.masterplan.direction_confidence==='low'?'var(--terra)':'var(--gold)'};">⚠ ${S.masterplan.direction_clarity_note||'Direction unclear.'} <a href="javascript:void(0)" onclick="openChecklist()" style="font-weight:500;text-decoration:underline;color:inherit;">Open checklist →</a></div>`
+    : '';
 
   const styleOpts = STYLE_OPTIONS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   const palOpts   = PALETTE_OPTIONS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-  const thumbs    = room.previews.filter(Boolean).map(u=>`<img class="room-hbar-thumb" src="${u}" alt="">`).join('');
+  const thumbs    = room.previews.filter(Boolean).map(u=>`<img class="r-room-thumb" src="${u}" alt="">`).join('');
 
+  // ── LEFT 70%: AI preview + companion ─────────────────────────────────────────
   area.innerHTML = `
     ${fb}${mpWarn}
-
-    <!-- Room header -->
-    <div class="room-hbar">
-      <div class="room-hbar-left">
-        <div class="room-hbar-title">${room.label}</div>
-        <div class="room-hbar-meta">${obs.estimated_sqft?obs.estimated_sqft+' sqft · ':''}${obs.light_direction?cap(obs.light_direction)+'-facing · ':''}Zone: ${zone!=='unknown'?zone:'Upload masterplan for zone'}</div>
-        ${thumbs?`<div class="room-hbar-thumbs">${thumbs}</div>`:''}
+    <div class="r-room-header">
+      <div>
+        <div class="r-room-title">${room.label}</div>
+        <div class="r-room-meta">${obs.estimated_sqft?obs.estimated_sqft+' sqft &ensp;·&ensp; ':''}${obs.light_direction?cap(obs.light_direction)+'-facing &ensp;·&ensp; ':''}Zone: ${zone!=='unknown'?zone:'Upload floor plan for zone'}</div>
+        ${thumbs?`<div class="r-room-thumbs">${thumbs}</div>`:''}
       </div>
     </div>
 
-    <!-- 70/30 grid -->
-    <div class="room-results-grid">
+    <div class="render-studio" id="renderStudio-${idx}">
+      <div class="rs-header">
+        <div class="rs-title">✦ AI Surface Preview</div>
+        <div class="rs-subtitle">Repaints walls, ceiling and floor — furniture stays unchanged</div>
+      </div>
+      <div class="rs-controls-bar">
+        <div class="rs-ctrl-group">
+          <div class="rs-ctrl-label">Design style</div>
+          <select class="rs-dropdown" id="rsStyle-${idx}">${styleOpts}</select>
+        </div>
+        <div class="rs-ctrl-group">
+          <div class="rs-ctrl-label">Colour palette</div>
+          <select class="rs-dropdown" id="rsPal-${idx}">${palOpts}</select>
+        </div>
+        <button class="rs-generate-btn" id="rsGenBtn-${idx}" onclick="triggerRender(${idx})">✦ Generate preview</button>
+      </div>
+      <div class="rs-preview" id="rsPreview-${idx}">
+        <div class="rs-placeholder">
+          <div class="rs-placeholder-icon">🎨</div>
+          <div class="rs-placeholder-title">Select style &amp; palette, then generate</div>
+          <div class="rs-placeholder-sub">Your room on left · AI redesign on right</div>
+        </div>
+      </div>
+      <div class="rs-footer">
+        <div class="rs-footer-note" id="rsNote-${idx}">~20 seconds · surfaces only · furniture unchanged</div>
+        <button class="rs-regen-btn" id="rsRegen-${idx}" onclick="triggerRender(${idx})">↻ Regenerate</button>
+        <a class="rs-download-btn" id="rsDownload-${idx}">↓ Download</a>
+      </div>
+    </div>
 
-      <!-- LEFT 70% — AI preview + companion -->
-      <div class="room-results-left">
-
-        <!-- AI Surface Preview (render studio) -->
-        <div class="render-studio" id="renderStudio-${idx}">
-          <div class="rs-header">
-            <div class="rs-title">✦ AI Surface Preview</div>
-            <div class="rs-subtitle">AI repaints walls, ceiling and floor of your actual room — no furniture changes</div>
-          </div>
-          <div class="rs-body">
-            <div class="rs-preview" id="rsPreview-${idx}">
-              <div class="rs-placeholder">
-                <div class="rs-placeholder-icon">🎨</div>
-                <div class="rs-placeholder-title">Select style &amp; palette, then generate</div>
-                <div class="rs-placeholder-sub">Your room on the left · AI redesign on the right</div>
-              </div>
-            </div>
-            <div class="rs-controls">
-              <div>
-                <div class="rs-ctrl-label">Design style</div>
-                <select class="rs-dropdown" id="rsStyle-${idx}">${styleOpts}</select>
-              </div>
-              <div>
-                <div class="rs-ctrl-label">Colour palette</div>
-                <select class="rs-dropdown" id="rsPal-${idx}">${palOpts}</select>
-                <div id="rsPalDots-${idx}" style="display:flex;gap:4px;margin-top:7px;align-items:center;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:6px;">
-                  ${PALETTE_OPTIONS[0].swatches.map(c=>`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,0.1);"></span>`).join('')}
-                  <span style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:4px;">Warm Earthen</span>
-                </div>
-              </div>
-              <button class="rs-generate-btn" id="rsGenBtn-${idx}" onclick="triggerRender(${idx})">✦ Generate preview</button>
-            </div>
-          </div>
-          <div class="rs-footer">
-            <div class="rs-footer-note" id="rsNote-${idx}">Applies colour palette and style to surfaces only. ~20 seconds.</div>
-            <button class="rs-regen-btn" id="rsRegen-${idx}" onclick="triggerRender(${idx})">↻ Regenerate</button>
-            <a class="rs-download-btn" id="rsDownload-${idx}">↓ Download</a>
+    <div class="companion-card">
+      <div class="companion-header">
+        <div class="companion-avatar">✦</div>
+        <div class="companion-name">Your Design Companion</div>
+        <div class="companion-online">● Online</div>
+      </div>
+      <div class="cs-messages" id="csMsgs-${idx}">
+        <div class="cs-empty">
+          <div class="cs-empty-icon">💬</div>
+          <div class="cs-empty-title">Try a quick prompt</div>
+          <div class="cs-empty-prompts">
+            <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Change the walls to sage green')">Sage green walls</div>
+            <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Minimalist modern with white walls')">Minimalist modern</div>
+            <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'What wall colour suits this Vastu zone?')">Best colour for this zone?</div>
           </div>
         </div>
+      </div>
+      <div class="cs-hint">Describe changes and AI will regenerate the render automatically.</div>
+      <div class="cs-input-row">
+        <textarea class="cs-input" id="csInput-${idx}" placeholder="e.g. Terracotta walls with a linen white ceiling…" rows="1"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPrompt(${idx},this.value);}"></textarea>
+        <button class="cs-send-btn" onclick="sendPrompt(${idx},document.getElementById('csInput-${idx}').value)">Send →</button>
+      </div>
+    </div>
 
-        <!-- Your Design Companion -->
-        <div class="companion-panel">
-          <div class="companion-panel-header">
-            <div class="companion-avatar">✦</div>
-            <div class="companion-title">Your Design Companion</div>
-            <div class="companion-status">● Online</div>
-          </div>
-          <div class="cs-messages" id="csMsgs-${idx}">
-            <div class="cs-empty">
-              <div class="cs-empty-icon">💬</div>
-              <div class="cs-empty-title">Try a quick prompt</div>
-              <div class="cs-empty-prompts">
-                <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Change the walls to sage green')">Sage green walls</div>
-                <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Minimalist modern with white walls')">Minimalist — white walls</div>
-                <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'What wall colour suits this Vastu zone?')">Best colour for this zone?</div>
-              </div>
-            </div>
-          </div>
-          <div class="cs-hint">Describe changes and AI will regenerate the render automatically.</div>
-          <div class="cs-input-row">
-            <textarea class="cs-input" id="csInput-${idx}" placeholder="e.g. Terracotta walls with a linen white ceiling…" rows="1"
-              oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPrompt(${idx},this.value);}"></textarea>
-            <button class="cs-send-btn" onclick="sendPrompt(${idx},document.getElementById('csInput-${idx}').value)">Send →</button>
-          </div>
-        </div>
-
-        <!-- Full design options -->
-        <div class="section-block" id="designSection-${idx}">
-          <div class="section-title">Full design options with products</div>
-          <button class="gen-btn" onclick="generateDesigns(${idx})">✦ Generate 4 complete design options</button>
-          <div class="gen-btn-note">Includes matched furniture, lighting, accessories and carpenter spec.</div>
-        </div>
-
-      </div><!-- /left -->
-
-      <!-- RIGHT 30% — Vastu + Room analysis -->
-      <div class="room-results-right">
-
-        <!-- Vastu score + rules -->
-        <div class="vastu-panel">
-          <div class="vastu-panel-top" style="--score-colour:${vastu?.grade?.colour||'#888'}">
-            <div>
-              <div class="vastu-score-big">${vastu?.score??'--'}</div>
-              <div style="font-size:11px;color:var(--ch40);margin-top:3px;">/ 100</div>
-            </div>
-            <div class="vastu-score-info">
-              <div class="vastu-score-lbl">Vastu score</div>
-              <div class="vastu-score-grade" style="color:${vastu?.grade?.colour||'#888'}">${vastu?.grade?.label||'—'}</div>
-              <div style="font-size:10px;color:var(--ch40);margin-top:4px;">${(vastu?.violated_rules||[]).length} issues · ${(vastu?.compliant_rules||[]).length} compliant</div>
-            </div>
-          </div>
-          <div class="vastu-panel-rules">
-            ${vastuRules || '<div style="font-size:12px;color:var(--ch40);padding:4px 0;">Upload floor plan for full zone analysis.</div>'}
-          </div>
-          <div class="vastu-panel-actions">
-            <button class="vastu-action-btn" onclick="openChecklist()">🗒 Vastu checklist</button>
-            <button class="vastu-action-btn" onclick="downloadVastuReport(${idx})">📄 Download Vastu report</button>
-          </div>
-        </div>
-
-        <!-- Room analysis insights -->
-        <div class="insights-panel">
-          <div class="insights-panel-header">Room analysis</div>
-          <div class="insights-grid-2">
-            <div class="insight-cell">
-              <div class="insight-cell-lbl">Light</div>
-              <div class="insight-cell-val">${cap(obs.light_direction||'Unknown')}</div>
-              <div class="insight-cell-sub">${cap(obs.light_quality||'')}</div>
-            </div>
-            <div class="insight-cell">
-              <div class="insight-cell-lbl">Windows</div>
-              <div class="insight-cell-val">${obs.window_count!=null?obs.window_count+' window'+(obs.window_count!==1?'s':''):'—'}</div>
-              <div class="insight-cell-sub">${(obs.natural_light_assessment||'').slice(0,30)}</div>
-            </div>
-            <div class="insight-cell">
-              <div class="insight-cell-lbl">Ceiling</div>
-              <div class="insight-cell-val">${cap(obs.ceiling_height||'—')}</div>
-              <div class="insight-cell-sub">${obs.overhead_beams_detected?'⚠ Beam detected':'No beams'}</div>
-            </div>
-            <div class="insight-cell">
-              <div class="insight-cell-lbl">Flooring</div>
-              <div class="insight-cell-val">${cap(obs.flooring_type||'—')}</div>
-              <div class="insight-cell-sub">${cap(obs.flooring_colour||'')}</div>
-            </div>
-            <div class="insight-cell">
-              <div class="insight-cell-lbl">Electrical</div>
-              <div class="insight-cell-val">${obs.electrical_points_visible!=null?obs.electrical_points_visible+' points':'—'}</div>
-              <div class="insight-cell-sub">${(obs.electrical_point_positions||[]).slice(0,1).join('')}</div>
-            </div>
-            <div class="insight-cell">
-              <div class="insight-cell-lbl">Style detected</div>
-              <div class="insight-cell-val">${cap((obs.style_detected||['—'])[0].replace(/_/g,' '))}</div>
-              <div class="insight-cell-sub">Zone: ${zone!=='unknown'?zone:'—'}</div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /right -->
-    </div><!-- /grid -->
+    <div class="section-block" id="designSection-${idx}">
+      <div class="section-title">Full design options with products</div>
+      <button class="gen-btn" onclick="generateDesigns(${idx})">✦ Generate 4 complete design options</button>
+      <div class="gen-btn-note">Includes matched furniture, lighting, accessories and carpenter spec.</div>
+    </div>
   `;
+
+  // ── RIGHT 30%: Vastu + insights ───────────────────────────────────────────────
+  if(panel){
+    const vastuRules = [
+      {rules:vastu.violated_rules||[],  icon:'✗', cls:'violated'},
+      {rules:vastu.warning_rules||[],   icon:'!',  cls:'warning'},
+      {rules:vastu.compliant_rules||[], icon:'✓',  cls:'compliant'}
+    ].map(g=>g.rules.slice(0,3).map(r=>`
+      <div class="rp-rule ${g.cls}">
+        <div class="rp-rule-icon">${g.icon}</div>
+        <div>
+          <div class="rp-rule-title">${r.title}</div>
+          <div class="rp-rule-desc">${(r.message||r.user_explanation||'').slice(0,80)}${(r.message||r.user_explanation||'').length>80?'…':''}</div>
+        </div>
+      </div>`).join('')).join('');
+
+    panel.innerHTML = `
+      <div class="rp-vastu-score" style="--score-colour:${vastu?.grade?.colour||'#888'}">
+        <div class="rp-score-num">${vastu?.score??'--'}</div>
+        <div>
+          <div class="rp-score-label">Vastu score</div>
+          <div class="rp-score-grade" style="color:${vastu?.grade?.colour||'#888'}">${vastu?.grade?.label||'—'}</div>
+          <div class="rp-score-breakdown">${(vastu?.violated_rules||[]).length} issues · ${(vastu?.compliant_rules||[]).length} compliant</div>
+        </div>
+      </div>
+      <div>
+        <div class="rp-section-title">Vastu compliance</div>
+        <div class="rp-rules">${vastuRules||'<div style="font-size:12px;color:var(--ch40);">Upload floor plan for full zone analysis.</div>'}</div>
+      </div>
+      <div>
+        <div class="rp-section-title">Room analysis</div>
+        <div class="rp-insights">
+          <div class="rp-insight"><div class="rp-insight-lbl">Light</div><div class="rp-insight-val">${cap(obs.light_direction||'—')}</div><div class="rp-insight-sub">${cap(obs.light_quality||'')}</div></div>
+          <div class="rp-insight"><div class="rp-insight-lbl">Windows</div><div class="rp-insight-val">${obs.window_count!=null?obs.window_count+' win':'—'}</div><div class="rp-insight-sub">${(obs.natural_light_assessment||'').slice(0,24)}</div></div>
+          <div class="rp-insight"><div class="rp-insight-lbl">Ceiling</div><div class="rp-insight-val">${cap(obs.ceiling_height||'—')}</div><div class="rp-insight-sub">${obs.overhead_beams_detected?'⚠ Beam':'No beams'}</div></div>
+          <div class="rp-insight"><div class="rp-insight-lbl">Flooring</div><div class="rp-insight-val">${cap(obs.flooring_type||'—')}</div><div class="rp-insight-sub">${cap(obs.flooring_colour||'')}</div></div>
+          <div class="rp-insight"><div class="rp-insight-lbl">Electrical</div><div class="rp-insight-val">${obs.electrical_points_visible!=null?obs.electrical_points_visible+' pts':'—'}</div><div class="rp-insight-sub">${(obs.electrical_point_positions||[]).slice(0,1).join('')}</div></div>
+          <div class="rp-insight"><div class="rp-insight-lbl">Zone</div><div class="rp-insight-val">${zone!=='unknown'?zone:'—'}</div><div class="rp-insight-sub">${cap((obs.style_detected||[''])[0].replace(/_/g,' '))}</div></div>
+        </div>
+      </div>
+      <div class="rp-actions">
+        <button class="rp-action" onclick="openChecklist()">🗒 Vastu checklist</button>
+        <button class="rp-action" onclick="downloadVastuReport(${idx})">📄 Download Vastu report</button>
+      </div>
+    `;
+  }
 
   // Attach palette swatch updater
   const palSel = document.getElementById('rsPal-'+idx);
