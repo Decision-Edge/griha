@@ -302,7 +302,46 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .vcl-check.checked{background:var(--sage);border-color:var(--sage);color:#fff;}
 .vcl-source{font-size:10px;color:var(--ch40);font-style:italic;margin-top:1px;}
 .vastu-modal-footer{padding:12px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--ch40);flex-shrink:0;line-height:1.5;}
-/* RESPONSIVE */
+/* ── 70/30 results layout ── */
+.room-results-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
+.room-results-left{display:flex;flex-direction:column;gap:16px;min-width:0;}
+.room-results-right{display:flex;flex-direction:column;gap:14px;position:sticky;top:72px;}
+/* Room header bar */
+.room-hbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.room-hbar-left{min-width:0;}
+.room-hbar-title{font-family:var(--font-d);font-size:26px;font-weight:500;line-height:1.1;}
+.room-hbar-meta{font-size:12px;color:var(--ch40);margin-top:3px;}
+.room-hbar-thumbs{display:flex;gap:6px;margin-top:8px;}
+.room-hbar-thumb{width:60px;height:44px;object-fit:cover;border-radius:5px;border:1px solid var(--border);}
+/* Vastu panel */
+.vastu-panel{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.vastu-panel-top{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.vastu-score-big{font-family:var(--font-d);font-size:52px;font-weight:400;line-height:1;color:var(--score-colour,#888);}
+.vastu-score-info{text-align:right;}
+.vastu-score-lbl{font-size:11px;font-weight:500;color:var(--ch40);letter-spacing:.06em;text-transform:uppercase;}
+.vastu-score-grade{font-size:14px;font-weight:500;margin-top:2px;}
+.vastu-panel-rules{padding:12px 14px;display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;}
+.vastu-panel-actions{padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px;}
+.vastu-action-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border-md);background:transparent;font-size:12px;font-weight:500;color:var(--charcoal);cursor:pointer;transition:all .15s;text-align:left;}
+.vastu-action-btn:hover{border-color:var(--terra);color:var(--terra);background:var(--terra-l);}
+/* Insights panel */
+.insights-panel{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.insights-panel-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--ch40);}
+.insights-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+.insight-cell{background:var(--warm-white);padding:10px 14px;}
+.insight-cell-lbl{font-size:10px;color:var(--ch40);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.insight-cell-val{font-size:12px;font-weight:500;color:var(--charcoal);}
+.insight-cell-sub{font-size:10px;color:var(--ch40);margin-top:1px;}
+/* Companion panel */
+.companion-panel{background:var(--warm-white);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.companion-panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.companion-avatar{width:28px;height:28px;background:var(--charcoal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--warm-white);flex-shrink:0;}
+.companion-title{font-size:13px;font-weight:500;color:var(--charcoal);}
+.companion-status{font-size:10px;color:var(--sage);margin-left:auto;}
+/* Render studio full-width adjustments */
+.rs-body{display:grid;grid-template-columns:1fr 200px;min-height:480px;}
+.rs-preview{position:relative;background:#1A1210;display:flex;align-items:center;justify-content:center;min-height:440px;overflow:hidden;}
+@media(max-width:900px){.room-results-grid{grid-template-columns:1fr;}.room-results-right{position:static;}}
 @media(max-width:768px){
   .topbar{padding:0 20px;}
   #uploadPhase{padding:32px 16px 100px;}
@@ -780,152 +819,199 @@ window.prevRoom=prevRoom; window.nextRoom=nextRoom;
 
 // ─── RENDER ROOM RESULTS ──────────────────────────────────────────────────────
 function renderRoomResults(idx){
-  const room   = S.rooms[idx];
-  const vastu  = room.vastu;
-  const obs    = room.ai?.observations||{};
-  const zone   = getZone(room.label);
-  const area   = document.getElementById('resultsArea');
+  const room  = S.rooms[idx];
+  const vastu = room.vastu;
+  const obs   = room.ai?.observations||{};
+  const zone  = getZone(room.label);
+  const area  = document.getElementById('resultsArea');
 
   if(!room.ai?.ok){
-    area.innerHTML=`<div style="padding:24px;"><div style="background:var(--terra-l);border:1px solid rgba(192,80,42,0.25);border-radius:var(--r-md);padding:14px 16px;"><div style="font-size:13px;font-weight:500;color:var(--terra);">Analysis unavailable for ${room.label}</div><div style="font-size:12px;color:var(--ch70);margin-top:4px;">Deploy the Cloudflare Worker to enable photo analysis.</div></div></div>`;
+    area.innerHTML=`<div style="padding:24px;"><div style="background:var(--terra-l);border:1px solid rgba(192,80,42,0.25);border-radius:var(--r-md);padding:14px 16px;font-size:13px;font-weight:500;color:var(--terra);">Analysis unavailable — deploy the Cloudflare Worker to enable photo analysis.</div></div>`;
     return;
   }
 
-  // Fallback banner
-  const fb = room.ai._isFallback ? '<div style="background:var(--gold-l);border:1px solid rgba(176,125,32,0.25);border-radius:var(--r-md);padding:12px 16px;display:flex;align-items:flex-start;gap:10px;"><div style="font-size:18px;flex-shrink:0;">💡</div><div><div style="font-size:12px;font-weight:500;color:var(--gold);margin-bottom:3px;">Using smart defaults — photo analysis pending</div><div style="font-size:12px;color:var(--ch70);line-height:1.55;">Deploy your Cloudflare Worker to unlock photo-specific analysis (beam detection, exact dimensions, current wall colours).</div></div></div>' : '';
+  const fb = room.ai._isFallback ? `<div style="background:var(--gold-l);border:1px solid rgba(176,125,32,0.25);border-radius:var(--r-md);padding:10px 14px;font-size:12px;color:var(--gold);display:flex;align-items:center;gap:8px;"><span>💡</span> Using smart defaults — deploy Worker for photo-specific analysis.</div>` : '';
 
-  // Masterplan direction warning in results
-  const mpWarn = (S.masterplan && S.masterplan.direction_confidence && S.masterplan.direction_confidence !== 'high')
-    ? '<div style="padding:10px 14px;border-radius:var(--r-sm);border:1px solid '+(S.masterplan.direction_confidence==='low'?'rgba(192,80,42,0.3)':'rgba(176,125,32,0.3)')+';background:'+(S.masterplan.direction_confidence==='low'?'var(--terra-l)':'var(--gold-l)')+';font-size:12px;color:'+(S.masterplan.direction_confidence==='low'?'var(--terra)':'var(--gold)')+';line-height:1.6;"><strong>'+(S.masterplan.direction_confidence==='low'?'⚠ Compass direction unclear':'💡 Direction partially inferred')+'</strong> '+(S.masterplan.direction_clarity_note||'No compass rose found in masterplan.')+' Vastu zones may be approximate. <a href="javascript:void(0)" onclick="openChecklist()" style="font-weight:500;text-decoration:underline;color:inherit;">Open Vastu checklist →</a></div>'
+  const mpWarn = (S.masterplan?.direction_confidence && S.masterplan.direction_confidence!=='high')
+    ? `<div style="padding:10px 14px;border-radius:var(--r-sm);border:1px solid ${S.masterplan.direction_confidence==='low'?'rgba(192,80,42,0.3)':'rgba(176,125,32,0.3)'};background:${S.masterplan.direction_confidence==='low'?'var(--terra-l)':'var(--gold-l)'};font-size:12px;color:${S.masterplan.direction_confidence==='low'?'var(--terra)':'var(--gold)'};line-height:1.6;"><strong>${S.masterplan.direction_confidence==='low'?'⚠ Compass direction unclear':'💡 Direction partially inferred'}</strong> ${S.masterplan.direction_clarity_note||''} <a href="javascript:void(0)" onclick="openChecklist()" style="font-weight:500;text-decoration:underline;color:inherit;">Open Vastu checklist →</a></div>`
     : '';
 
-  // Vastu rules HTML
-  const rulesHTML = [
-    {rules:vastu.violated_rules||[],  icon:'✗',cls:'violated'},
-    {rules:vastu.warning_rules||[],   icon:'!',cls:'warning'},
-    {rules:vastu.compliant_rules||[], icon:'✓',cls:'compliant'}
-  ].map(g=>g.rules.slice(0,3).map(r=>`<div class="vastu-rule vastu-${g.cls}"><div class="vr-icon">${g.icon}</div><div><div class="vr-title">${r.title}</div><div class="vr-desc">${r.message||r.user_explanation||''}</div><div class="vr-source">${r.source||''}</div></div></div>`).join('')).join('');
-
-  // Style & palette dropdowns
-  const styleOpts  = STYLE_OPTIONS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  const palOpts    = PALETTE_OPTIONS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-  const photosStrip= room.previews.map(u=>`<img class="rps-thumb" src="${u}" alt="">`).join('');
-
-  area.innerHTML = [
-    fb,
-    mpWarn,
-
-    // Header
-    `<div class="r-header">
+  // Vastu rules (compact for right panel)
+  const vastuRules = [
+    {rules:vastu.violated_rules||[],  icon:'✗', cls:'violated'},
+    {rules:vastu.warning_rules||[],   icon:'!',  cls:'warning'},
+    {rules:vastu.compliant_rules||[], icon:'✓',  cls:'compliant'}
+  ].map(g=>g.rules.slice(0,4).map(r=>`
+    <div class="vastu-rule vastu-${g.cls}" style="margin-bottom:4px;">
+      <div class="vr-icon">${g.icon}</div>
       <div>
-        <div class="r-room-title">${room.label}</div>
-        <div class="r-meta">${obs.estimated_sqft?obs.estimated_sqft+' sqft · ':''}${obs.light_direction?cap(obs.light_direction)+'-facing · ':''}Zone: ${zone!=='unknown'?zone:'Upload masterplan for zone'}</div>
-        <div class="room-photos-strip" style="margin-top:10px;">${photosStrip}</div>
+        <div class="vr-title">${r.title}</div>
+        <div class="vr-desc">${(r.message||r.user_explanation||'').slice(0,90)}${(r.message||r.user_explanation||'').length>90?'…':''}</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-        <div class="vastu-score" style="--score-colour:${vastu?.grade?.colour||'#888'}">
-          <div class="vs-num">${vastu?.score??'--'}</div>
-          <div class="vs-label">${vastu?.grade?.label||'Vastu score'}</div>
-        </div>
-        <button onclick="openChecklist()" style="font-size:11px;padding:5px 12px;border-radius:100px;border:1px solid var(--border-md);background:transparent;cursor:pointer;color:var(--ch70);white-space:nowrap;">🗒 Vastu checklist</button>
-      </div>
-    </div>`,
+    </div>`).join('')).join('');
 
-    // Insights
-    `<div class="insights">
-      ${ins('Light',cap(obs.light_direction||'unknown'),cap(obs.light_quality||''))}
-      ${ins('Electrical',obs.electrical_points_visible!=null?obs.electrical_points_visible+' visible':'Unknown',(obs.electrical_point_positions||[]).slice(0,2).join(', '))}
-      ${ins('Ceiling',cap(obs.ceiling_height||'unknown')+' · '+cap(obs.ceiling_type||'flat'),obs.overhead_beams_detected?'⚠ Beam detected':'No beams')}
-      ${ins('Windows',obs.window_count!=null?obs.window_count+' window'+(obs.window_count!==1?'s':''):'Unknown',obs.natural_light_assessment||'')}
-      ${ins('Flooring',cap(obs.flooring_type||'unknown'),cap(obs.flooring_colour||'')+' '+cap(obs.wall_condition||''))}
-      ${ins('Style',cap((obs.style_detected||['unknown'])[0]),obs.vastu_observations?.heavy_furniture_zone?'Heavy: '+obs.vastu_observations.heavy_furniture_zone:'')}
-    </div>`,
+  const styleOpts = STYLE_OPTIONS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  const palOpts   = PALETTE_OPTIONS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  const thumbs    = room.previews.filter(Boolean).map(u=>`<img class="room-hbar-thumb" src="${u}" alt="">`).join('');
 
-    // Vastu section
-    `<div class="section-block">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--border);">
-        <div class="section-title" style="border:none;padding:0;">Vastu compliance</div>
-        <button onclick="downloadVastuReport(${idx})" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;border:1px solid var(--border-md);background:transparent;font-size:12px;font-weight:500;cursor:pointer;">📄 Download Vastu report</button>
-      </div>
-      ${rulesHTML||'<div style="font-size:13px;color:var(--ch40);padding-top:8px;">Upload masterplan for full zone analysis.</div>'}
-    </div>`,
+  area.innerHTML = `
+    ${fb}${mpWarn}
 
-    // Render studio
-    `<div class="render-studio" id="renderStudio-${idx}">
-      <div class="rs-header">
-        <div class="rs-title">✦ AI Surface Preview</div>
-        <div class="rs-subtitle">AI repaints walls, ceiling and floor of your actual room — no furniture changes</div>
+    <!-- Room header -->
+    <div class="room-hbar">
+      <div class="room-hbar-left">
+        <div class="room-hbar-title">${room.label}</div>
+        <div class="room-hbar-meta">${obs.estimated_sqft?obs.estimated_sqft+' sqft · ':''}${obs.light_direction?cap(obs.light_direction)+'-facing · ':''}Zone: ${zone!=='unknown'?zone:'Upload masterplan for zone'}</div>
+        ${thumbs?`<div class="room-hbar-thumbs">${thumbs}</div>`:''}
       </div>
-      <div class="rs-body">
-        <div class="rs-preview" id="rsPreview-${idx}">
-          <div class="rs-placeholder">
-            <div class="rs-placeholder-icon">🎨</div>
-            <div class="rs-placeholder-title">Select style &amp; palette, then generate</div>
-            <div class="rs-placeholder-sub">AI transforms surfaces only. Furniture and layout stay unchanged.</div>
+    </div>
+
+    <!-- 70/30 grid -->
+    <div class="room-results-grid">
+
+      <!-- LEFT 70% — AI preview + companion -->
+      <div class="room-results-left">
+
+        <!-- AI Surface Preview (render studio) -->
+        <div class="render-studio" id="renderStudio-${idx}">
+          <div class="rs-header">
+            <div class="rs-title">✦ AI Surface Preview</div>
+            <div class="rs-subtitle">AI repaints walls, ceiling and floor of your actual room — no furniture changes</div>
           </div>
-        </div>
-        <div class="rs-controls">
-          <div>
-            <div class="rs-ctrl-label">Design style</div>
-            <select class="rs-dropdown" id="rsStyle-${idx}">${styleOpts}</select>
-          </div>
-          <div>
-            <div class="rs-ctrl-label">Colour palette</div>
-            <select class="rs-dropdown" id="rsPal-${idx}">${palOpts}</select>
-            <div id="rsPalDots-${idx}" style="display:flex;gap:4px;margin-top:7px;align-items:center;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:6px;">
-              ${PALETTE_OPTIONS[0].swatches.map(c=>`<span style="display:inline-block;width:13px;height:13px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,0.1);"></span>`).join('')}
-              <span style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:4px;">Warm Earthen</span>
+          <div class="rs-body">
+            <div class="rs-preview" id="rsPreview-${idx}">
+              <div class="rs-placeholder">
+                <div class="rs-placeholder-icon">🎨</div>
+                <div class="rs-placeholder-title">Select style &amp; palette, then generate</div>
+                <div class="rs-placeholder-sub">Your room on the left · AI redesign on the right</div>
+              </div>
+            </div>
+            <div class="rs-controls">
+              <div>
+                <div class="rs-ctrl-label">Design style</div>
+                <select class="rs-dropdown" id="rsStyle-${idx}">${styleOpts}</select>
+              </div>
+              <div>
+                <div class="rs-ctrl-label">Colour palette</div>
+                <select class="rs-dropdown" id="rsPal-${idx}">${palOpts}</select>
+                <div id="rsPalDots-${idx}" style="display:flex;gap:4px;margin-top:7px;align-items:center;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:6px;">
+                  ${PALETTE_OPTIONS[0].swatches.map(c=>`<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};border:1px solid rgba(0,0,0,0.1);"></span>`).join('')}
+                  <span style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:4px;">Warm Earthen</span>
+                </div>
+              </div>
+              <button class="rs-generate-btn" id="rsGenBtn-${idx}" onclick="triggerRender(${idx})">✦ Generate preview</button>
             </div>
           </div>
-          <button class="rs-generate-btn" id="rsGenBtn-${idx}" onclick="triggerRender(${idx})">✦ Generate surface preview</button>
-        </div>
-      </div>
-      <div class="rs-footer">
-        <div class="rs-footer-note" id="rsNote-${idx}">Applies colour palette and style to walls, ceiling and floor only. Takes about 20 seconds.</div>
-        <button class="rs-regen-btn" id="rsRegen-${idx}" onclick="triggerRender(${idx})">↻ Regenerate</button>
-        <a class="rs-download-btn" id="rsDownload-${idx}">↓ Download</a>
-      </div>
-    </div>`,
-
-    // Chat studio
-    `<div class="chat-studio">
-      <div class="cs-header">
-        <div class="cs-header-icon">✦</div>
-        <div>
-          <div class="cs-header-title">Ask Griha to refine this design</div>
-          <div class="cs-header-sub">Describe surface changes and AI will regenerate — or ask any Vastu question</div>
-        </div>
-      </div>
-      <div class="cs-messages" id="csMsgs-${idx}">
-        <div class="cs-empty">
-          <div class="cs-empty-icon">💬</div>
-          <div class="cs-empty-title">Try a quick prompt</div>
-          <div class="cs-empty-prompts">
-            <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Change the walls to sage green')">Sage green walls</div>
-            <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Switch to minimalist modern with white walls')">Minimalist — white walls</div>
-            <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Traditional heritage with deep ochre walls')">Traditional — deep ochre walls</div>
-            <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'What wall colour suits this Vastu zone per classical texts?')">Best colour for this Vastu zone?</div>
+          <div class="rs-footer">
+            <div class="rs-footer-note" id="rsNote-${idx}">Applies colour palette and style to surfaces only. ~20 seconds.</div>
+            <button class="rs-regen-btn" id="rsRegen-${idx}" onclick="triggerRender(${idx})">↻ Regenerate</button>
+            <a class="rs-download-btn" id="rsDownload-${idx}">↓ Download</a>
           </div>
         </div>
-      </div>
-      <div class="cs-hint">Tip: Mention colours, styles, or say "regenerate" — Griha updates the render automatically.</div>
-      <div class="cs-input-row">
-        <textarea class="cs-input" id="csInput-${idx}" placeholder="e.g. Paint the walls terracotta with a linen white ceiling" rows="1"
-          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPrompt(${idx},this.value);}"></textarea>
-        <button class="cs-send-btn" onclick="sendPrompt(${idx},document.getElementById('csInput-${idx}').value)">Send →</button>
-      </div>
-    </div>`,
 
-    // Palette dropdown listener (attached after render)
-    `<div class="section-block" id="designSection-${idx}">
-      <div class="section-title">Full design options with products</div>
-      <button class="gen-btn" onclick="generateDesigns(${idx})">✦ Generate 4 complete design options</button>
-      <div class="gen-btn-note">Each option includes matched furniture, lighting, wallpaper, accessories, and a carpenter spec.</div>
-    </div>`
-  ].join('');
+        <!-- Your Design Companion -->
+        <div class="companion-panel">
+          <div class="companion-panel-header">
+            <div class="companion-avatar">✦</div>
+            <div class="companion-title">Your Design Companion</div>
+            <div class="companion-status">● Online</div>
+          </div>
+          <div class="cs-messages" id="csMsgs-${idx}">
+            <div class="cs-empty">
+              <div class="cs-empty-icon">💬</div>
+              <div class="cs-empty-title">Try a quick prompt</div>
+              <div class="cs-empty-prompts">
+                <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Change the walls to sage green')">Sage green walls</div>
+                <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'Minimalist modern with white walls')">Minimalist — white walls</div>
+                <div class="cs-prompt-chip" onclick="sendPrompt(${idx},'What wall colour suits this Vastu zone?')">Best colour for this zone?</div>
+              </div>
+            </div>
+          </div>
+          <div class="cs-hint">Describe changes and AI will regenerate the render automatically.</div>
+          <div class="cs-input-row">
+            <textarea class="cs-input" id="csInput-${idx}" placeholder="e.g. Terracotta walls with a linen white ceiling…" rows="1"
+              oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPrompt(${idx},this.value);}"></textarea>
+            <button class="cs-send-btn" onclick="sendPrompt(${idx},document.getElementById('csInput-${idx}').value)">Send →</button>
+          </div>
+        </div>
 
-  // Attach palette swatch preview updater
+        <!-- Full design options -->
+        <div class="section-block" id="designSection-${idx}">
+          <div class="section-title">Full design options with products</div>
+          <button class="gen-btn" onclick="generateDesigns(${idx})">✦ Generate 4 complete design options</button>
+          <div class="gen-btn-note">Includes matched furniture, lighting, accessories and carpenter spec.</div>
+        </div>
+
+      </div><!-- /left -->
+
+      <!-- RIGHT 30% — Vastu + Room analysis -->
+      <div class="room-results-right">
+
+        <!-- Vastu score + rules -->
+        <div class="vastu-panel">
+          <div class="vastu-panel-top" style="--score-colour:${vastu?.grade?.colour||'#888'}">
+            <div>
+              <div class="vastu-score-big">${vastu?.score??'--'}</div>
+              <div style="font-size:11px;color:var(--ch40);margin-top:3px;">/ 100</div>
+            </div>
+            <div class="vastu-score-info">
+              <div class="vastu-score-lbl">Vastu score</div>
+              <div class="vastu-score-grade" style="color:${vastu?.grade?.colour||'#888'}">${vastu?.grade?.label||'—'}</div>
+              <div style="font-size:10px;color:var(--ch40);margin-top:4px;">${(vastu?.violated_rules||[]).length} issues · ${(vastu?.compliant_rules||[]).length} compliant</div>
+            </div>
+          </div>
+          <div class="vastu-panel-rules">
+            ${vastuRules || '<div style="font-size:12px;color:var(--ch40);padding:4px 0;">Upload floor plan for full zone analysis.</div>'}
+          </div>
+          <div class="vastu-panel-actions">
+            <button class="vastu-action-btn" onclick="openChecklist()">🗒 Vastu checklist</button>
+            <button class="vastu-action-btn" onclick="downloadVastuReport(${idx})">📄 Download Vastu report</button>
+          </div>
+        </div>
+
+        <!-- Room analysis insights -->
+        <div class="insights-panel">
+          <div class="insights-panel-header">Room analysis</div>
+          <div class="insights-grid-2">
+            <div class="insight-cell">
+              <div class="insight-cell-lbl">Light</div>
+              <div class="insight-cell-val">${cap(obs.light_direction||'Unknown')}</div>
+              <div class="insight-cell-sub">${cap(obs.light_quality||'')}</div>
+            </div>
+            <div class="insight-cell">
+              <div class="insight-cell-lbl">Windows</div>
+              <div class="insight-cell-val">${obs.window_count!=null?obs.window_count+' window'+(obs.window_count!==1?'s':''):'—'}</div>
+              <div class="insight-cell-sub">${(obs.natural_light_assessment||'').slice(0,30)}</div>
+            </div>
+            <div class="insight-cell">
+              <div class="insight-cell-lbl">Ceiling</div>
+              <div class="insight-cell-val">${cap(obs.ceiling_height||'—')}</div>
+              <div class="insight-cell-sub">${obs.overhead_beams_detected?'⚠ Beam detected':'No beams'}</div>
+            </div>
+            <div class="insight-cell">
+              <div class="insight-cell-lbl">Flooring</div>
+              <div class="insight-cell-val">${cap(obs.flooring_type||'—')}</div>
+              <div class="insight-cell-sub">${cap(obs.flooring_colour||'')}</div>
+            </div>
+            <div class="insight-cell">
+              <div class="insight-cell-lbl">Electrical</div>
+              <div class="insight-cell-val">${obs.electrical_points_visible!=null?obs.electrical_points_visible+' points':'—'}</div>
+              <div class="insight-cell-sub">${(obs.electrical_point_positions||[]).slice(0,1).join('')}</div>
+            </div>
+            <div class="insight-cell">
+              <div class="insight-cell-lbl">Style detected</div>
+              <div class="insight-cell-val">${cap((obs.style_detected||['—'])[0].replace(/_/g,' '))}</div>
+              <div class="insight-cell-sub">Zone: ${zone!=='unknown'?zone:'—'}</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /right -->
+    </div><!-- /grid -->
+  `;
+
+  // Attach palette swatch updater
   const palSel = document.getElementById('rsPal-'+idx);
   if(palSel) palSel.addEventListener('change', ()=>{
     const p = PALETTE_OPTIONS.find(x=>x.id===palSel.value);
