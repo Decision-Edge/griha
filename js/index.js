@@ -5,7 +5,7 @@
  * Bindings:  AI (Workers AI), RATE_KV (KV namespace)
  */
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-opus-4-6';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -182,15 +182,28 @@ async function handleMasterplan(req, env) {
   } catch(e) { return jsonRes({ ok:false, error:e.message }, 500); }
 }
 
-// ── /generate-render — Segmind SDXL img2img ─────────────────────────────────
-// Segmind API: pure JSON, base64 in/out, no multipart, fast (<15s)
-// Endpoint: api.segmind.com/v1/sdxl-controlnet — ControlNet with edge detection
+// ── /generate-render — Segmind SDXL ControlNet ───────────────────────────────
+// Uses Segmind sdxl-controlnet: extracts structural edges from your room photo
+// and uses them as a hard constraint — windows, walls, furniture stay in place.
+// Only surfaces (wall colour, floor, ceiling) are transformed.
 // Requires: SEGMIND_API_KEY in Worker Settings → Variables and Secrets
-// Get key at: segmind.com → Sign up → Dashboard → API Key
 async function handleRender(req, env) {
   if (!env.SEGMIND_API_KEY) {
-    return jsonRes({ ok:false, error:'SEGMIND_API_KEY not set. Sign up at segmind.com → Dashboard → API Key → add as secret SEGMIND_API_KEY in Cloudflare Worker settings.' }, 503);
+    return jsonRes({ ok:false, error:'SEGMIND_API_KEY not set. Sign up at segmind.com and add the key in Cloudflare Worker Settings.' }, 503);
   }
+
+  const ip = getClientIP(req);
+  try {
+    const rc = await checkRateLimit(env, ip, 'render');
+    if (!rc.allowed) return jsonRes({
+      ok:false, limit_reached:true, type:'render',
+      message:"You have used your free render. Buy a credit pack to continue.",
+      packs:[
+        { name:'Starter',   price:299, includes:'3 rooms + 5 renders',      tag:'starter'   },
+        { name:'Full Home', price:799, includes:'Unlimited rooms + renders', tag:'full_home' }
+      ]
+    }, 429);
+  } catch(e) {}
 
   const { design_style_id, palette_id, room_type, roomImageBase64 } = await req.json().catch(()=>({}));
 
@@ -198,41 +211,49 @@ async function handleRender(req, env) {
     return jsonRes({ ok:false, error:'No room photo provided. Please upload a room photo first.' }, 400);
   }
 
+  // Surface-specific prompts — describe ONLY what changes on walls/floor/ceiling
   const STYLES = {
-    contemporary_indian:  'warm terracotta orange walls, polished beige stone floor, white ceiling, Indian contemporary interior',
-    minimalist_modern:    'pure white walls, large light grey porcelain floor tiles, white ceiling, minimalist Scandinavian interior',
-    traditional_heritage: 'deep ochre yellow walls with burgundy dado panel, dark teak herringbone wood floor, cream ceiling with gold cornice, traditional Indian interior',
-    boho_chic:            'sage green walls, terracotta patterned cement floor tiles, white ceiling, bohemian chic interior',
-    industrial_modern:    'raw grey concrete walls, dark polished concrete floor, dark anthracite ceiling, industrial modern interior',
-    art_deco_indian:      'deep teal walls with gold geometric border, black and gold marble floor, cream ceiling with gold cornice, Art Deco Indian interior',
-    japandi:              'warm greige walls, pale ash wood floor, white ceiling with natural wood beam, Japandi interior',
-    coastal_indian:       'aquamarine limewash walls, pale teak wood floor, white ceiling, coastal Indian interior',
+    contemporary_indian:  'contemporary Indian interior, terracotta orange walls, polished beige stone floor tiles, warm brass pendant light, sheesham wood furniture',
+    minimalist_modern:    'minimalist modern interior, pure white walls, light grey porcelain floor tiles, recessed white LED lights, clean white furniture',
+    traditional_heritage: 'traditional Indian interior, deep ochre walls with burgundy dado panel, dark teak herringbone floor, antique brass chandelier, carved dark wood furniture',
+    boho_chic:            'bohemian chic interior, sage green walls, terracotta patterned cement floor tiles, rattan pendant light, macrame wall art, colourful dhurrie rug',
+    industrial_modern:    'industrial modern interior, raw concrete walls, exposed brick accent, dark polished concrete floor, black steel Edison bulb pendants',
+    art_deco_indian:      'Art Deco Indian interior, deep teal walls with gold geometric stencil border, black and gold marble floor, ornate cream ceiling with gold cornice',
+    japandi:              'Japandi interior, warm greige walls, wide plank pale ash wood floor, white ceiling with pale oak beam, paper pendant light, minimal wood furniture',
+    coastal_indian:       'coastal Indian interior, aquamarine limewash walls, pale teak plank floor, whitewashed wooden ceiling, natural rope pendant light',
   };
-
   const PALETTES = {
-    warm_earthen:     'terracotta #C47040 and cream #EAE1D5',
-    sage_serenity:    'sage green #779971 and mist white #E8EEE6',
-    terracotta_dawn:  'burnt terracotta #9A4820 and peach #F5ECE1',
-    cloud_white:      'pure white #F5F0E8 and greige #C8BC9F',
-    monsoon_blue:     'cerulean blue #5B8FAE and arctic white #EBF0F5',
-    golden_hour:      'warm gold #B07D20 and champagne #F4EAD5',
-    forest_deep:      'forest green #2B4D25 and pale sage #E8EEE6',
-    blush_rose:       'dusty rose #D4927B and warm cream #FAF0EA',
-    midnight_charcoal:'charcoal #2C2C2A and warm grey #8C8C8A',
-    coastal_sand:     'coastal sand #DED3B8 and seafoam #E8EDE6',
+    warm_earthen:     'colour palette warm terracotta #C47040 and kaolin cream #EAE1D5',
+    sage_serenity:    'colour palette sage green #779971 and pale mist #E8EEE6',
+    terracotta_dawn:  'colour palette burnt terracotta #9A4820 and warm peach #F5ECE1',
+    cloud_white:      'colour palette pure white #F5F0E8 and soft greige #C8BC9F',
+    monsoon_blue:     'colour palette cerulean blue #5B8FAE and arctic white #EBF0F5',
+    golden_hour:      'colour palette warm gold #B07D20 and champagne cream #F4EAD5',
+    forest_deep:      'colour palette forest green #2B4D25 and pale sage #E8EEE6',
+    blush_rose:       'colour palette dusty rose #D4927B and warm cream #FAF0EA',
+    midnight_charcoal:'colour palette warm charcoal #2C2C2A and warm grey #8C8C8A',
+    coastal_sand:     'colour palette coastal sand #DED3B8 and sea foam #E8EDE6',
   };
 
   const style   = STYLES[design_style_id]  || STYLES.contemporary_indian;
   const palette = PALETTES[palette_id]     || PALETTES.warm_earthen;
   const room    = (room_type || 'room').replace(/_/g, ' ');
 
-  const prompt = `Same ${room} with restyled surfaces only. ${style}. Colour palette: ${palette}. Keep all furniture, windows, doors and room layout exactly identical. Only walls, floor and ceiling are changed. Photorealistic interior photography. No people.`;
+  const prompt = [
+    `Photorealistic professional interior design photo of an Indian ${room}.`,
+    style + '.',
+    palette + '.',
+    'Same room layout, same window positions, same door positions, same furniture arrangement.',
+    'Only wall colour, floor material and ceiling finish are changed.',
+    'Ultra realistic. 8K quality. Natural daylight. No people.',
+  ].join(' ');
 
-  const negPrompt = 'different room, moved furniture, new furniture, different windows, different layout, cartoon, blurry, distorted, watermark, text, people, low quality, painting, sketch';
+  const negPrompt = [
+    'different room layout, moved furniture, new furniture, different windows, different doors, different room shape',
+    'cartoon, anime, sketch, painting, watermark, text, blurry, distorted, low quality, people, overexposed',
+  ].join(', ');
 
   try {
-    // sdxl-controlnet: locks your room's exact structure via edge detection
-    // then applies style/colour changes. Better than img2img for room relevance.
     const response = await fetch('https://api.segmind.com/v1/sdxl-controlnet', {
       method:  'POST',
       headers: { 'x-api-key': env.SEGMIND_API_KEY, 'Content-Type': 'application/json' },
@@ -244,9 +265,9 @@ async function handleRender(req, env) {
         scheduler:           'DPM++ 2M Karras',
         num_inference_steps: 30,
         guidance_scale:      8,
-        controlnet_scale:    0.8,
-        seed:                12345,
-        base64:              false,
+        controlnet_scale:    0.8,   // 0.8 = strong structure lock
+        seed:                42,
+        base64:              false, // returns raw image bytes
       }),
     });
 
@@ -255,23 +276,24 @@ async function handleRender(req, env) {
       let errMsg = errText.slice(0, 300);
       try { errMsg = JSON.parse(errText).error || errMsg; } catch {}
       console.error('Segmind error', response.status, errMsg);
-      if (response.status === 401 || response.status === 403) return jsonRes({ ok:false, error:'Invalid SEGMIND_API_KEY.' });
+      if (response.status === 401 || response.status === 403) return jsonRes({ ok:false, error:'Invalid SEGMIND_API_KEY. Check at segmind.com.' });
       if (response.status === 402 || response.status === 406) return jsonRes({ ok:false, error:'No Segmind credits. Top up at cloud.segmind.com/billing?type=TOPUP' });
-      if (response.status === 429) return jsonRes({ ok:false, error:'Segmind rate limit. Wait a moment.' });
+      if (response.status === 429) return jsonRes({ ok:false, error:'Segmind rate limit. Wait a moment and try again.' });
       return jsonRes({ ok:false, error:'Segmind ' + response.status + ': ' + errMsg }, 502);
     }
 
-    // base64:false → Segmind returns raw image bytes (image/jpeg)
-    const imgBuf  = await response.arrayBuffer();
-    const imgArr  = new Uint8Array(imgBuf);
-    let binary    = '';
+    // base64:false — Segmind returns raw image bytes
+    const imgBuf = await response.arrayBuffer();
+    const imgArr = new Uint8Array(imgBuf);
+    let binary = '';
     for (let i = 0; i < imgArr.length; i += 8192) {
       binary += String.fromCharCode(...imgArr.subarray(i, i + 8192));
     }
     const b64 = btoa(binary);
-    if (!b64) return jsonRes({ ok:false, error:'No image returned from Segmind.' }, 502);
+    if (!b64 || b64.length < 100) return jsonRes({ ok:false, error:'No image returned from Segmind. Check your credits.' }, 502);
 
-    return jsonRes({ ok:true, image_base64:b64, mime_type:'image/jpeg', mode:'img2img' });
+    try { await consumeCredit(env, ip, 'render'); } catch(e) {}
+    return jsonRes({ ok:true, image_base64:b64, mime_type:'image/jpeg', mode:'controlnet' });
 
   } catch(e) {
     console.error('Render error:', e.message);
