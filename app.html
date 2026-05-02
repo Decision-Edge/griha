@@ -140,8 +140,8 @@ body{font-family:var(--font-b);background:var(--warm-white);color:var(--charcoal
 .rs-header{padding:14px 20px;background:linear-gradient(135deg,var(--charcoal) 0%,#2A1F1A 100%);border-bottom:1px solid rgba(255,255,255,0.07);}
 .rs-title{font-family:var(--font-d);font-size:20px;font-weight:400;color:var(--warm-white);}
 .rs-subtitle{font-size:11px;color:rgba(255,255,255,0.35);margin-top:2px;}
-.rs-body{display:grid;grid-template-columns:1fr 200px;min-height:380px;}
-.rs-preview{position:relative;background:#1A1210;display:flex;align-items:center;justify-content:center;min-height:340px;overflow:hidden;}
+.rs-body{display:grid;grid-template-columns:1fr 200px;min-height:480px;}
+.rs-preview{position:relative;background:#1A1210;display:flex;align-items:center;justify-content:center;min-height:440px;overflow:hidden;}
 .rs-img{width:100%;height:100%;object-fit:contain;display:block;}
 .rs-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;text-align:center;height:100%;width:100%;}
 .rs-placeholder-icon{font-size:48px;opacity:.25;}
@@ -766,8 +766,17 @@ function renderResultsSidebar(){
 function selectResultRoom(idx){
   S.activeRoom=idx;
   document.querySelectorAll('.r-room-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  // Update nav bar tab highlights
+  S.rooms.forEach((_,i)=>{
+    const t=document.getElementById('rnTab-'+i);
+    if(t){ t.style.background=i===idx?'var(--charcoal)':'transparent'; t.style.color=i===idx?'#fff':'var(--ch70)'; }
+  });
   renderRoomResults(idx);
 }
+
+function prevRoom(){ if(S.activeRoom>0) selectResultRoom(S.activeRoom-1); }
+function nextRoom(){ if(S.activeRoom<S.rooms.length-1) selectResultRoom(S.activeRoom+1); }
+window.prevRoom=prevRoom; window.nextRoom=nextRoom;
 
 // ─── RENDER ROOM RESULTS ──────────────────────────────────────────────────────
 function renderRoomResults(idx){
@@ -974,19 +983,33 @@ async function triggerRender(idx){
   RENDER_CACHE[idx][styleId+'_'+palId] = result.image_base64;
 }
 
-// ─── MULTI-ROOM CAROUSEL ──────────────────────────────────────────────────────
+// ─── MULTI-ROOM CAROUSEL — disabled, rooms navigate via sidebar ───────────────
 function buildCarousel(){
+  // Carousel removed — navigation is via the sidebar room list.
+  // With multiple rooms, show prev/next arrows in the results header instead.
   const section=document.getElementById('carouselSection');
-  if(!section) return;
-  const rooms=S.rooms.filter(r=>r.status==='done');
-  if(rooms.length<2){ section.style.display='none'; return; }
-  section.style.display='block';
-  const sOpts=STYLE_OPTIONS.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  const pOpts=PALETTE_OPTIONS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-  const dots=rooms.map((r,i)=>`<div class="carousel-dot${i===0?' active':''}" onclick="goToSlide(${i})"></div>`).join('');
-  const slides=rooms.map((r,i)=>`<div class="carousel-slide" id="cslide-${i}"><div class="carousel-placeholder" id="cph-${i}"><div class="carousel-placeholder-icon">🎨</div><div class="carousel-placeholder-text">${r.label}<br><span style="font-size:11px;opacity:.6;">Click Generate all rooms</span></div></div><div class="carousel-slide-label">${r.label}</div></div>`).join('');
-  section.innerHTML=`<div class="carousel-studio"><div class="carousel-header"><div><div class="carousel-title">✦ All Rooms Preview</div><div class="carousel-subtitle">${rooms.length} rooms · Same style and palette applied to all</div></div><div class="carousel-controls-top"><select class="carousel-dropdown" id="carouselStyle">${sOpts}</select><select class="carousel-dropdown" id="carouselPalette">${pOpts}</select><button class="carousel-gen-btn" id="carouselGenBtn" onclick="generateAllRooms()">✦ Generate all rooms</button></div></div><div class="carousel-track-wrap" style="position:relative;"><div class="carousel-track" id="carouselTrack">${slides}</div><button class="carousel-nav prev" id="carouselPrev" onclick="prevSlide()" disabled>‹</button><button class="carousel-nav next" id="carouselNext" onclick="nextSlide()" ${rooms.length<2?'disabled':''}>›</button></div><div class="carousel-footer"><div class="carousel-dots" id="carouselDots">${dots}</div><div class="carousel-footer-note" id="carouselNote">Select style and palette above, then generate all rooms at once</div><a class="carousel-download-btn" id="carouselDl">↓ Save render</a></div></div>`;
-  window._ci=0; window._ct=rooms.length;
+  if(section) section.style.display='none';
+
+  // If 2+ rooms, add prev/next nav to results header
+  if(S.rooms.length > 1){
+    const existing = document.getElementById('roomNavBar');
+    if(existing) existing.remove();
+    const nav = document.createElement('div');
+    nav.id = 'roomNavBar';
+    nav.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 24px 0;gap:8px;';
+    nav.innerHTML = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${S.rooms.map((r,i)=>`<button onclick="selectResultRoom(${i})" id="rnTab-${i}"
+          style="font-size:12px;padding:5px 14px;border-radius:100px;border:1px solid var(--border-md);background:${i===0?'var(--charcoal)':'transparent'};color:${i===0?'#fff':'var(--ch70)'};cursor:pointer;transition:all .15s;font-family:var(--font-b);"
+        >${r.label}</button>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="prevRoom()" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-md);background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">‹</button>
+        <button onclick="nextRoom()" style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-md);background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">›</button>
+      </div>`;
+    const rMain = document.getElementById('rMain');
+    if(rMain) rMain.insertBefore(nav, rMain.firstChild);
+  }
 }
 
 async function generateAllRooms(){
