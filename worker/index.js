@@ -5,7 +5,7 @@
  * Bindings:  AI (Workers AI), RATE_KV (KV namespace)
  */
 
-const MODEL = 'claude-opus-4-6';
+const MODEL = 'claude-sonnet-4-6';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
